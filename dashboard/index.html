@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Mansa Musa AI OS — Command Center</title>
+<!-- Install to iPhone home screen (Add to Home Screen -> opens full-screen) -->
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#171109" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Mansa Musa" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<link rel="icon" href="icon-192.png" />
+<style>
+  :root { --bg:#0e0c0a; --panel:#1a1612; --panel2:#211b15; --line:#2c251d; --gold:#c79a3b;
+          --text:#efe7d8; --muted:#9b8f7a; --good:#5fae6b; --warn:#d8a23a; --bad:#cf6a5a; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:20px 28px; border-bottom:1px solid var(--line); display:flex; align-items:baseline; gap:14px; }
+  header h1 { font-size:19px; margin:0; letter-spacing:.3px; }
+  header span { color:var(--muted); font-size:13px; }
+  .gold { color:var(--gold); }
+  main { display:grid; grid-template-columns:230px 1fr; min-height:calc(100vh - 64px); }
+  nav { border-right:1px solid var(--line); padding:14px 0; }
+  nav button { display:block; width:100%; text-align:left; padding:10px 26px; background:none;
+    border:none; color:var(--muted); font:inherit; cursor:pointer; }
+  nav button:hover, nav button.active { color:var(--text); background:var(--panel); border-left:2px solid var(--gold); }
+  section { padding:24px 30px; }
+  h2 { font-size:16px; margin:0 0 16px; font-weight:600; }
+  .slots { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+  .slots button { background:var(--panel); border:1px solid var(--line); color:var(--text);
+    padding:8px 13px; border-radius:8px; cursor:pointer; font-size:13px; }
+  .slots button:hover { border-color:var(--gold); }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-bottom:22px; }
+  .kpi { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .kpi .v { font-size:24px; font-weight:600; }
+  .kpi .l { color:var(--muted); font-size:12px; margin-top:2px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:14px; }
+  .card h3 { margin:0 0 10px; font-size:14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--muted); font-weight:500; }
+  .tag { font-size:11px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); }
+  .STAR,.good,.Champion { color:var(--good); border-color:#2f4a32; }
+  .PUZZLE,.warn,.watch { color:var(--warn); border-color:#574316; }
+  .DOG,.bad,.out,.critical,.Lost { color:var(--bad); border-color:#5a2c25; }
+  pre { white-space:pre-wrap; margin:0; font:13px/1.5 ui-monospace,monospace; color:#ddd2bd; }
+  .empty { color:var(--muted); }
+
+  /* ── iPhone / small screens: sidebar becomes a scrollable top tab bar ── */
+  header { padding-top: max(20px, env(safe-area-inset-top)); }
+  @media (max-width: 760px) {
+    body { font-size: 16px; }            /* 16px stops iOS auto-zoom on inputs */
+    header { padding: max(14px, env(safe-area-inset-top)) 18px 14px; }
+    header h1 { font-size: 17px; }
+    main { display: block; min-height: 0; }
+    nav {
+      display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      border-right: none; border-bottom: 1px solid var(--line); padding: 6px 10px;
+      position: sticky; top: 0; background: var(--bg); z-index: 10; scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    nav button {
+      width: auto; white-space: nowrap; padding: 9px 14px; border-radius: 999px;
+      border: 1px solid var(--line); border-left: 1px solid var(--line);
+    }
+    nav button.active { border-color: var(--gold); background: var(--panel); }
+    section { padding: 18px 16px calc(28px + env(safe-area-inset-bottom)); }
+    .kpis { grid-template-columns: repeat(2, 1fr); }   /* two KPI cards per row */
+    .kpi .v { font-size: 21px; }
+    /* let wide tables scroll sideways instead of squashing */
+    .card { overflow-x: auto; }
+    table { min-width: 460px; }
+    .slots button, nav button { min-height: 40px; }    /* comfortable tap targets */
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mansa Musa <span class="gold">AI OS</span></h1>
+  <span id="status">connecting…</span>
+  <span id="datamode" class="tag" style="margin-left:auto"></span>
+</header>
+<main>
+  <nav id="nav"></nav>
+  <section id="view"></section>
+</main>
+<script>
+// Auto-detect: localhost/opened-from-disk -> local API; live site -> Render API.
+const LOCAL = location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.protocol === "file:";
+const API = LOCAL ? "http://localhost:8000" : "https://api.mansamusainitiative.co.uk";
+const TABS = ["Executive","Menu Engineering","Inventory","Finance","Customers","Forecast","Labour","AI Command"];
+const nav = document.getElementById("nav"), view = document.getElementById("view");
+let active = "Executive";
+TABS.forEach((t,i)=>{ const b=document.createElement("button"); b.textContent=t;
+  if(i===0)b.className="active"; b.onclick=()=>{active=t;
+    document.querySelectorAll('nav button').forEach(x=>x.className='');b.className='active';render();};
+  nav.appendChild(b); });
+
+async function get(path){ try{ const r=await fetch(API+path); return await r.json(); }catch(e){ return {__err:true}; } }
+function tag(v){ return `<span class="tag ${v}">${v}</span>`; }
+function err(){ return '<p class="empty">API offline — run: uvicorn backend.main:app --port 8000</p>'; }
+
+async function status(){
+  const d = await get("/status");
+  document.getElementById("status").textContent = d.__err
+    ? "API offline — start the backend" : `${d.total_agents} agents · ${d.enabled.length} active`;
+}
+
+// Live vs demo badge
+async function dataMode(){
+  const d = await get("/data/status");
+  const el = document.getElementById("datamode");
+  if(d.__err || !d.sources){ el.textContent=""; return; }
+  const live = d.live_count, total = d.total;
+  const allLive = live===total;
+  el.textContent = allLive ? "LIVE DATA" : `${live}/${total} live`;
+  el.className = "tag " + (allLive ? "good" : (live===0 ? "" : "warn"));
+  el.title = Object.entries(d.sources).map(([k,v])=>`${k}: ${v}`).join(" · ");
+}
+
+// White-label: pull brand name + accent from the API so resellers rebrand by config.
+async function applyBrand(){
+  const b = await get("/brand");
+  if(b.__err || !b.name) return;
+  document.title = b.name + " — Command Center";
+  const h1 = document.querySelector("header h1");
+  if(h1) h1.innerHTML = b.name.replace(/(\s\S+)$/, ' <span class="gold">$1</span>');
+  if(b.accent) document.documentElement.style.setProperty("--gold", b.accent);
+}
+
+async function render(){
+  view.innerHTML = '<p class="empty">Loading…</p>';
+  if(active==="Executive") return renderExec();
+  if(active==="Menu Engineering") return renderMenu();
+  if(active==="Inventory") return renderInventory();
+  if(active==="Finance") return renderFinance();
+  if(active==="Customers") return renderCRM();
+  if(active==="Forecast") return renderForecast();
+  if(active==="Labour") return renderLabour();
+  if(active==="AI Command") return renderCommand();
+}
+
+async function renderExec(){
+  const f = await get("/analytics/finance");
+  if(f.__err) return view.innerHTML = err();
+  view.innerHTML = `<h2>Executive overview</h2>
+    <div class="kpis">
+      ${kpi('£'+f.revenue,'Revenue (period)')}
+      ${kpi(f.gross_margin_pct+'%','Gross margin')}
+      ${kpi(f.prime_cost_pct+'%','Prime cost', f.prime_cost_health)}
+      ${kpi(f.net_margin_pct+'%','Net margin')}
+      ${kpi('£'+f.operating_profit,'Operating profit')}
+    </div>
+    <div class="card"><h3>Run the day</h3>
+      <div class="slots">
+        <button onclick="runSlot('06:00')">06:00 Operations</button>
+        <button onclick="runSlot('09:00')">09:00 Marketing</button>
+        <button onclick="runSlot('12:00')">12:00 Reviews & Loyalty</button>
+        <button onclick="runSlot('15:00')">15:00 Revenue & Menu</button>
+        <button onclick="runSlot('21:00')">21:00 Closing</button>
+      </div>
+      <div id="slotout" class="empty">Pick a slot to run its agents.</div>
+    </div>`;
+}
+function kpi(v,l,health){ return `<div class="kpi"><div class="v ${health||''}">${v}</div><div class="l">${l}</div></div>`; }
+
+async function renderMenu(){
+  const d = await get("/analytics/menu"); if(d.__err) return view.innerHTML=err();
+  const rows = d.items.map(i=>`<tr><td>${i.name}</td><td>${i.units_sold}</td><td>${i.menu_share_pct}%</td>
+    <td>£${i.unit_margin}</td><td>${tag(i.class)}</td><td class="empty">${i.action}</td></tr>`).join("");
+  view.innerHTML = `<h2>Menu engineering matrix</h2>
+    <div class="card"><h3>Stars ${d.summary.STAR} · Plowhorses ${d.summary.PLOWHORSE} · Puzzles ${d.summary.PUZZLE} · Dogs ${d.summary.DOG}</h3>
+    <table><tr><th>Dish</th><th>Sold</th><th>Share</th><th>Margin</th><th>Class</th><th>Action</th></tr>${rows}</table></div>`;
+}
+
+async function renderInventory(){
+  const d = await get("/analytics/inventory"); if(d.__err) return view.innerHTML=err();
+  const rows = d.reorder.map(r=>`<tr><td>${r.item}</td><td>${r.on_hand} ${r.unit}</td><td>${r.par_level}</td>
+    <td>${r.order_qty} ${r.unit}</td><td>${tag(r.urgency)}</td></tr>`).join("");
+  view.innerHTML = `<h2>Inventory & auto-reorder</h2>
+    <div class="kpis">${kpi('£'+d.stock_value,'Stock on hand')}${kpi(d.reorder.length,'Lines to reorder')}</div>
+    <div class="card"><table><tr><th>Item</th><th>On hand</th><th>Par</th><th>Order</th><th>Urgency</th></tr>${rows}</table></div>`;
+}
+
+async function renderFinance(){
+  const f = await get("/analytics/finance"); if(f.__err) return view.innerHTML=err();
+  view.innerHTML = `<h2>Finance — P&L & prime cost</h2>
+    <div class="kpis">
+      ${kpi('£'+f.revenue,'Revenue')}${kpi('£'+f.cogs,'COGS')}${kpi('£'+f.labour,'Labour')}
+      ${kpi(f.prime_cost_pct+'%','Prime cost',f.prime_cost_health)}${kpi(f.net_margin_pct+'%','Net margin')}
+    </div>
+    <div class="card"><pre>${JSON.stringify(f,null,2)}</pre></div>`;
+}
+
+async function renderCRM(){
+  const d = await get("/analytics/crm"); if(d.__err) return view.innerHTML=err();
+  const segs = Object.entries(d.segments).map(([k,v])=>`<tr><td>${tag(k.split(' ')[0])} ${k}</td><td>${v}</td>
+    <td class="empty">${d.plays[k]||''}</td></tr>`).join("");
+  const samp = d.sample.map(c=>`<tr><td>${c.name}</td><td>${c.rfm}</td><td>${c.segment}</td><td>£${c.monetary}</td></tr>`).join("");
+  view.innerHTML = `<h2>Customers — RFM segments</h2>
+    <div class="card"><h3>Segments & plays</h3><table><tr><th>Segment</th><th>#</th><th>Recommended play</th></tr>${segs}</table></div>
+    <div class="card"><h3>Sample</h3><table><tr><th>Name</th><th>RFM</th><th>Segment</th><th>Spend</th></tr>${samp}</table></div>`;
+}
+
+async function renderForecast(){
+  const d = await get("/analytics/forecast"); if(d.__err) return view.innerHTML=err();
+  const rows = d.week.map(w=>`<tr><td>${w.weekday}</td><td>${w.forecast_covers}</td><td>£${w.forecast_revenue}</td>
+    <td>${w.staffing.front_of_house} FOH / ${w.staffing.kitchen} BOH</td></tr>`).join("");
+  view.innerHTML = `<h2>Demand forecast & staffing</h2>
+    <div class="card"><table><tr><th>Day</th><th>Covers</th><th>Revenue</th><th>Staffing</th></tr>${rows}</table></div>`;
+}
+
+async function renderLabour(){
+  const d = await get("/analytics/labour"); if(d.__err) return view.innerHTML=err();
+  view.innerHTML = `<h2>Labour vs forecast</h2>
+    <div class="kpis">${kpi(d.labour_pct+'%','Labour %',d.flag==='ok'?'good':'bad')}
+      ${kpi('£'+d.labour_cost,'Scheduled cost')}${kpi('£'+d.labour_budget,'Budget')}
+      ${kpi('£'+d.sales_per_labour_hour,'Sales / labour hr')}</div>
+    <div class="card"><pre>${JSON.stringify(d,null,2)}</pre></div>`;
+}
+
+async function renderCommand(){
+  const t = await get("/tasks"); if(t.__err) return view.innerHTML=err();
+  const cards = (t||[]).map(x=>`<div class="card"><h3>${x.agent||'Agent'} · ${x.status||''}</h3>
+    <pre>${(x.detail||'').replace(/</g,'&lt;')}</pre></div>`).join("");
+  view.innerHTML = `<h2>AI Command — recent agent output</h2>${cards||'<p class="empty">No tasks yet. Run a slot from Executive.</p>'}`;
+}
+
+async function runSlot(slot){
+  const out = document.getElementById("slotout");
+  if(out) out.innerHTML = "Running "+slot+"…";
+  const d = await get_post("/slots/"+slot+"/run");
+  if(out) out.innerHTML = (d.results||[]).map(r=>`<div class="card"><h3>${r.agent} · ${r.status}</h3>
+    <pre>${(r.output||'').replace(/</g,'&lt;')}</pre></div>`).join("") || "No agents in this slot.";
+}
+async function get_post(path){ try{ const r=await fetch(API+path,{method:"POST",
+  headers:{'Content-Type':'application/json'},body:'{}'}); return await r.json(); }catch(e){ return {__err:true}; } }
+
+applyBrand(); status(); dataMode(); render(); setInterval(status, 15000); setInterval(dataMode, 30000);
+
+// Register the service worker so the app installs to the iPhone home screen.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
