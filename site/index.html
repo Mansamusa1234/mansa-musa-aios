@@ -191,9 +191,9 @@
 </div></footer>
 
 <script>
-  // Auto-detect: localhost/opened-from-disk -> local API; live site -> Render API.
-  const LOCAL = location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.protocol === "file:";
-  const API = LOCAL ? "http://localhost:8000" : "https://api.mansamusainitiative.co.uk";
+  // Served by the backend at /web, so bookings post same-origin (relative).
+  // Opened from disk during dev? use the local server.
+  const API = (location.protocol === "file:") ? "http://localhost:8000" : "";
   document.getElementById('yr').textContent = new Date().getFullYear();
 
   document.getElementById('bookingForm').addEventListener('submit', async (e)=>{

@@ -99,6 +99,28 @@ def test_payment_link_blocked_without_key():
     assert r.json()["status"] == "blocked"
 
 
+def test_dashboard_served_by_backend():
+    # The command center is served by the API at /app (same origin = connected).
+    r = client.get("/app/")
+    assert r.status_code == 200 and "Mansa Musa" in r.text
+
+
+def test_root_redirects_to_app():
+    r = client.get("/", follow_redirects=False)
+    assert r.status_code in (307, 308) and "/app" in r.headers.get("location", "")
+
+
+def test_auth_gate(monkeypatch):
+    monkeypatch.setenv("DASHBOARD_PASSWORD", "secret123")
+    # protected business endpoint blocked without the key…
+    assert client.get("/tasks").status_code == 401
+    # …allowed with it; public + health stay open.
+    assert client.get("/tasks", headers={"X-OS-Key": "secret123"}).status_code == 200
+    assert client.get("/health").status_code == 200
+    assert client.post("/reservations", json={"name": "A", "party_size": 2,
+                                              "starts_at": "2026-06-05T19:00"}).status_code == 200
+
+
 def test_data_status_reports_sources():
     d = client.get("/data/status").json()
     assert "sources" in d and "finance" in d["sources"]

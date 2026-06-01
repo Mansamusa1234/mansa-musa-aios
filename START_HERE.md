@@ -50,6 +50,27 @@ So: save this folder somewhere easy like your **Desktop**. That's it for now.
 
 ---
 
+## Already deployed to Render? Make it LIVE + CONNECTED (do this)
+Your backend is up, but it needs three things. In **Render → your service → Environment**, add:
+
+| Variable | Value | Fixes |
+|----------|-------|-------|
+| `OPENAI_API_KEY` | your OpenAI key | `llm:false` → agents write real text |
+| `SUPABASE_URL` | your Supabase project URL | `supabase:false` → real saved data |
+| `SUPABASE_SERVICE_KEY` | Supabase service_role key | (same) |
+| `DASHBOARD_PASSWORD` | a password you choose | locks the dashboard |
+
+Then **push the latest code and let Render redeploy** (this version makes the backend
+**serve the dashboard itself**). When it's done:
+
+- **Your command center:** `https://<your-app>.onrender.com/app/`  ← open this on laptop & phone
+- **Your public website:** `https://<your-app>.onrender.com/web/`
+- The dashboard is now powered by live backend data automatically — no "demo mode", no DNS,
+  no CORS. The first time, it asks for your `DASHBOARD_PASSWORD` once.
+
+> Why this fixes it: the frontend and backend are now the **same web address**, so the cards,
+> agents and automations all read from the live API instead of pointing at a domain that isn't set up yet.
+
 ## When you're ready to go online + on your iPhone
 Open **`QUICKSTART_LAPTOP_PHONE.md`** (Track 2) or the detailed **`LAUNCH.md`**. Short version:
 GitHub → Supabase → Render → Vercel → on iPhone, open the dashboard link in **Safari** →

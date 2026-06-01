@@ -14,6 +14,9 @@ COPY backend ./backend
 COPY config ./config
 COPY scheduler ./scheduler
 COPY db ./db
+# Frontend (served by the backend at /app and /web — same origin, no CORS/DNS needed)
+COPY dashboard ./dashboard
+COPY site ./site
 
 EXPOSE 8000
 

@@ -88,9 +88,14 @@
   <section id="view"></section>
 </main>
 <script>
-// Auto-detect: localhost/opened-from-disk -> local API; live site -> Render API.
-const LOCAL = location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.protocol === "file:";
-const API = LOCAL ? "http://localhost:8000" : "https://api.mansamusainitiative.co.uk";
+// The dashboard is served BY the backend (at /app), so API calls are same-origin
+// (relative). Opened straight from disk during dev? fall back to the local server.
+const API = (location.protocol === "file:") ? "http://localhost:8000" : "";
+
+// Optional password gate (active only if the backend has DASHBOARD_PASSWORD set).
+function osKey(){ return localStorage.getItem('osKey') || ''; }
+function authHeaders(extra){ const h = Object.assign({}, extra||{}); const k = osKey(); if(k) h['X-OS-Key']=k; return h; }
+function needLogin(){ const k = prompt('Enter the access password for this dashboard:'); if(k){ localStorage.setItem('osKey', k); location.reload(); } }
 const TABS = ["Executive","Menu Engineering","Inventory","Finance","Customers","Forecast","Labour","AI Command"];
 const nav = document.getElementById("nav"), view = document.getElementById("view");
 let active = "Executive";
@@ -99,7 +104,7 @@ TABS.forEach((t,i)=>{ const b=document.createElement("button"); b.textContent=t;
     document.querySelectorAll('nav button').forEach(x=>x.className='');b.className='active';render();};
   nav.appendChild(b); });
 
-async function get(path){ try{ const r=await fetch(API+path); return await r.json(); }catch(e){ return {__err:true}; } }
+async function get(path){ try{ const r=await fetch(API+path,{headers:authHeaders()}); if(r.status===401){ needLogin(); return {__err:true}; } return await r.json(); }catch(e){ return {__err:true}; } }
 function tag(v){ return `<span class="tag ${v}">${v}</span>`; }
 function err(){ return '<p class="empty">API offline — run: uvicorn backend.main:app --port 8000</p>'; }
 
@@ -237,7 +242,8 @@ async function runSlot(slot){
     <pre>${(r.output||'').replace(/</g,'&lt;')}</pre></div>`).join("") || "No agents in this slot.";
 }
 async function get_post(path){ try{ const r=await fetch(API+path,{method:"POST",
-  headers:{'Content-Type':'application/json'},body:'{}'}); return await r.json(); }catch(e){ return {__err:true}; } }
+  headers:authHeaders({'Content-Type':'application/json'}),body:'{}'});
+  if(r.status===401){ needLogin(); return {__err:true}; } return await r.json(); }catch(e){ return {__err:true}; } }
 
 applyBrand(); status(); dataMode(); render(); setInterval(status, 15000); setInterval(dataMode, 30000);
 

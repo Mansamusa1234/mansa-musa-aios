@@ -4,12 +4,17 @@ Run:  uvicorn backend.main:app --reload --port 8000
 """
 from __future__ import annotations
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, Header
+from fastapi import FastAPI, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 from . import orchestrator, store, connectors, automation, datasource
 from .connectors import whatsapp
@@ -28,6 +33,25 @@ app.add_middleware(
     CORSMiddleware, allow_origins=ALLOWED_ORIGINS, allow_methods=["*"], allow_headers=["*"],
 )
 
+# Paths that never need a password: health, branding, the frontend itself, API docs,
+# and the PUBLIC endpoints (customers booking, provider webhooks which carry their own secret).
+OPEN_PREFIXES = ("/health", "/brand", "/status", "/app", "/web", "/docs", "/redoc",
+                 "/openapi.json", "/favicon", "/reservations", "/inbound")
+
+
+@app.middleware("http")
+async def auth_gate(request: Request, call_next):
+    """Lightweight shared-password gate. If DASHBOARD_PASSWORD is unset, auth is OFF
+    (handy for local dev). When set, business endpoints require the X-OS-Key header
+    (or ?key=) — the dashboard sends it after you log in once."""
+    pw = os.getenv("DASHBOARD_PASSWORD")
+    path = request.url.path
+    if pw and request.method != "OPTIONS" and path != "/" and not path.startswith(OPEN_PREFIXES):
+        provided = request.headers.get("x-os-key") or request.query_params.get("key")
+        if provided != pw:
+            return JSONResponse({"detail": "unauthorized"}, status_code=401)
+    return await call_next(request)
+
 
 class RunBody(BaseModel):
     context: dict | None = None
@@ -35,6 +59,9 @@ class RunBody(BaseModel):
 
 @app.get("/")
 def root():
+    # Send people straight to the command center if it's bundled, else return JSON.
+    if (BASE_DIR / "dashboard" / "index.html").exists():
+        return RedirectResponse(url="/app/")
     return {"service": "Mansa Musa AI OS", "ok": True}
 
 
@@ -261,3 +288,12 @@ def whatsapp_send(body: WhatsAppBody):
 def approve(task_id: str):
     store.log("Orchestrator", "task approved", payload={"task_id": task_id})
     return {"task_id": task_id, "status": "approved"}
+
+
+# ── Serve the frontend from the backend (same origin = always connected) ──────
+# The command center at /app and the public website at /web. Mounted last so they
+# never shadow the API routes above.
+if (BASE_DIR / "dashboard").is_dir():
+    app.mount("/app", StaticFiles(directory=str(BASE_DIR / "dashboard"), html=True), name="dashboard")
+if (BASE_DIR / "site").is_dir():
+    app.mount("/web", StaticFiles(directory=str(BASE_DIR / "site"), html=True), name="site")
