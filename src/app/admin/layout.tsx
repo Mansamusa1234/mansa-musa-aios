@@ -1,0 +1,42 @@
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") redirect("/dashboard");
+
+  return (
+    <div className="flex h-screen bg-gray-50">
+      <aside className="w-56 flex-col border-r border-gray-100 bg-white hidden md:flex">
+        <div className="px-5 py-5">
+          <span className="text-sm font-bold text-brand-600">MansaMusaAI</span>
+          <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-600">
+            Admin
+          </span>
+        </div>
+        <nav className="flex-1 px-3 py-2 space-y-1">
+          {[
+            { href: "/admin", label: "Overview" },
+            { href: "/admin/users", label: "Users" },
+          ].map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="flex rounded-xl px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              {l.label}
+            </Link>
+          ))}
+          <Link
+            href="/dashboard"
+            className="flex rounded-xl px-3 py-2 text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            ← Back to app
+          </Link>
+        </nav>
+      </aside>
+      <main className="flex-1 overflow-auto p-6">{children}</main>
+    </div>
+  );
+}
