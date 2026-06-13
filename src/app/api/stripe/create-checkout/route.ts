@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { stripe, getOrCreateStripeCustomer } from "@/lib/stripe";
+import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -7,6 +8,9 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const limited = await checkRateLimit(limiters.checkout, session.user.id);
+  if (limited) return limited;
 
   const { priceId } = await req.json();
   if (!priceId) {

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { anthropic, SYSTEM_PROMPT, getModelForPlan } from "@/lib/anthropic";
 import { db } from "@/lib/db";
+import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -8,6 +9,9 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const limited = await checkRateLimit(limiters.chat, session.user.id);
+  if (limited) return limited;
 
   const { conversationId, message } = await req.json();
   if (!conversationId || !message) {
