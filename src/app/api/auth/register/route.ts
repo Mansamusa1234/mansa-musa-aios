@@ -34,16 +34,7 @@ export async function POST(req: Request) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
     }
-    const e = err as any;
-    const dbUrl = process.env.DATABASE_URL;
-    return NextResponse.json({
-      error: "Internal server error.",
-      _debug: {
-        message: e?.message?.slice(0, 300),
-        dbUrlLength: dbUrl?.length,
-        dbUrlStart: dbUrl?.slice(0, 20),
-        dbUrlCharCodes: dbUrl ? [...dbUrl.slice(0, 5)].map(c => c.charCodeAt(0)) : null,
-      },
-    }, { status: 500 });
+    console.error("[register]", (err as Error)?.message);
+    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
 }
