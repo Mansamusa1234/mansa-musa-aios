@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminUsersPage() {
   const users = await db.user.findMany({
     orderBy: { createdAt: "desc" },
