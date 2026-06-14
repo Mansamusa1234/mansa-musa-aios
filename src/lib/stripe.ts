@@ -11,6 +11,7 @@ export const PLANS: PricingPlan[] = [
     id: "free",
     name: "Free",
     price: 0,
+    currency: "gbp",
     priceId: "",
     description: "Get started for free",
     features: ["20 messages / month", "GPT-3.5 quality", "Chat history (7 days)"],
@@ -20,7 +21,8 @@ export const PLANS: PricingPlan[] = [
   {
     id: "basic",
     name: "Basic",
-    price: 9,
+    price: 19,
+    currency: "gbp",
     priceId: process.env.STRIPE_PRICE_BASIC ?? "",
     description: "For individuals",
     features: ["500 messages / month", "Claude Haiku", "Chat history (30 days)", "Email support"],
@@ -30,7 +32,8 @@ export const PLANS: PricingPlan[] = [
   {
     id: "pro",
     name: "Pro",
-    price: 29,
+    price: 49,
+    currency: "gbp",
     priceId: process.env.STRIPE_PRICE_PRO ?? "",
     description: "For power users",
     features: [
@@ -46,7 +49,8 @@ export const PLANS: PricingPlan[] = [
   {
     id: "enterprise",
     name: "Enterprise",
-    price: 99,
+    price: 199,
+    currency: "gbp",
     priceId: process.env.STRIPE_PRICE_ENTERPRISE ?? "",
     description: "For teams",
     features: [
@@ -61,6 +65,15 @@ export const PLANS: PricingPlan[] = [
     messagesPerMonth: Infinity,
   },
 ];
+
+/** Fetch live unit_amount + currency from Stripe for all paid plans. */
+export async function getLivePrices(): Promise<Record<string, { amount: number; currency: string }>> {
+  const paid = PLANS.filter((p) => p.priceId);
+  const results = await Promise.all(paid.map((p) => stripe.prices.retrieve(p.priceId)));
+  return Object.fromEntries(
+    results.map((p) => [p.id, { amount: (p.unit_amount ?? 0) / 100, currency: p.currency }])
+  );
+}
 
 export async function getOrCreateStripeCustomer(userId: string, email: string): Promise<string> {
   const { db } = await import("./db");

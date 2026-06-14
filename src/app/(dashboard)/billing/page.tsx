@@ -1,12 +1,18 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { PLANS } from "@/lib/stripe";
+import { PLANS, getLivePrices } from "@/lib/stripe";
 import BillingClient from "./BillingClient";
 
 export default async function BillingPage() {
   const session = await auth();
-  const subscription = await db.subscription.findUnique({
-    where: { userId: session!.user.id },
+  const [subscription, livePrices] = await Promise.all([
+    db.subscription.findUnique({ where: { userId: session!.user.id } }),
+    getLivePrices().catch(() => ({} as Record<string, { amount: number; currency: string }>)),
+  ]);
+
+  const plans = PLANS.map((plan) => {
+    const live = plan.priceId ? livePrices[plan.priceId] : null;
+    return live ? { ...plan, price: live.amount, currency: live.currency } : plan;
   });
 
   return (
@@ -15,7 +21,7 @@ export default async function BillingPage() {
       <p className="mt-1 text-sm text-gray-500">Manage your subscription and payment details.</p>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {PLANS.map((plan) => (
+        {plans.map((plan) => (
           <BillingClient
             key={plan.id}
             plan={plan}

@@ -94,8 +94,16 @@ export default function HomePage() {
                 <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
                 <p className="mt-1 text-sm text-gray-500">{plan.description}</p>
                 <div className="mt-4 text-3xl font-extrabold text-gray-900">
-                  ${plan.price}
-                  <span className="text-base font-normal text-gray-400">/mo</span>
+                  {plan.price === 0
+                    ? "Free"
+                    : new Intl.NumberFormat("en-GB", {
+                        style: "currency",
+                        currency: plan.currency.toUpperCase(),
+                        minimumFractionDigits: 0,
+                      }).format(plan.price)}
+                  {plan.price > 0 && (
+                    <span className="text-base font-normal text-gray-400">/mo</span>
+                  )}
                 </div>
                 <ul className="mt-6 flex-1 space-y-2">
                   {plan.features.map((f) => (

@@ -4,6 +4,7 @@ export interface PricingPlan {
   id: Plan;
   name: string;
   price: number;
+  currency: string;
   priceId: string;
   description: string;
   features: string[];

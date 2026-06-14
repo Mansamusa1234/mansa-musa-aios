@@ -40,7 +40,14 @@ export default function BillingClient({ plan, currentPriceId }: Props) {
       )}
       <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
       <div className="mt-2 text-2xl font-extrabold text-gray-900">
-        ${plan.price}<span className="text-sm font-normal text-gray-400">/mo</span>
+        {plan.price === 0
+          ? "Free"
+          : new Intl.NumberFormat("en-GB", {
+              style: "currency",
+              currency: plan.currency.toUpperCase(),
+              minimumFractionDigits: 0,
+            }).format(plan.price)}
+        {plan.price > 0 && <span className="text-sm font-normal text-gray-400">/mo</span>}
       </div>
       <ul className="mt-4 flex-1 space-y-1.5">
         {plan.features.map((f) => (
