@@ -74,8 +74,10 @@ export default function LandingPage({ plans }: Props) {
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</a>
-            <a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</a>
+            <Link href="/features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</Link>
+            <Link href="/agents" className="text-sm text-gray-400 hover:text-white transition-colors">Agents</Link>
+            <Link href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</Link>
+            <Link href="/blog" className="text-sm text-gray-400 hover:text-white transition-colors">Blog</Link>
             <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">Sign in</Link>
             <Link
               href="/register"
@@ -107,8 +109,10 @@ export default function LandingPage({ plans }: Props) {
           className="overflow-hidden md:hidden border-t border-white/10"
         >
           <div className="flex flex-col gap-4 px-6 py-4">
-            <a href="#features" className="text-sm text-gray-400" onClick={() => setNavOpen(false)}>Features</a>
-            <a href="#pricing" className="text-sm text-gray-400" onClick={() => setNavOpen(false)}>Pricing</a>
+            <Link href="/features" className="text-sm text-gray-400" onClick={() => setNavOpen(false)}>Features</Link>
+            <Link href="/agents" className="text-sm text-gray-400" onClick={() => setNavOpen(false)}>Agents</Link>
+            <Link href="/pricing" className="text-sm text-gray-400" onClick={() => setNavOpen(false)}>Pricing</Link>
+            <Link href="/blog" className="text-sm text-gray-400" onClick={() => setNavOpen(false)}>Blog</Link>
             <Link href="/login" className="text-sm text-gray-400" onClick={() => setNavOpen(false)}>Sign in</Link>
             <Link
               href="/register"
