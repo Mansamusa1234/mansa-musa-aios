@@ -35,10 +35,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
     }
     const e = err as any;
-    console.error("[register] message:", e?.message);
-    console.error("[register] code:", e?.code);
-    console.error("[register] meta:", JSON.stringify(e?.meta));
-    console.error("[register] DB_URL prefix:", process.env.DATABASE_URL?.slice(0, 30));
-    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
+    console.error("[register] error:", e?.message, e?.code, JSON.stringify(e?.meta));
+    return NextResponse.json({
+      error: "Internal server error.",
+      _debug: { message: e?.message, code: e?.code, meta: e?.meta },
+    }, { status: 500 });
   }
 }
