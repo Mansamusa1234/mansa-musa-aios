@@ -15,6 +15,10 @@
   body {
     @apply bg-white text-gray-900 antialiased;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer utilities {
@@ -31,5 +35,17 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: theme(colors.gray.300);
     border-radius: 9999px;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-500 to-brand-400 bg-clip-text text-transparent;
+  }
+
+  .glass {
+    @apply border border-white/10 bg-white/5 backdrop-blur-xl;
+  }
+
+  .glow-brand {
+    box-shadow: 0 0 40px theme(colors.brand.500 / 0.2);
   }
 }

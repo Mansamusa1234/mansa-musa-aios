@@ -21,11 +21,12 @@ export default async function BillingPage() {
       <p className="mt-1 text-sm text-gray-500">Manage your subscription and payment details.</p>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {plans.map((plan) => (
+        {plans.map((plan, i) => (
           <BillingClient
             key={plan.id}
             plan={plan}
             currentPriceId={subscription?.stripePriceId ?? null}
+            index={i}
           />
         ))}
       </div>

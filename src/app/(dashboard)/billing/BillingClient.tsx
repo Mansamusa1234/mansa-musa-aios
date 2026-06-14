@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import type { PricingPlan } from "@/types";
+import { scaleIn } from "@/lib/motion";
 
 interface Props {
   plan: PricingPlan;
   currentPriceId: string | null;
+  index: number;
 }
 
-export default function BillingClient({ plan, currentPriceId }: Props) {
+export default function BillingClient({ plan, currentPriceId, index }: Props) {
   const [loading, setLoading] = useState(false);
   const isCurrent = plan.priceId ? currentPriceId === plan.priceId : !currentPriceId;
 
@@ -25,50 +28,81 @@ export default function BillingClient({ plan, currentPriceId }: Props) {
     else setLoading(false);
   }
 
+  const price =
+    plan.price === 0
+      ? "Free"
+      : new Intl.NumberFormat("en-GB", {
+          style: "currency",
+          currency: plan.currency.toUpperCase(),
+          minimumFractionDigits: 0,
+        }).format(plan.price);
+
   return (
-    <div
-      className={`rounded-2xl border p-6 flex flex-col ${
+    <motion.div
+      variants={scaleIn}
+      initial="hidden"
+      animate="visible"
+      transition={{ delay: index * 0.08 }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className={`relative flex flex-col rounded-2xl border p-6 shadow-sm transition-shadow hover:shadow-md ${
         plan.highlighted
-          ? "border-brand-500 bg-brand-50"
+          ? "border-brand-400 bg-gradient-to-b from-brand-500 to-brand-600 text-white"
+          : isCurrent
+          ? "border-brand-200 bg-brand-50"
           : "border-gray-200 bg-white"
       }`}
     >
       {plan.highlighted && (
-        <span className="mb-2 self-start rounded-full bg-brand-500 px-2 py-0.5 text-xs font-semibold text-white">
-          Most popular
-        </span>
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-brand-600 shadow-sm">
+            Most popular
+          </span>
+        </div>
       )}
-      <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
-      <div className="mt-2 text-2xl font-extrabold text-gray-900">
-        {plan.price === 0
-          ? "Free"
-          : new Intl.NumberFormat("en-GB", {
-              style: "currency",
-              currency: plan.currency.toUpperCase(),
-              minimumFractionDigits: 0,
-            }).format(plan.price)}
-        {plan.price > 0 && <span className="text-sm font-normal text-gray-400">/mo</span>}
+
+      {isCurrent && !plan.highlighted && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span className="rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
+            Current plan
+          </span>
+        </div>
+      )}
+
+      <p className={`text-xs font-bold uppercase tracking-widest ${plan.highlighted ? "text-brand-100" : "text-brand-600"}`}>
+        {plan.name}
+      </p>
+
+      <div className="mt-3 flex items-end gap-1">
+        <span className={`text-3xl font-extrabold ${plan.highlighted ? "text-white" : "text-gray-900"}`}>
+          {price}
+        </span>
+        {plan.price > 0 && (
+          <span className={`mb-1 text-sm ${plan.highlighted ? "text-brand-100" : "text-gray-400"}`}>/mo</span>
+        )}
       </div>
-      <ul className="mt-4 flex-1 space-y-1.5">
+
+      <ul className="mt-4 flex-1 space-y-2">
         {plan.features.map((f) => (
-          <li key={f} className="flex items-start gap-1.5 text-xs text-gray-600">
-            <span className="text-brand-500">✓</span> {f}
+          <li key={f} className="flex items-start gap-2 text-xs">
+            <span className={plan.highlighted ? "text-brand-100" : "text-brand-500"}>✓</span>
+            <span className={plan.highlighted ? "text-brand-50" : "text-gray-600"}>{f}</span>
           </li>
         ))}
       </ul>
+
       <button
         onClick={handleSubscribe}
         disabled={isCurrent || loading || !plan.priceId}
-        className={`mt-6 rounded-xl py-2 text-sm font-semibold transition-colors ${
+        className={`mt-6 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 active:scale-95 ${
           isCurrent
-            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+            ? "cursor-not-allowed bg-gray-100 text-gray-400"
             : plan.highlighted
-            ? "bg-brand-500 text-white hover:bg-brand-600"
-            : "border border-gray-200 text-gray-700 hover:bg-gray-50"
+            ? "bg-white text-brand-600 hover:bg-brand-50 shadow-md"
+            : "border border-gray-200 text-gray-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
         }`}
       >
         {isCurrent ? "Current plan" : loading ? "Redirecting…" : `Upgrade to ${plan.name}`}
       </button>
-    </div>
+    </motion.div>
   );
 }
