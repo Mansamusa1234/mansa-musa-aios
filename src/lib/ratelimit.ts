@@ -36,6 +36,12 @@ export const limiters = {
   admin:    makeLimiter(60, "1 m", "rl:admin"),
   /** 10 sessions / day — authenticated, keyed by user ID (each session runs ~20 LLM calls) */
   arena:    makeLimiter(10, "1 d", "rl:arena"),
+  /** 8 attempts / 5 minutes — unauthenticated, keyed by IP */
+  login:              makeLimiter(8, "5 m", "rl:login"),
+  /** 3 requests / hour — unauthenticated, keyed by IP */
+  forgotPassword:     makeLimiter(3, "1 h", "rl:forgot-password"),
+  /** 3 requests / hour — keyed by user ID or IP */
+  resendVerification: makeLimiter(3, "1 h", "rl:resend-verification"),
 };
 
 /**

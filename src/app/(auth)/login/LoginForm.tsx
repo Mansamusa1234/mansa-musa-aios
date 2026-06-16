@@ -104,7 +104,12 @@ export default function LoginForm({ showGithub, showGoogle }: Props) {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">Password</label>
+                <Link href="/forgot-password" className="text-xs font-medium text-brand-600 hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 type="password"
                 required

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 import { recordReferralSignup, recordAffiliateSignup } from "@/lib/referrals";
+import { createAndSendVerificationEmail } from "@/lib/email";
 
 const schema = z.object({
   name: z.string().min(1).max(100),
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
     await Promise.all([
       recordReferralSignup(ref, user.id),
       recordAffiliateSignup(affCode, user.id),
+      createAndSendVerificationEmail(user.id, user.email),
     ]);
 
     return NextResponse.json({ success: true }, { status: 201 });
