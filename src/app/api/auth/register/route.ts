@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
+import { recordReferralSignup, recordAffiliateSignup } from "@/lib/referrals";
 
 const schema = z.object({
   name: z.string().min(1).max(100),
   email: z.string().email(),
   password: z.string().min(8).max(100),
+  ref: z.string().max(32).optional(),
 });
 
 export async function POST(req: Request) {
@@ -16,7 +19,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, email, password } = schema.parse(body);
+    const { name, email, password, ref } = schema.parse(body);
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
@@ -25,9 +28,15 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    await db.user.create({
+    const user = await db.user.create({
       data: { name, email, passwordHash },
     });
+
+    const affCode = (await cookies()).get("mm_aff")?.value;
+    await Promise.all([
+      recordReferralSignup(ref, user.id),
+      recordAffiliateSignup(affCode, user.id),
+    ]);
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {

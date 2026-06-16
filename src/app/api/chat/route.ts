@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
-import { anthropic, SYSTEM_PROMPT, getModelForPlan } from "@/lib/anthropic";
+import { anthropic, SYSTEM_PROMPT, getModelForPlan, buildAgentSystemPrompt } from "@/lib/anthropic";
 import { db } from "@/lib/db";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
+import { AGENTS } from "@/data/agents";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -59,11 +60,27 @@ export async function POST(req: Request) {
   }
   const model = getModelForPlan(plan);
 
+  // Resolve agent persona + saved memory for this conversation (falls back to the
+  // default assistant exactly as before when no agent is set).
+  let system: string = SYSTEM_PROMPT;
+  if (conversation.agentId) {
+    const agent = AGENTS.find((a) => a.id === conversation.agentId);
+    if (agent) {
+      system = buildAgentSystemPrompt(agent);
+      const memory = await db.agentMemory.findUnique({
+        where: { userId_agentId: { userId: session.user.id, agentId: agent.id } },
+      });
+      if (memory?.content) {
+        system += `\n\nNotes the user has saved from previous sessions with you:\n${memory.content}`;
+      }
+    }
+  }
+
   // Stream response
   const stream = await anthropic.messages.stream({
     model,
     max_tokens: 2048,
-    system: SYSTEM_PROMPT,
+    system,
     messages: history.map((m) => ({
       role: m.role as "user" | "assistant",
       content: m.content,

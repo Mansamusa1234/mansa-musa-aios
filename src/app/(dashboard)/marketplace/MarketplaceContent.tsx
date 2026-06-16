@@ -28,6 +28,21 @@ export default function MarketplaceContent({ userPlan }: Props) {
     return list;
   }, [category, query]);
 
+  const stats = useMemo(() => {
+    const active = AGENTS.filter((a) => a.status === "active").length;
+    const beta = AGENTS.filter((a) => a.status === "beta").length;
+    const free = AGENTS.filter((a) => a.plan === "free").length;
+    const tasks = AGENTS.reduce((sum, a) => sum + a.metrics.tasks, 0);
+    return [
+      { label: "Total agents",    value: AGENTS.length },
+      { label: "Categories",      value: AGENT_CATEGORIES.length },
+      { label: "Active agents",   value: active },
+      { label: "Beta agents",     value: beta },
+      { label: "Free to deploy",  value: free },
+      { label: "Tasks completed", value: tasks },
+    ];
+  }, []);
+
   const canDeploy = (plan: AgentPlan) => PLAN_ORDER[userPlan] >= PLAN_ORDER[plan];
 
   async function handleDeploy(agentId: string, plan: AgentPlan) {
@@ -49,7 +64,7 @@ export default function MarketplaceContent({ userPlan }: Props) {
               Deploy your AI workforce
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              <CountUp value={30} /> specialist agents across <CountUp value={7} /> business functions
+              <CountUp value={AGENTS.length} /> specialist agents across <CountUp value={AGENT_CATEGORIES.length} /> business functions
             </p>
           </div>
           <Link href="/agent-dashboard" className="flex-shrink-0 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-300 hover:bg-brand-500/20 transition-colors">
@@ -59,14 +74,7 @@ export default function MarketplaceContent({ userPlan }: Props) {
 
         {/* Stats bar */}
         <motion.div variants={fadeUp} className="mt-5 grid grid-cols-3 gap-3 rounded-2xl border border-white/6 bg-white/3 p-4 sm:grid-cols-6">
-          {[
-            { label: "Total agents",   value: 30 },
-            { label: "Categories",     value: 7  },
-            { label: "Active agents",  value: 24 },
-            { label: "Beta agents",    value: 5  },
-            { label: "Free to deploy", value: 3  },
-            { label: "Tasks completed",value: 148000 },
-          ].map((s) => (
+          {stats.map((s) => (
             <div key={s.label} className="text-center">
               <p className="text-xl font-extrabold text-brand-400"><CountUp value={s.value} /></p>
               <p className="text-[10px] text-gray-600 mt-0.5">{s.label}</p>
@@ -98,7 +106,7 @@ export default function MarketplaceContent({ userPlan }: Props) {
                     : "border border-white/8 bg-white/3 text-gray-500 hover:text-gray-200 hover:bg-white/6"
                 }`}
               >
-                {cat === ALL ? "All (30)" : cat}
+                {cat === ALL ? `All (${AGENTS.length})` : cat}
               </button>
             ))}
           </div>
@@ -196,9 +204,12 @@ export default function MarketplaceContent({ userPlan }: Props) {
 
                 {/* Deploy button */}
                 {isDeployed ? (
-                  <div className="flex items-center justify-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 py-2.5 text-sm font-semibold text-green-400">
-                    <span>✓</span> Deployed
-                  </div>
+                  <Link
+                    href={`/chat?agent=${agent.id}`}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-green-500/30 bg-green-500/10 py-2.5 text-sm font-semibold text-green-400 hover:bg-green-500/20 transition-colors"
+                  >
+                    <span>✓</span> Deployed — Chat now
+                  </Link>
                 ) : hasAccess ? (
                   <motion.button
                     whileHover={{ scale: 1.02 }}

@@ -28,6 +28,7 @@ model User {
   image             String?
   passwordHash      String?
   role              Role      @default(USER)
+  referralCode      String?   @unique
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -36,6 +37,10 @@ model User {
   subscription      Subscription?
   conversations     Conversation[]
   usageRecords      UsageRecord[]
+  agentMemories     AgentMemory[]
+  referralsMade     Referral[]    @relation("ReferralsMade")
+  referralReceived  Referral?     @relation("ReferralsReceived")
+  affiliate         Affiliate?
 }
 
 model Account {
@@ -90,6 +95,7 @@ model Subscription {
 model Conversation {
   id        String    @id @default(cuid())
   userId    String
+  agentId   String?
   title     String    @default("New Conversation")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -119,4 +125,55 @@ model UsageRecord {
   createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AgentMemory {
+  id        String   @id @default(cuid())
+  userId    String
+  agentId   String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, agentId])
+}
+
+model Referral {
+  id             String    @id @default(cuid())
+  referrerId     String
+  referredUserId String    @unique
+  status         String    @default("SIGNED_UP")
+  rewardCents    Int       @default(0)
+  createdAt      DateTime  @default(now())
+  convertedAt    DateTime?
+
+  referrer     User @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUser User @relation("ReferralsReceived", fields: [referredUserId], references: [id], onDelete: Cascade)
+}
+
+model Affiliate {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  code           String   @unique
+  status         String   @default("APPROVED")
+  commissionRate Int      @default(20)
+  clicks         Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversions AffiliateConversion[]
+}
+
+model AffiliateConversion {
+  id              String    @id @default(cuid())
+  affiliateId     String
+  referredUserId  String    @unique
+  status          String    @default("SIGNED_UP")
+  commissionCents Int       @default(0)
+  createdAt       DateTime  @default(now())
+  convertedAt     DateTime?
+
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
 }

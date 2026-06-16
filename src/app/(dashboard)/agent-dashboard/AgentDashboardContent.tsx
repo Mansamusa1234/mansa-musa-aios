@@ -137,7 +137,7 @@ export default function AgentDashboardContent({ totalConversations, totalMessage
                       {status}
                     </span>
                     <Link
-                      href="/chat"
+                      href={`/chat?agent=${agent.id}`}
                       className="text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors"
                     >
                       Run →

@@ -12,6 +12,15 @@ interface RecentUser {
   createdAt: Date;
 }
 
+interface GrowthStats {
+  totalReferrals: number;
+  convertedReferrals: number;
+  referralRewardOwed: number;
+  totalAffiliates: number;
+  convertedAffiliateConversions: number;
+  affiliateCommissionOwed: number;
+}
+
 interface Props {
   totalUsers: number;
   paidUsers: number;
@@ -26,6 +35,7 @@ interface Props {
   arr: number;
   totalTokens: number;
   recentUsers: RecentUser[];
+  growth: GrowthStats;
   health: { stripe: boolean; redis: boolean; ai: boolean; database: boolean };
 }
 
@@ -98,6 +108,7 @@ export default function AdminClient({
   arr,
   totalTokens,
   recentUsers,
+  growth,
   health,
 }: Props) {
   return (
@@ -153,6 +164,19 @@ export default function AdminClient({
           <StatCard label="Total messages" value={totalMessages} delay={1} />
           <StatCard label="Messages this month" value={messagesThisMonth} delay={2} />
           <StatCard label="Total tokens" value={totalTokens} delay={3} />
+        </motion.div>
+      </section>
+
+      {/* Growth */}
+      <section>
+        <motion.h2 variants={fadeUp} className="mb-4 text-xs font-bold uppercase tracking-widest text-gray-600">
+          Growth
+        </motion.h2>
+        <motion.div variants={stagger} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Referrals" value={growth.totalReferrals} sublabel={`${growth.convertedReferrals} converted`} delay={0} />
+          <StatCard label="Referral rewards owed" value={growth.referralRewardOwed} prefix="£" sublabel="Tracking only — not auto-paid" delay={1} />
+          <StatCard label="Affiliates" value={growth.totalAffiliates} sublabel={`${growth.convertedAffiliateConversions} conversions`} delay={2} />
+          <StatCard label="Affiliate commission owed" value={growth.affiliateCommissionOwed} prefix="£" sublabel="Tracking only — not auto-paid" delay={3} />
         </motion.div>
       </section>
 

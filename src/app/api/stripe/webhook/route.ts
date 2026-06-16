@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
+import { recordConversion } from "@/lib/referrals";
 import type Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -38,6 +39,13 @@ export async function POST(req: Request) {
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
         },
       });
+
+      // Referral/affiliate conversion tracking — best-effort, must never affect webhook processing.
+      try {
+        await recordConversion(session.metadata!.userId, sub.items.data[0].price.id);
+      } catch (err) {
+        console.error("[webhook] referral/affiliate conversion tracking failed:", err);
+      }
       break;
     }
 

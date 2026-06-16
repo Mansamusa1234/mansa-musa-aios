@@ -5,7 +5,8 @@ export type AgentCategory =
   | "Research"
   | "Operations"
   | "Sales & Marketing"
-  | "Customer Success";
+  | "Customer Success"
+  | "Engineering";
 
 export type AgentStatus = "active" | "beta" | "coming-soon";
 export type AgentPlan   = "free" | "basic" | "pro" | "enterprise";
@@ -26,7 +27,7 @@ export interface Agent {
 }
 
 export const AGENT_CATEGORIES: AgentCategory[] = [
-  "C-Suite", "Finance", "Legal", "Research", "Operations", "Sales & Marketing", "Customer Success",
+  "C-Suite", "Finance", "Legal", "Research", "Operations", "Sales & Marketing", "Customer Success", "Engineering",
 ];
 
 export const AGENTS: Agent[] = [
@@ -173,6 +174,34 @@ export const AGENTS: Agent[] = [
     bg: "bg-orange-500/15",
     metrics: { tasks: 1890, accuracy: 98, avgSec: 15 },
   },
+  {
+    id: "crypto",
+    name: "Crypto Agent",
+    icon: "🪙",
+    category: "Finance",
+    role: "Crypto Markets & On-Chain Analysis",
+    description: "Monitors crypto markets and on-chain activity — tracking price action, protocol news, and portfolio exposure across digital assets.",
+    capabilities: ["Price & volume tracking", "On-chain analytics", "Portfolio exposure", "Protocol news monitoring", "Risk flagging", "Market sentiment"],
+    status: "beta",
+    plan: "pro",
+    color: "text-orange-300",
+    bg: "bg-orange-500/15",
+    metrics: { tasks: 1800, accuracy: 90, avgSec: 9 },
+  },
+  {
+    id: "fintech",
+    name: "Fintech Agent",
+    icon: "🏦",
+    category: "Finance",
+    role: "Fintech Strategy & Product",
+    description: "Specialises in financial technology — payment rails, banking infrastructure, and regulatory nuances for fintech product strategy.",
+    capabilities: ["Payment rail analysis", "Banking-as-a-service guidance", "Regulatory landscape", "Fintech competitor tracking", "Product strategy", "Partnership evaluation"],
+    status: "active",
+    plan: "pro",
+    color: "text-emerald-300",
+    bg: "bg-emerald-500/15",
+    metrics: { tasks: 2600, accuracy: 94, avgSec: 10 },
+  },
 
   /* ── Legal ────────────────────────────────────────────────── */
   {
@@ -231,6 +260,20 @@ export const AGENTS: Agent[] = [
     bg: "bg-rose-500/15",
     metrics: { tasks: 1560, accuracy: 98, avgSec: 9 },
   },
+  {
+    id: "legal-research",
+    name: "Legal Research Agent",
+    icon: "📚",
+    category: "Legal",
+    role: "Case Law & Statutory Research",
+    description: "Digs through case law, statutes, and regulatory filings to surface precedent and ground your legal arguments in solid research.",
+    capabilities: ["Case law search", "Statutory analysis", "Precedent summarisation", "Citation formatting", "Regulatory filings review", "Memo drafting"],
+    status: "active",
+    plan: "pro",
+    color: "text-indigo-300",
+    bg: "bg-indigo-500/15",
+    metrics: { tasks: 3100, accuracy: 96, avgSec: 12 },
+  },
 
   /* ── Research ─────────────────────────────────────────────── */
   {
@@ -288,6 +331,34 @@ export const AGENTS: Agent[] = [
     color: "text-slate-300",
     bg: "bg-slate-500/15",
     metrics: { tasks: 3300, accuracy: 94, avgSec: 13 },
+  },
+  {
+    id: "research",
+    name: "Research Agent",
+    icon: "🧠",
+    category: "Research",
+    role: "General Research & Synthesis",
+    description: "Conducts deep, open-ended research across any topic — gathering sources, synthesising findings, and producing clear, citation-backed briefs.",
+    capabilities: ["Web & literature research", "Source verification", "Executive briefs", "Citation management", "Topic deep-dives", "Fact-checking"],
+    status: "active",
+    plan: "basic",
+    color: "text-violet-300",
+    bg: "bg-violet-500/15",
+    metrics: { tasks: 5400, accuracy: 93, avgSec: 10 },
+  },
+  {
+    id: "news",
+    name: "News Agent",
+    icon: "📰",
+    category: "Research",
+    role: "Real-Time News Monitoring",
+    description: "Tracks breaking news and industry headlines in real time, filters for relevance, and delivers concise summaries to keep you ahead of the cycle.",
+    capabilities: ["Real-time monitoring", "Relevance filtering", "Headline summarisation", "Source aggregation", "Sentiment tagging", "Daily digests"],
+    status: "active",
+    plan: "free",
+    color: "text-sky-300",
+    bg: "bg-sky-500/15",
+    metrics: { tasks: 28000, accuracy: 91, avgSec: 3 },
   },
 
   /* ── Operations ───────────────────────────────────────────── */
@@ -361,6 +432,20 @@ export const AGENTS: Agent[] = [
     bg: "bg-gray-500/15",
     metrics: { tasks: 24000, accuracy: 97, avgSec: 2 },
   },
+  {
+    id: "business",
+    name: "Business Agent",
+    icon: "🏢",
+    category: "Operations",
+    role: "General Business Strategy & Ops",
+    description: "A general-purpose business advisor — helps with planning, operations, and decision-making across any department that needs a second opinion.",
+    capabilities: ["Business planning", "Decision frameworks", "Cross-functional coordination", "Process improvement", "Meeting prep", "General advisory"],
+    status: "active",
+    plan: "basic",
+    color: "text-slate-300",
+    bg: "bg-slate-500/15",
+    metrics: { tasks: 6700, accuracy: 92, avgSec: 7 },
+  },
 
   /* ── Sales & Marketing ────────────────────────────────────── */
   {
@@ -419,6 +504,20 @@ export const AGENTS: Agent[] = [
     bg: "bg-lime-500/15",
     metrics: { tasks: 8700, accuracy: 93, avgSec: 7 },
   },
+  {
+    id: "content",
+    name: "Content Agent",
+    icon: "✍️",
+    category: "Sales & Marketing",
+    role: "Content Creation & Strategy",
+    description: "Writes and plans content at scale — blog posts, scripts, and long-form copy — aligned to your brand voice and content calendar.",
+    capabilities: ["Long-form writing", "Content calendars", "Brand voice consistency", "Editing & proofreading", "Repurposing content", "Headline testing"],
+    status: "active",
+    plan: "basic",
+    color: "text-fuchsia-300",
+    bg: "bg-fuchsia-500/15",
+    metrics: { tasks: 12400, accuracy: 93, avgSec: 6 },
+  },
 
   /* ── Customer Success ─────────────────────────────────────── */
   {
@@ -463,6 +562,64 @@ export const AGENTS: Agent[] = [
     bg: "bg-violet-500/15",
     metrics: { tasks: 3200, accuracy: 93, avgSec: 5 },
   },
+
+  /* ── Engineering ──────────────────────────────────────────── */
+  {
+    id: "coding",
+    name: "Coding Agent",
+    icon: "🧑‍💻",
+    category: "Engineering",
+    role: "Code Generation & Review",
+    description: "Writes, reviews, and debugs code across languages — from quick scripts to full feature implementations with tests.",
+    capabilities: ["Code generation", "Code review", "Debugging", "Test writing", "Refactoring", "Documentation"],
+    status: "active",
+    plan: "pro",
+    color: "text-cyan-300",
+    bg: "bg-cyan-500/15",
+    metrics: { tasks: 9800, accuracy: 95, avgSec: 8 },
+  },
+  {
+    id: "claude-agent",
+    name: "Claude Agent",
+    icon: "✨",
+    category: "Engineering",
+    role: "General-Purpose AI Assistant",
+    description: "A versatile, general-purpose assistant for writing, analysis, and reasoning tasks that don't need a specialist — flexible and fast.",
+    capabilities: ["General Q&A", "Writing & editing", "Summarisation", "Analysis & reasoning", "Brainstorming", "Multi-step tasks"],
+    status: "active",
+    plan: "free",
+    color: "text-amber-300",
+    bg: "bg-amber-500/15",
+    metrics: { tasks: 15200, accuracy: 96, avgSec: 4 },
+  },
+  {
+    id: "openai-agent",
+    name: "OpenAI Agent",
+    icon: "🔷",
+    category: "Engineering",
+    role: "General-Purpose AI Assistant",
+    description: "An alternative general-purpose assistant persona for everyday writing, brainstorming, and Q&A tasks.",
+    capabilities: ["General Q&A", "Writing & editing", "Summarisation", "Brainstorming", "Idea generation", "Multi-step tasks"],
+    status: "beta",
+    plan: "free",
+    color: "text-teal-300",
+    bg: "bg-teal-500/15",
+    metrics: { tasks: 9700, accuracy: 94, avgSec: 5 },
+  },
+  {
+    id: "openclaw-agent",
+    name: "OpenClaw Agent",
+    icon: "🦾",
+    category: "Engineering",
+    role: "Experimental Automation Agent",
+    description: "An experimental automation persona for open-ended task execution and workflow chaining — built for power users who want to push boundaries.",
+    capabilities: ["Workflow automation", "Task chaining", "Open-ended execution", "Tool orchestration", "Experimental features", "Power-user workflows"],
+    status: "beta",
+    plan: "enterprise",
+    color: "text-red-300",
+    bg: "bg-red-500/15",
+    metrics: { tasks: 640, accuracy: 88, avgSec: 14 },
+  },
 ];
 
 export const PLAN_ORDER: Record<AgentPlan, number> = { free: 0, basic: 1, pro: 2, enterprise: 3 };
@@ -475,6 +632,7 @@ export const CATEGORY_COLORS: Record<AgentCategory, string> = {
   "Operations":        "bg-orange-500/20 text-orange-300 border-orange-500/30",
   "Sales & Marketing": "bg-pink-500/20 text-pink-300 border-pink-500/30",
   "Customer Success":  "bg-teal-500/20 text-teal-300 border-teal-500/30",
+  "Engineering":       "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
 };
 
 export const PLAN_COLORS: Record<AgentPlan, string> = {

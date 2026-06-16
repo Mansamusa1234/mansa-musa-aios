@@ -1,20 +1,76 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { stagger, fadeUp, scaleIn } from "@/lib/motion";
 
-const INDICES = [
-  { name: "FTSE 100",    value: "7,842.30", change: "+64.20", pct: "+0.82%", up: true  },
-  { name: "S&P 500",     value: "5,912.40", change: "+67.10", pct: "+1.14%", up: true  },
-  { name: "NASDAQ",      value: "19,284.70",change: "+317.90",pct: "+1.67%", up: true  },
-  { name: "DAX",         value: "19,104.80",change: "+104.40",pct: "+0.55%", up: true  },
-  { name: "Nikkei 225",  value: "38,920.10",change: "+734.20",pct: "+1.92%", up: true  },
-  { name: "BTC/USD",     value: "$96,420",  change: "+$2,180",pct: "+2.30%", up: true  },
-  { name: "ETH/USD",     value: "$3,241",   change: "-$48",   pct: "-1.46%", up: false },
-  { name: "Gold",        value: "$2,841",   change: "+$31",   pct: "+1.10%", up: true  },
-  { name: "Brent Oil",   value: "$78.40",   change: "-$1.84", pct: "-2.30%", up: false },
-  { name: "GBP/USD",     value: "1.2648",   change: "-0.0015",pct: "-0.12%", up: false },
+interface Index {
+  name: string;
+  base: number;
+  decimals: number;
+  prefix: string;
+  pctVol: number; // simulated per-tick volatility, as a fraction
+}
+
+const INDEX_SEEDS: Index[] = [
+  { name: "FTSE 100",   base: 7842.30,  decimals: 2, prefix: "",  pctVol: 0.0006 },
+  { name: "S&P 500",    base: 5912.40,  decimals: 2, prefix: "",  pctVol: 0.0006 },
+  { name: "NASDAQ",     base: 19284.70, decimals: 2, prefix: "",  pctVol: 0.0008 },
+  { name: "DAX",        base: 19104.80, decimals: 2, prefix: "",  pctVol: 0.0006 },
+  { name: "Nikkei 225", base: 38920.10, decimals: 2, prefix: "",  pctVol: 0.0007 },
+  { name: "BTC/USD",    base: 96420,    decimals: 0, prefix: "$", pctVol: 0.002  },
+  { name: "ETH/USD",    base: 3241,     decimals: 0, prefix: "$", pctVol: 0.0025 },
+  { name: "Gold",       base: 2841,     decimals: 0, prefix: "$", pctVol: 0.0009 },
+  { name: "Brent Oil",  base: 78.40,    decimals: 2, prefix: "$", pctVol: 0.0012 },
+  { name: "GBP/USD",    base: 1.2648,   decimals: 4, prefix: "",  pctVol: 0.0005 },
 ];
+
+interface Tick { value: number; pct: number; }
+
+function formatValue(prefix: string, decimals: number, value: number): string {
+  return `${prefix}${value.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+}
+
+/** Simulated live feed: random-walks each index's value every few seconds. No external API — demo data only. */
+function useLiveIndices() {
+  const [ticks, setTicks] = useState<Tick[]>(() => INDEX_SEEDS.map((s) => ({ value: s.base, pct: 0 })));
+  const lastUpdateRef = useRef(Date.now());
+  const [secondsAgo, setSecondsAgo] = useState(0);
+
+  useEffect(() => {
+    const tickInterval = setInterval(() => {
+      setTicks((prev) =>
+        prev.map((t, i) => {
+          const seed = INDEX_SEEDS[i];
+          const drift = (Math.random() - 0.5) * 2 * seed.pctVol;
+          const value = Math.max(0, t.value * (1 + drift));
+          const pct = ((value - seed.base) / seed.base) * 100;
+          return { value, pct };
+        })
+      );
+      lastUpdateRef.current = Date.now();
+      setSecondsAgo(0);
+    }, 3000);
+
+    const clockInterval = setInterval(() => {
+      setSecondsAgo(Math.floor((Date.now() - lastUpdateRef.current) / 1000));
+    }, 1000);
+
+    return () => {
+      clearInterval(tickInterval);
+      clearInterval(clockInterval);
+    };
+  }, []);
+
+  const indices = INDEX_SEEDS.map((seed, i) => ({
+    name: seed.name,
+    value: formatValue(seed.prefix, seed.decimals, ticks[i].value),
+    pct: `${ticks[i].pct >= 0 ? "+" : ""}${ticks[i].pct.toFixed(2)}%`,
+    up: ticks[i].pct >= 0,
+  }));
+
+  return { indices, secondsAgo };
+}
 
 const SECTORS = [
   { name: "Technology",    pct: "+2.4%", up: true,  heat: 88 },
@@ -57,19 +113,30 @@ function heatColor(h: number) {
 }
 
 export default function IntelligenceContent() {
+  const { indices, secondsAgo } = useLiveIndices();
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <motion.div variants={stagger} initial="hidden" animate="visible">
-        <motion.div variants={fadeUp}>
-          <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· AI Intelligence ·</p>
-          <h1 className="text-2xl font-extrabold text-white">Market Intelligence</h1>
-          <p className="mt-1 text-sm text-gray-500">Live market data, competitive intelligence, and sector analysis</p>
+        <motion.div variants={fadeUp} className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· AI Intelligence ·</p>
+            <h1 className="text-2xl font-extrabold text-white">Market Intelligence</h1>
+            <p className="mt-1 text-sm text-gray-500">Live market data, competitive intelligence, and sector analysis</p>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-green-500/25 bg-green-500/10 px-3 py-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" />
+            </span>
+            <span className="text-xs font-semibold text-green-400">LIVE · {secondsAgo}s ago</span>
+          </div>
         </motion.div>
 
         {/* Market indices */}
         <motion.div variants={fadeUp} className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-5">
-          {INDICES.slice(0, 5).map((idx) => (
+          {indices.slice(0, 5).map((idx) => (
             <div key={idx.name} className="rounded-xl border border-white/8 bg-white/3 p-3">
               <p className="text-[10px] text-gray-600 mb-1">{idx.name}</p>
               <p className="text-sm font-bold text-white">{idx.value}</p>
@@ -80,7 +147,7 @@ export default function IntelligenceContent() {
 
         {/* Crypto / commodities */}
         <motion.div variants={fadeUp} className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
-          {INDICES.slice(5).map((idx) => (
+          {indices.slice(5).map((idx) => (
             <div key={idx.name} className="rounded-xl border border-white/8 bg-white/3 p-3">
               <p className="text-[10px] text-gray-600 mb-1">{idx.name}</p>
               <p className="text-sm font-bold text-white">{idx.value}</p>
@@ -89,6 +156,10 @@ export default function IntelligenceContent() {
           ))}
         </motion.div>
       </motion.div>
+
+      <p className="text-[10px] text-gray-600">
+        Market data is simulated for demo purposes and does not reflect real prices.
+      </p>
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Sector analysis */}

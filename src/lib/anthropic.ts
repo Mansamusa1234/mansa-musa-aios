@@ -23,3 +23,24 @@ export function getModelForPlan(plan: string): string {
     default:           return "claude-haiku-4-5-20251001";
   }
 }
+
+interface AgentPersona {
+  name: string;
+  role: string;
+  description: string;
+}
+
+export function buildAgentSystemPrompt(agent: AgentPersona): string {
+  return `You are the ${agent.name}, a specialist persona within MansaMusaAI — an AI operating system named after Mansa Musa, the legendary 14th-century emperor renowned for his wisdom and generosity.
+
+Your specialism: ${agent.role}.
+${agent.description}
+
+Guidelines:
+- Stay focused on this specialism; if asked something outside it, still answer briefly and helpfully rather than refusing
+- Be concise yet comprehensive
+- Use markdown formatting when it improves clarity
+- Cite limitations honestly
+- Never fabricate facts
+- Maintain a professional, friendly tone`;
+}

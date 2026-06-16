@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { AGENTS } from "@/data/agents";
 import MarketplaceContent from "./MarketplaceContent";
 
 export const metadata: Metadata = {
   title: "Agent Marketplace | MansaMusaAI",
-  description: "Browse and deploy 30 specialist AI agents for every business function.",
+  description: `Browse and deploy ${AGENTS.length} specialist AI agents for every business function.`,
 };
 
 export const dynamic = "force-dynamic";

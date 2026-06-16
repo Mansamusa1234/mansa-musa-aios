@@ -2,19 +2,71 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { ChatMessage } from "@/types";
+import { AGENTS } from "@/data/agents";
 import MessageBubble from "./MessageBubble";
 
 interface Props {
   conversationId: string;
   initialMessages: ChatMessage[];
+  initialAgentId?: string | null;
 }
 
-export default function ChatInterface({ conversationId, initialMessages }: Props) {
+export default function ChatInterface({ conversationId, initialMessages, initialAgentId = null }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [agentId, setAgentId] = useState<string | null>(initialAgentId);
+  const [agentSaving, setAgentSaving] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
+  const [memory, setMemory] = useState("");
+  const [memoryLoaded, setMemoryLoaded] = useState(false);
+  const [memorySaving, setMemorySaving] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const agent = agentId ? AGENTS.find((a) => a.id === agentId) ?? null : null;
+
+  async function handleAgentChange(newAgentId: string) {
+    const value = newAgentId || null;
+    setAgentSaving(true);
+    try {
+      const res = await fetch(`/api/conversations/${conversationId}/agent`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: value }),
+      });
+      if (res.ok) setAgentId(value);
+    } finally {
+      setAgentSaving(false);
+    }
+  }
+
+  async function toggleMemory() {
+    const opening = !showMemory;
+    setShowMemory(opening);
+    if (opening && !memoryLoaded && agent) {
+      const res = await fetch(`/api/agent-memory?agentId=${agent.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMemory(data.content ?? "");
+      }
+      setMemoryLoaded(true);
+    }
+  }
+
+  async function saveMemory() {
+    if (!agent) return;
+    setMemorySaving(true);
+    try {
+      await fetch("/api/agent-memory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: agent.id, content: memory }),
+      });
+    } finally {
+      setMemorySaving(false);
+    }
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -87,6 +139,63 @@ export default function ChatInterface({ conversationId, initialMessages }: Props
 
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-8rem)]">
+      {/* Agent bar */}
+      <div className="mb-3 flex items-center gap-2">
+        {messages.length === 0 ? (
+          <select
+            value={agentId ?? ""}
+            disabled={agentSaving}
+            onChange={(e) => handleAgentChange(e.target.value)}
+            className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 outline-none focus:border-brand-500 disabled:opacity-50"
+          >
+            <option value="">💬 General Assistant</option>
+            {AGENTS.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.icon} {a.name}
+              </option>
+            ))}
+          </select>
+        ) : agent ? (
+          <span className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700">
+            {agent.icon} {agent.name}
+          </span>
+        ) : null}
+
+        {agent && (
+          <button
+            onClick={toggleMemory}
+            className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-brand-600 transition-colors"
+          >
+            🧠 Memory
+          </button>
+        )}
+      </div>
+
+      {showMemory && agent && (
+        <div className="mb-3 rounded-xl border border-gray-200 bg-white p-3">
+          <p className="mb-1.5 text-xs font-semibold text-gray-700">
+            Notes for {agent.name} to remember about you
+          </p>
+          <textarea
+            value={memory}
+            onChange={(e) => setMemory(e.target.value)}
+            maxLength={2000}
+            rows={3}
+            placeholder="e.g. our fiscal year ends in March, we operate in the UK and US…"
+            className="w-full resize-none rounded-lg border border-gray-200 p-2 text-xs outline-none focus:border-brand-500"
+          />
+          <div className="mt-1.5 flex justify-end">
+            <button
+              onClick={saveMemory}
+              disabled={memorySaving}
+              className="rounded-lg bg-brand-500 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50 transition-colors"
+            >
+              {memorySaving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-4 scrollbar-thin pr-1">
         {messages.length === 0 && (

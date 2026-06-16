@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import CountUp from "@/components/ui/CountUp";
 import { fadeUp, stagger, scaleIn } from "@/lib/motion";
+import { AGENTS } from "@/data/agents";
 
 interface Conversation {
   id: string;
@@ -21,7 +22,7 @@ interface Props {
 }
 
 const QUICK_LINKS = [
-  { icon: "🤖", label: "AI Marketplace",    href: "/marketplace",     desc: "Browse 30 agents"     },
+  { icon: "🤖", label: "AI Marketplace",    href: "/marketplace",     desc: `Browse ${AGENTS.length} agents` },
   { icon: "📊", label: "Agent Dashboard",   href: "/agent-dashboard", desc: "Manage deployments"   },
   { icon: "📰", label: "News Feed",         href: "/news",            desc: "Live intelligence"    },
   { icon: "📈", label: "Analytics",         href: "/analytics",       desc: "Usage & insights"     },

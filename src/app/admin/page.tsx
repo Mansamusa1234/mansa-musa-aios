@@ -20,6 +20,12 @@ export default async function AdminPage() {
     tokenStats,
     activeSubs,
     recentUsers,
+    totalReferrals,
+    convertedReferrals,
+    referralRewardSum,
+    totalAffiliates,
+    convertedAffiliateConversions,
+    affiliateCommissionSum,
   ] = await Promise.all([
     db.user.count(),
     db.subscription.count({ where: { status: "ACTIVE" } }),
@@ -35,6 +41,12 @@ export default async function AdminPage() {
       take: 8,
       select: { id: true, name: true, email: true, createdAt: true, role: true },
     }),
+    db.referral.count(),
+    db.referral.count({ where: { status: "CONVERTED" } }),
+    db.referral.aggregate({ _sum: { rewardCents: true } }),
+    db.affiliate.count(),
+    db.affiliateConversion.count({ where: { status: "CONVERTED" } }),
+    db.affiliateConversion.aggregate({ _sum: { commissionCents: true } }),
   ]);
 
   const mrr = activeSubs.reduce((sum, sub) => {
@@ -64,6 +76,14 @@ export default async function AdminPage() {
       arr={mrr * 12}
       totalTokens={totalTokens}
       recentUsers={recentUsers}
+      growth={{
+        totalReferrals,
+        convertedReferrals,
+        referralRewardOwed: (referralRewardSum._sum.rewardCents ?? 0) / 100,
+        totalAffiliates,
+        convertedAffiliateConversions,
+        affiliateCommissionOwed: (affiliateCommissionSum._sum.commissionCents ?? 0) / 100,
+      }}
       health={{
         stripe: !!process.env.STRIPE_SECRET_KEY,
         redis: !!process.env.UPSTASH_REDIS_REST_URL,

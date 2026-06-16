@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { AGENTS } from "@/data/agents";
 
 /* ── Inline SVG icon set ──────────────────────────────────── */
-type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics";
+type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics" | "gift" | "link";
 
 const ICONS: Record<IK, React.ReactNode> = {
   home: (
@@ -80,6 +81,18 @@ const ICONS: Record<IK, React.ReactNode> = {
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
     </svg>
   ),
+  gift: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 8v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8"/>
+      <path d="M12 8c-1.5-4-7-3.5-7-0.5C5 9 8 8 12 8zM12 8c1.5-4 7-3.5 7-0.5C19 9 16 8 12 8z"/>
+    </svg>
+  ),
+  link: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+    </svg>
+  ),
 };
 
 /* ── Nav structure ────────────────────────────────────────── */
@@ -97,7 +110,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Agents",
     items: [
-      { href: "/marketplace",      label: "Marketplace",  icon: "store", badge: "30" },
+      { href: "/marketplace",      label: "Marketplace",  icon: "store", badge: String(AGENTS.length) },
       { href: "/agent-dashboard",  label: "My Agents",    icon: "bot"   },
     ],
   },
@@ -113,6 +126,13 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/chat",     label: "AI Chat",   icon: "chat"     },
       { href: "/revenue",  label: "Revenue",   icon: "currency", adminOnly: true },
+    ],
+  },
+  {
+    label: "Grow",
+    items: [
+      { href: "/referrals", label: "Referrals", icon: "gift" },
+      { href: "/affiliate", label: "Affiliate",  icon: "link" },
     ],
   },
   {
