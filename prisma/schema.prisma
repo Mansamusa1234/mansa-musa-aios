@@ -53,6 +53,8 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   auditLogs               AuditLog[]
   trustedSessions          TrustedSession[]
+  pushSubscriptions        PushSubscription[]
+  newsletterSubscriber     NewsletterSubscriber?
 }
 
 model Account {
@@ -400,4 +402,47 @@ model TrustedSession {
   revokedAt  DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/* ── Growth Engine ────────────────────────────────────────── */
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum SubscriberStatus {
+  SUBSCRIBED
+  UNSUBSCRIBED
+}
+
+model NewsletterSubscriber {
+  id           String           @id @default(cuid())
+  email        String           @unique
+  userId       String?          @unique
+  status       SubscriberStatus @default(SUBSCRIBED)
+  unsubscribeToken String       @unique
+  subscribedAt DateTime         @default(now())
+  unsubscribedAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model EmailCampaign {
+  id          String    @id @default(cuid())
+  subject     String
+  bodyHtml    String    @db.Text
+  status      String    @default("DRAFT")
+  recipientCount Int    @default(0)
+  sentCount   Int       @default(0)
+  failedCount Int       @default(0)
+  createdAt   DateTime  @default(now())
+  sentAt      DateTime?
 }

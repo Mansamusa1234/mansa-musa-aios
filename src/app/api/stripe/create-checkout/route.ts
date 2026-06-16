@@ -30,6 +30,7 @@ export async function POST(req: Request) {
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
     metadata: { userId: session.user.id },
+    allow_promotion_codes: true,
   });
 
   return NextResponse.json({ url: checkoutSession.url });

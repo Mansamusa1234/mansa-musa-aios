@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import CountUp from "@/components/ui/CountUp";
+import PushNotificationToggle from "@/components/ui/PushNotificationToggle";
 import { fadeUp, stagger, scaleIn } from "@/lib/motion";
 import { AGENTS } from "@/data/agents";
 
@@ -84,6 +85,11 @@ export default function DashboardClient({ userName, conversations, plan, status,
               </Link>
             ))}
           </div>
+        </motion.div>
+
+        {/* Push notifications */}
+        <motion.div variants={fadeUp} className="mt-6">
+          <PushNotificationToggle />
         </motion.div>
 
         {/* Recent conversations */}

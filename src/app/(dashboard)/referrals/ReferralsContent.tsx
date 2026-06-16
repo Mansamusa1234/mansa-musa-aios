@@ -34,9 +34,11 @@ interface Props {
   referrals: ReferralRow[];
   totalRewardCents: number;
   convertedCount: number;
+  rank: number | null;
+  totalRankedReferrers: number;
 }
 
-export default function ReferralsContent({ code, referrals, totalRewardCents, convertedCount }: Props) {
+export default function ReferralsContent({ code, referrals, totalRewardCents, convertedCount, rank, totalRankedReferrers }: Props) {
   const [copied, setCopied] = useState(false);
   const link = typeof window !== "undefined" ? `${window.location.origin}/register?ref=${code}` : `/register?ref=${code}`;
 
@@ -55,6 +57,18 @@ export default function ReferralsContent({ code, referrals, totalRewardCents, co
           <p className="mt-1 text-sm text-gray-500">
             Share your link — when someone signs up and subscribes, you earn a reward.
           </p>
+        </motion.div>
+
+        {/* Leaderboard rank */}
+        <motion.div variants={fadeUp} className="mt-4 flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-2.5">
+          <span className="text-lg">🏆</span>
+          {rank ? (
+            <p className="text-sm text-amber-200">
+              You're ranked <span className="font-bold">#{rank}</span> of {totalRankedReferrers} referrers by conversions.
+            </p>
+          ) : (
+            <p className="text-sm text-amber-200/70">Get your first conversion to join the leaderboard.</p>
+          )}
         </motion.div>
 
         {/* Stats */}

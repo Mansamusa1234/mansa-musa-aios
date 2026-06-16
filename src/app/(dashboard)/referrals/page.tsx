@@ -15,7 +15,7 @@ export default async function ReferralsPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [code, referrals] = await Promise.all([
+  const [code, referrals, leaderboard] = await Promise.all([
     getOrCreateReferralCode(userId),
     db.referral.findMany({
       where: { referrerId: userId },
@@ -25,10 +25,16 @@ export default async function ReferralsPage() {
         ledgerEntry: { select: { status: true } },
       },
     }),
+    db.referral.groupBy({ by: ["referrerId"], where: { status: "CONVERTED" }, _count: { _all: true } }),
   ]);
 
   const totalRewardCents = referrals.reduce((sum, r) => sum + r.rewardCents, 0);
   const convertedCount = referrals.filter((r) => r.status === "CONVERTED").length;
+
+  const sortedLeaderboard = [...leaderboard].sort((a, b) => b._count._all - a._count._all);
+  const rankIndex = sortedLeaderboard.findIndex((l) => l.referrerId === userId);
+  const rank = rankIndex === -1 ? null : rankIndex + 1;
+  const totalRankedReferrers = sortedLeaderboard.length;
 
   return (
     <ReferralsContent
@@ -44,6 +50,8 @@ export default async function ReferralsPage() {
       }))}
       totalRewardCents={totalRewardCents}
       convertedCount={convertedCount}
+      rank={rank}
+      totalRankedReferrers={totalRankedReferrers}
     />
   );
 }
