@@ -41,6 +41,8 @@ model User {
   referralsMade     Referral[]    @relation("ReferralsMade")
   referralReceived  Referral?     @relation("ReferralsReceived")
   affiliate         Affiliate?
+  arenaSessions     ArenaSession[]
+  wisdomMemories    WisdomMemory[]
 }
 
 model Account {
@@ -176,4 +178,110 @@ model AffiliateConversion {
   convertedAt     DateTime?
 
   affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+}
+
+/* ── Wisdom Arena ─────────────────────────────────────────── */
+
+enum ArenaStatus {
+  RUNNING
+  DEBATING
+  CRITIQUING
+  IMPROVING
+  SCORING
+  SYNTHESIZING
+  DONE
+  FAILED
+}
+
+enum ResponseRound {
+  INITIAL
+  CRITIQUE
+  IMPROVED
+}
+
+model Agent {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  name         String
+  role         String
+  description  String
+  systemPrompt String   @db.Text
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  responses AgentResponse[]
+  scores    AgentScore[]
+}
+
+model ArenaSession {
+  id          String      @id @default(cuid())
+  userId      String
+  question    String      @db.Text
+  status      ArenaStatus @default(RUNNING)
+  error       String?
+  createdAt   DateTime    @default(now())
+  completedAt DateTime?
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses AgentResponse[]
+  scores    AgentScore[]
+  synthesis FinalSynthesis?
+  memory    WisdomMemory?
+}
+
+model AgentResponse {
+  id        String        @id @default(cuid())
+  sessionId String
+  agentId   String
+  round     ResponseRound
+  content   String        @db.Text
+  createdAt DateTime      @default(now())
+
+  session ArenaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  agent   Agent        @relation(fields: [agentId], references: [id])
+
+  @@unique([sessionId, agentId, round])
+}
+
+model AgentScore {
+  id            String   @id @default(cuid())
+  sessionId     String
+  agentId       String
+  truth         Int
+  evidence      Int
+  depth         Int
+  practicality  Int
+  riskAwareness Int
+  originality   Int
+  clarity       Int
+  longTermValue Int
+  total         Int
+  rationale     String   @db.Text
+  createdAt     DateTime @default(now())
+
+  session ArenaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  agent   Agent        @relation(fields: [agentId], references: [id])
+
+  @@unique([sessionId, agentId])
+}
+
+model FinalSynthesis {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  session ArenaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model WisdomMemory {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String   @unique
+  question  String   @db.Text
+  summary   String   @db.Text
+  savedAt   DateTime @default(now())
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session ArenaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }
