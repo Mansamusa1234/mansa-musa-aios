@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 import { recordReferralSignup, recordAffiliateSignup } from "@/lib/referrals";
 import { createAndSendVerificationEmail } from "@/lib/email";
+import { meetsMinimumRequirements } from "@/lib/passwordStrength";
+import { isPasswordBreached } from "@/lib/passwordBreach";
 
 const schema = z.object({
   name: z.string().min(1).max(100),
@@ -25,6 +27,14 @@ export async function POST(req: Request) {
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json({ error: "Email already in use." }, { status: 409 });
+    }
+
+    const requirementError = meetsMinimumRequirements(password);
+    if (requirementError) {
+      return NextResponse.json({ error: requirementError }, { status: 400 });
+    }
+    if (await isPasswordBreached(password)) {
+      return NextResponse.json({ error: "This password has appeared in a known data breach. Please choose another." }, { status: 400 });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);

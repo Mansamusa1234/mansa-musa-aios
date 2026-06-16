@@ -8,16 +8,19 @@ import Link from "next/link";
 interface Props {
   showGithub: boolean;
   showGoogle: boolean;
+  showMicrosoft?: boolean;
+  showApple?: boolean;
 }
 
-export default function LoginForm({ showGithub, showGoogle }: Props) {
+export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showApple }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const hasOAuth = showGithub || showGoogle;
+  const hasOAuth = showGithub || showGoogle || showMicrosoft || showApple;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,6 +30,7 @@ export default function LoginForm({ showGithub, showGoogle }: Props) {
     const res = await signIn("credentials", {
       email,
       password,
+      rememberMe: rememberMe ? "true" : "false",
       redirect: false,
     });
 
@@ -78,6 +82,31 @@ export default function LoginForm({ showGithub, showGoogle }: Props) {
                     Continue with Google
                   </button>
                 )}
+                {showMicrosoft && (
+                  <button
+                    onClick={() => signIn("microsoft-entra-id", { callbackUrl: "/dashboard" })}
+                    className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24">
+                      <path fill="#F25022" d="M1 1h10v10H1z" />
+                      <path fill="#7FBA00" d="M13 1h10v10H13z" />
+                      <path fill="#00A4EF" d="M1 13h10v10H1z" />
+                      <path fill="#FFB900" d="M13 13h10v10H13z" />
+                    </svg>
+                    Continue with Microsoft
+                  </button>
+                )}
+                {showApple && (
+                  <button
+                    onClick={() => signIn("apple", { callbackUrl: "/dashboard" })}
+                    className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.633 0 2.937.06 4.486 2.3-.115.08-2.43 1.46-2.43 4.21 0 3.21 2.797 4.31 2.89 4.34z" />
+                    </svg>
+                    Continue with Apple
+                  </button>
+                )}
               </div>
 
               <div className="my-6 flex items-center gap-4">
@@ -119,6 +148,15 @@ export default function LoginForm({ showGithub, showGoogle }: Props) {
                 placeholder="••••••••"
               />
             </div>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-200"
+              />
+              Keep me signed in
+            </label>
             <button
               type="submit"
               disabled={loading}

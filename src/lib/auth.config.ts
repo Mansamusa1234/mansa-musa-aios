@@ -1,3 +1,5 @@
+import { isTrustedSessionRevoked } from "@/lib/sessionSecurity";
+
 export const authConfig = {
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
@@ -13,6 +15,14 @@ export const authConfig = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        if (user.jti) token.jti = user.jti;
+      }
+      // Only tokens issued after this feature shipped carry a jti -- pre-existing
+      // sessions have none and skip this check entirely, so they keep working
+      // exactly as before until they naturally expire and the user logs in again.
+      if (token.jti) {
+        const revoked = await isTrustedSessionRevoked(token.jti as string).catch(() => false);
+        if (revoked) return null;
       }
       return token;
     },

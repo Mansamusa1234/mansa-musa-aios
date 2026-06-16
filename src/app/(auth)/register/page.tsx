@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import PasswordStrengthMeter from "@/components/ui/PasswordStrengthMeter";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -89,6 +90,7 @@ export default function RegisterPage() {
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                 placeholder="Min 8 characters"
               />
+              <PasswordStrengthMeter password={password} />
             </div>
             <button
               type="submit"
