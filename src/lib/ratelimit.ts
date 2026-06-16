@@ -34,6 +34,8 @@ export const limiters = {
   checkout: makeLimiter(10, "1 h", "rl:checkout"),
   /** 60 requests / minute — authenticated admin, keyed by user ID */
   admin:    makeLimiter(60, "1 m", "rl:admin"),
+  /** 10 sessions / day — authenticated, keyed by user ID (each session runs ~20 LLM calls) */
+  arena:    makeLimiter(10, "1 d", "rl:arena"),
 };
 
 /**

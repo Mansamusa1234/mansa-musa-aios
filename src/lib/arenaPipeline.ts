@@ -31,6 +31,9 @@ async function callAgent(systemPrompt: string, userContent: string, model: strin
       system: systemPrompt,
       messages: [{ role: "user", content: userContent }],
     });
+    if (msg.stop_reason === "max_tokens") {
+      console.warn(`[arena] response truncated at max_tokens=${maxTokens} for model ${model}`);
+    }
     const block = msg.content.find((b) => b.type === "text");
     return block && block.type === "text" ? block.text : "[No response generated]";
   } catch (err) {
@@ -209,7 +212,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
       synthesisAgent.systemPrompt,
       `Question: ${question}\n\nFinal answers from each agent:\n\n${answersBlock}\n\nWisdom Judge's scores:\n${scoresBlock}\n\nProduce the Deep Wisdom Answer.`,
       SYNTHESIS_MODEL,
-      1200
+      3000
     );
     await db.finalSynthesis.create({ data: { sessionId, content: synthesisContent } });
 
