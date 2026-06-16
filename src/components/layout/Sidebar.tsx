@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { AGENTS } from "@/data/agents";
 
 /* ── Inline SVG icon set ──────────────────────────────────── */
-type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics" | "gift" | "link";
+type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics" | "gift" | "link" | "arena";
 
 const ICONS: Record<IK, React.ReactNode> = {
   home: (
@@ -93,6 +93,12 @@ const ICONS: Record<IK, React.ReactNode> = {
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
     </svg>
   ),
+  arena: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M4 4l16 16M20 4 4 20"/>
+      <circle cx="12" cy="12" r="9"/>
+    </svg>
+  ),
 };
 
 /* ── Nav structure ────────────────────────────────────────── */
@@ -112,6 +118,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/marketplace",      label: "Marketplace",  icon: "store", badge: String(AGENTS.length) },
       { href: "/agent-dashboard",  label: "My Agents",    icon: "bot"   },
+      { href: "/arena",            label: "Wisdom Arena", icon: "arena", badge: "NEW" },
     ],
   },
   {
