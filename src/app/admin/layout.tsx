@@ -7,11 +7,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (session?.user?.role !== "ADMIN") redirect("/dashboard");
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <aside className="w-56 flex-col border-r border-gray-100 bg-white hidden md:flex">
+    <div className="flex h-screen bg-[#070712]">
+      <aside className="w-56 flex-col border-r border-white/6 bg-[#0a0a18] hidden md:flex">
         <div className="px-5 py-5">
-          <span className="text-sm font-bold text-brand-600">MansaMusaAI</span>
-          <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-600">
+          <span className="text-sm font-bold text-white">Mansa<span className="text-brand-400">Musa</span>AI</span>
+          <span className="ml-2 rounded bg-red-500/15 px-1.5 py-0.5 text-xs font-semibold text-red-400">
             Admin
           </span>
         </div>
@@ -23,14 +23,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link
               key={l.href}
               href={l.href}
-              className="flex rounded-xl px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex rounded-xl px-3 py-2 text-sm font-medium text-gray-400 hover:bg-white/4 hover:text-gray-200 transition-colors"
             >
               {l.label}
             </Link>
           ))}
           <Link
             href="/dashboard"
-            className="flex rounded-xl px-3 py-2 text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors"
+            className="flex rounded-xl px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-300 transition-colors"
           >
             ← Back to app
           </Link>

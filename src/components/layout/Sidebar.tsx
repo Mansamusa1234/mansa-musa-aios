@@ -4,103 +4,259 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 
+/* ── Inline SVG icon set ──────────────────────────────────── */
+type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics";
+
+const ICONS: Record<IK, React.ReactNode> = {
+  home: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  ),
+  chart: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+    </svg>
+  ),
+  analytics: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+  ),
+  store: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+      <line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+    </svg>
+  ),
+  bot: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <rect x="3" y="11" width="18" height="10" rx="2"/>
+      <path d="M12 11V7m-3 4V7m6 4V7"/><circle cx="9" cy="16" r="1" fill="currentColor"/><circle cx="15" cy="16" r="1" fill="currentColor"/>
+      <path d="M9 7h6a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1z"/>
+    </svg>
+  ),
+  news: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 0 2-2V7m-2 13a2 2 0 0 1-2-2V7m2 0H7"/>
+      <line x1="7" y1="10" x2="12" y2="10"/><line x1="7" y1="14" x2="12" y2="14"/>
+    </svg>
+  ),
+  globe: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+  ),
+  chat: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  currency: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+  ),
+  users: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  ),
+  user: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  ),
+  card: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+    </svg>
+  ),
+  shield: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  ),
+};
+
+/* ── Nav structure ────────────────────────────────────────── */
+type NavItem = { href: string; label: string; icon: IK; adminOnly?: boolean; badge?: string };
+type NavGroup = { label: string; items: NavItem[] };
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Overview",
+    items: [
+      { href: "/dashboard",   label: "Dashboard",   icon: "home"      },
+      { href: "/analytics",   label: "Analytics",   icon: "analytics" },
+    ],
+  },
+  {
+    label: "Agents",
+    items: [
+      { href: "/marketplace",      label: "Marketplace",  icon: "store", badge: "30" },
+      { href: "/agent-dashboard",  label: "My Agents",    icon: "bot"   },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { href: "/news",         label: "News Feed",    icon: "news"     },
+      { href: "/intelligence", label: "Market Intel", icon: "globe"    },
+    ],
+  },
+  {
+    label: "Workspace",
+    items: [
+      { href: "/chat",     label: "AI Chat",   icon: "chat"     },
+      { href: "/revenue",  label: "Revenue",   icon: "currency" },
+    ],
+  },
+  {
+    label: "Manage",
+    items: [
+      { href: "/team",    label: "Team",    icon: "users" },
+      { href: "/billing", label: "Billing", icon: "card"  },
+      { href: "/portal",  label: "Portal",  icon: "user"  },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { href: "/admin", label: "Admin Panel", icon: "shield", adminOnly: true },
+    ],
+  },
+];
+
+/* Mobile bottom nav — 6 most important */
+const MOBILE_NAV: NavItem[] = [
+  { href: "/dashboard",  label: "Home",    icon: "home"     },
+  { href: "/marketplace",label: "Agents",  icon: "store"    },
+  { href: "/chat",       label: "Chat",    icon: "chat"     },
+  { href: "/news",       label: "News",    icon: "news"     },
+  { href: "/billing",    label: "Billing", icon: "card"     },
+];
+
+/* ── Component ────────────────────────────────────────────── */
 interface Props {
   user: { name?: string | null; email?: string | null; role?: string };
 }
 
-const links = [
-  { href: "/dashboard", label: "Dashboard", icon: "⊞" },
-  { href: "/chat", label: "Chat", icon: "✦" },
-  { href: "/billing", label: "Billing", icon: "◈" },
-];
-
 export default function Sidebar({ user }: Props) {
   const pathname = usePathname();
-
-  const allLinks = [
-    ...links,
-    ...(user.role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: "⚙" }] : []),
-  ];
+  const isAdmin = user.role === "ADMIN";
 
   return (
     <>
-      {/* Desktop sidebar */}
+      {/* ── Desktop sidebar ──────────────────────────── */}
       <motion.aside
-        initial={{ x: -20, opacity: 0 }}
+        initial={{ x: -24, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.35, ease: "easeOut" }}
-        className="hidden w-60 flex-col border-r border-gray-100 bg-white md:flex"
+        className="hidden w-56 flex-shrink-0 flex-col border-r border-white/6 bg-[#0a0a18] md:flex"
       >
-        <div className="px-5 py-5">
-          <span className="text-lg font-bold tracking-tight text-gray-900">
-            Mansa<span className="text-brand-600">Musa</span>AI
-          </span>
+        {/* Logo */}
+        <div className="px-4 py-5 border-b border-white/6">
+          <Link href="/dashboard" className="block">
+            <span className="text-[15px] font-bold tracking-tight text-white">
+              Mansa<span className="text-brand-400">Musa</span>
+              <span className="text-gray-500">AI</span>
+            </span>
+          </Link>
+          <p className="mt-0.5 text-[10px] text-gray-600 uppercase tracking-widest">AI Operating System</p>
         </div>
 
-        <nav className="flex-1 px-3 py-2 space-y-0.5">
-          {allLinks.map((l) => {
-            const active = pathname.startsWith(l.href);
+        {/* Nav groups */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4 scrollbar-thin">
+          {NAV_GROUPS.map((group) => {
+            const visibleItems = group.items.filter((i) => !i.adminOnly || isAdmin);
+            if (visibleItems.length === 0) return null;
             return (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                  active ? "bg-brand-50 text-brand-700" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                {active && (
-                  <motion.div
-                    layoutId="sidebar-active"
-                    className="absolute inset-0 rounded-xl bg-brand-50"
-                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10 text-base">{l.icon}</span>
-                <span className="relative z-10">{l.label}</span>
-              </Link>
+              <div key={group.label}>
+                <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-widest text-gray-700">
+                  {group.label}
+                </p>
+                <div className="space-y-0.5">
+                  {visibleItems.map((item) => {
+                    const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors ${
+                          active
+                            ? "bg-brand-500/15 text-brand-300"
+                            : "text-gray-500 hover:bg-white/4 hover:text-gray-200"
+                        }`}
+                      >
+                        {active && (
+                          <motion.div
+                            layoutId="sidebar-active"
+                            className="absolute inset-0 rounded-lg bg-brand-500/15 border border-brand-500/20"
+                            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                          />
+                        )}
+                        <span className={`relative z-10 flex-shrink-0 ${active ? "text-brand-400" : "text-gray-600"}`}>
+                          {ICONS[item.icon]}
+                        </span>
+                        <span className="relative z-10 flex-1">{item.label}</span>
+                        {item.badge && (
+                          <span className="relative z-10 rounded-full bg-brand-500/20 px-1.5 py-0.5 text-[10px] font-bold text-brand-400">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
 
-        <div className="border-t border-gray-100 px-5 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+        {/* User card */}
+        <div className="border-t border-white/6 px-3 py-4">
+          <div className="flex items-center gap-2.5 rounded-lg border border-white/6 bg-white/3 px-3 py-2.5">
+            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-brand-500/20 text-xs font-bold text-brand-300">
               {user.name?.[0]?.toUpperCase() ?? "U"}
             </div>
-            <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-gray-700">{user.name}</p>
-              <p className="truncate text-xs text-gray-400">{user.email}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] font-semibold text-gray-300">{user.name ?? "User"}</p>
+              <p className="truncate text-[10px] text-gray-600">{user.role ?? "Member"}</p>
             </div>
           </div>
         </div>
       </motion.aside>
 
-      {/* Mobile bottom nav */}
+      {/* ── Mobile bottom nav ────────────────────────── */}
       <motion.nav
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeOut", delay: 0.1 }}
-        className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-gray-100 bg-white/95 backdrop-blur-sm md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-50 flex border-t border-white/8 bg-[#0a0a18]/95 backdrop-blur-xl md:hidden"
       >
-        {allLinks.map((l) => {
-          const active = pathname.startsWith(l.href);
+        {MOBILE_NAV.map((item) => {
+          const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
             <Link
-              key={l.href}
-              href={l.href}
-              className={`relative flex flex-1 flex-col items-center py-3 text-xs font-medium transition-colors ${
-                active ? "text-brand-600" : "text-gray-400 hover:text-gray-600"
+              key={item.href}
+              href={item.href}
+              className={`relative flex flex-1 flex-col items-center py-3 text-[10px] font-semibold transition-colors ${
+                active ? "text-brand-400" : "text-gray-600 hover:text-gray-400"
               }`}
             >
               {active && (
                 <motion.div
                   layoutId="mobile-active"
-                  className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full bg-brand-500"
-                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 rounded-full bg-brand-400"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
                 />
               )}
-              <span className="text-lg">{l.icon}</span>
-              <span className="mt-0.5">{l.label}</span>
+              <span className={`${active ? "text-brand-400" : "text-gray-600"}`}>{ICONS[item.icon]}</span>
+              <span className="mt-1">{item.label}</span>
             </Link>
           );
         })}
