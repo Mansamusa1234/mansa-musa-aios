@@ -51,8 +51,8 @@ const sections = [
     mockup: (
       <div className="space-y-3">
         {[
-          { name: "Claude Haiku", label: "Free · Basic", speed: "Fastest", color: "bg-gray-100 text-gray-700", bar: "w-1/3" },
-          { name: "Claude Sonnet", label: "Pro", speed: "Balanced", color: "bg-brand-100 text-brand-700", bar: "w-2/3" },
+          { name: "Claude Haiku 4.5", label: "Free · Basic", speed: "Fastest", color: "bg-gray-100 text-gray-700", bar: "w-1/3" },
+          { name: "Claude Sonnet 4.6", label: "Pro", speed: "Balanced", color: "bg-brand-100 text-brand-700", bar: "w-2/3" },
           { name: "Claude Opus 4.8", label: "Enterprise", speed: "Deepest", color: "bg-amber-100 text-amber-700", bar: "w-full" },
         ].map((m) => (
           <div key={m.name} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">

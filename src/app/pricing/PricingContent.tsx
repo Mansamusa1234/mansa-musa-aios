@@ -10,9 +10,9 @@ import type { PricingPlan } from "@/types";
 
 const tableFeatures = [
   { label: "AI messages / month",    values: ["20", "500", "Unlimited", "Unlimited"] },
-  { label: "AI model",               values: ["Haiku", "Haiku", "Sonnet", "Opus 4.8"] },
+  { label: "AI model",               values: ["Haiku 4.5", "Haiku 4.5", "Sonnet 4.6", "Opus 4.8"] },
   { label: "Conversation history",   values: ["7 days", "30 days", "Unlimited", "Unlimited"] },
-  { label: "AI Agent Hub",           values: [false, "3 agents", "10 agents", "All 10"] },
+  { label: "AI Agent Hub",           values: [false, "10 agents", "All 41", "All 41"] },
   { label: "Analytics dashboard",    values: ["Basic", "Standard", "Advanced", "Enterprise"] },
   { label: "API access",             values: [false, false, true, true] },
   { label: "Priority support",       values: [false, "Email", "Priority", "Dedicated"] },
