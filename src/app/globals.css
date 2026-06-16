@@ -48,4 +48,22 @@
   .glow-brand {
     box-shadow: 0 0 40px theme(colors.brand.500 / 0.2);
   }
+
+  .gradient-sweep {
+    background-size: 200% auto;
+    animation: sweep 3s linear infinite;
+  }
+
+  @keyframes sweep {
+    0%   { background-position: 0%   center; }
+    100% { background-position: 200% center; }
+  }
+
+  .glass-dark {
+    @apply border border-white/8 bg-white/4 backdrop-blur-md;
+  }
+
+  .glow-sm {
+    box-shadow: 0 0 20px theme(colors.brand.500 / 0.15);
+  }
 }
