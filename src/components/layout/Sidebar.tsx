@@ -112,13 +112,13 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Workspace",
     items: [
       { href: "/chat",     label: "AI Chat",   icon: "chat"     },
-      { href: "/revenue",  label: "Revenue",   icon: "currency" },
+      { href: "/revenue",  label: "Revenue",   icon: "currency", adminOnly: true },
     ],
   },
   {
     label: "Manage",
     items: [
-      { href: "/team",    label: "Team",    icon: "users" },
+      { href: "/team",    label: "Team",    icon: "users", adminOnly: true },
       { href: "/billing", label: "Billing", icon: "card"  },
       { href: "/portal",  label: "Portal",  icon: "user"  },
     ],

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import TeamContent from "./TeamContent";
 
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TeamPage() {
   const session = await auth();
+  if (session!.user.role !== "ADMIN") redirect("/dashboard");
 
   const members = await db.user.findMany({
     orderBy: { createdAt: "desc" },
