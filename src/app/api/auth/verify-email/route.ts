@@ -14,12 +14,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This verification link is invalid or has expired." }, { status: 400 });
     }
 
+    const currentUser = await db.user.findUnique({ where: { id: verificationToken.userId } });
+    const isEmailChange = currentUser && currentUser.email !== verificationToken.email;
+
+    if (isEmailChange) {
+      const conflict = await db.user.findUnique({ where: { email: verificationToken.email } });
+      if (conflict) {
+        return NextResponse.json({ error: "That email address is already in use." }, { status: 409 });
+      }
+    }
+
     await db.$transaction([
-      db.user.update({ where: { id: verificationToken.userId }, data: { emailVerified: new Date() } }),
+      db.user.update({
+        where: { id: verificationToken.userId },
+        data: { email: verificationToken.email, emailVerified: new Date() },
+      }),
       db.emailVerificationToken.update({ where: { id: verificationToken.id }, data: { usedAt: new Date() } }),
     ]);
 
-    await logAuditEvent({ userId: verificationToken.userId, event: "EMAIL_VERIFIED" });
+    await logAuditEvent({ userId: verificationToken.userId, event: isEmailChange ? "EMAIL_CHANGED" : "EMAIL_VERIFIED" });
 
     return NextResponse.json({ success: true });
   } catch (err) {
