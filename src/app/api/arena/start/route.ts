@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { runArenaPipeline } from "@/lib/arenaPipeline";
+import { getActivePlan } from "@/lib/subscription";
 import { after, NextResponse } from "next/server";
 
 export const maxDuration = 300;
@@ -17,14 +18,7 @@ export async function POST(req: Request) {
   const limited = await checkRateLimit(limiters.arena, session.user.id);
   if (limited) return limited;
 
-  const subscription = await db.subscription.findUnique({ where: { userId: session.user.id } });
-  let plan = "free";
-  if (subscription?.status === "ACTIVE" && subscription.stripePriceId) {
-    const priceId = subscription.stripePriceId;
-    if (priceId === process.env.STRIPE_PRICE_ENTERPRISE) plan = "enterprise";
-    else if (priceId === process.env.STRIPE_PRICE_PRO) plan = "pro";
-    else if (priceId === process.env.STRIPE_PRICE_BASIC) plan = "basic";
-  }
+  const plan = await getActivePlan(session.user.id);
   if (!ARENA_PLANS.includes(plan)) {
     return NextResponse.json({ error: "Wisdom Arena requires a Pro or Enterprise plan." }, { status: 403 });
   }
