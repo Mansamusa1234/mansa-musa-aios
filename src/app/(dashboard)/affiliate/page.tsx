@@ -17,7 +17,7 @@ export default async function AffiliatePage() {
   const affiliate = await db.affiliate.findUnique({
     where: { userId },
     include: {
-      conversions: { orderBy: { createdAt: "desc" } },
+      conversions: { orderBy: { createdAt: "desc" }, include: { ledgerEntry: { select: { status: true } } } },
     },
   });
 
@@ -35,6 +35,7 @@ export default async function AffiliatePage() {
         status: c.status,
         commissionCents: c.commissionCents,
         createdAt: c.createdAt,
+        payoutStatus: c.ledgerEntry?.status ?? null,
       }))}
       totalCommissionCents={totalCommissionCents}
     />

@@ -22,10 +22,12 @@ export default async function AdminPage() {
     recentUsers,
     totalReferrals,
     convertedReferrals,
-    referralRewardSum,
     totalAffiliates,
     convertedAffiliateConversions,
-    affiliateCommissionSum,
+    pendingLedgerSum,
+    approvedLedgerSum,
+    paidLedgerSum,
+    pendingLedgerCount,
   ] = await Promise.all([
     db.user.count(),
     db.subscription.count({ where: { status: "ACTIVE" } }),
@@ -43,10 +45,12 @@ export default async function AdminPage() {
     }),
     db.referral.count(),
     db.referral.count({ where: { status: "CONVERTED" } }),
-    db.referral.aggregate({ _sum: { rewardCents: true } }),
     db.affiliate.count(),
     db.affiliateConversion.count({ where: { status: "CONVERTED" } }),
-    db.affiliateConversion.aggregate({ _sum: { commissionCents: true } }),
+    db.commissionLedger.aggregate({ where: { status: "PENDING" }, _sum: { amountCents: true } }),
+    db.commissionLedger.aggregate({ where: { status: "APPROVED" }, _sum: { amountCents: true } }),
+    db.commissionLedger.aggregate({ where: { status: "PAID" }, _sum: { amountCents: true } }),
+    db.commissionLedger.count({ where: { status: "PENDING" } }),
   ]);
 
   const mrr = activeSubs.reduce((sum, sub) => {
@@ -79,10 +83,12 @@ export default async function AdminPage() {
       growth={{
         totalReferrals,
         convertedReferrals,
-        referralRewardOwed: (referralRewardSum._sum.rewardCents ?? 0) / 100,
         totalAffiliates,
         convertedAffiliateConversions,
-        affiliateCommissionOwed: (affiliateCommissionSum._sum.commissionCents ?? 0) / 100,
+        pendingPayoutTotal: (pendingLedgerSum._sum.amountCents ?? 0) / 100,
+        approvedPayoutTotal: (approvedLedgerSum._sum.amountCents ?? 0) / 100,
+        paidPayoutTotal: (paidLedgerSum._sum.amountCents ?? 0) / 100,
+        pendingApprovalCount: pendingLedgerCount,
       }}
       health={{
         stripe: !!process.env.STRIPE_SECRET_KEY,

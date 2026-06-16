@@ -10,7 +10,22 @@ interface Conversion {
   status: string;
   commissionCents: number;
   createdAt: Date;
+  payoutStatus: string | null;
 }
+
+const PAYOUT_STYLES: Record<string, string> = {
+  PENDING: "bg-gray-500/15 text-gray-400",
+  APPROVED: "bg-blue-500/15 text-blue-300",
+  PAID: "bg-green-500/15 text-green-400",
+  REJECTED: "bg-red-500/15 text-red-400",
+};
+
+const PAYOUT_LABELS: Record<string, string> = {
+  PENDING: "Pending review",
+  APPROVED: "Approved",
+  PAID: "Paid",
+  REJECTED: "Rejected",
+};
 
 interface AffiliateInfo {
   code: string;
@@ -121,7 +136,7 @@ export default function AffiliateContent({ affiliate, conversions, totalCommissi
             </button>
           </div>
           <p className="mt-2 text-[11px] text-gray-600">
-            Commission is tracked automatically here — payout details are handled by the MansaMusaAI team.
+            Commission is tracked automatically, then reviewed and paid out manually by the MansaMusaAI team — nothing is paid automatically.
           </p>
         </motion.div>
       </motion.div>
@@ -151,6 +166,11 @@ export default function AffiliateContent({ affiliate, conversions, totalCommissi
                   </span>
                   {c.commissionCents > 0 && (
                     <p className="mt-1 text-xs font-bold text-brand-400">£{(c.commissionCents / 100).toFixed(2)}</p>
+                  )}
+                  {c.payoutStatus && (
+                    <p className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold ${PAYOUT_STYLES[c.payoutStatus] ?? PAYOUT_STYLES.PENDING}`}>
+                      {PAYOUT_LABELS[c.payoutStatus] ?? c.payoutStatus}
+                    </p>
                   )}
                 </div>
               </div>

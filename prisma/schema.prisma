@@ -29,6 +29,7 @@ model User {
   passwordHash      String?
   role              Role      @default(USER)
   referralCode      String?   @unique
+  referredByUserId  String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -43,6 +44,9 @@ model User {
   affiliate         Affiliate?
   arenaSessions     ArenaSession[]
   wisdomMemories    WisdomMemory[]
+  referredBy        User?              @relation("ReferredBy", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referredUsers     User[]             @relation("ReferredBy")
+  commissionLedger  CommissionLedger[]
 }
 
 model Account {
@@ -153,6 +157,8 @@ model Referral {
 
   referrer     User @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
   referredUser User @relation("ReferralsReceived", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  ledgerEntry CommissionLedger?
 }
 
 model Affiliate {
@@ -178,6 +184,42 @@ model AffiliateConversion {
   convertedAt     DateTime?
 
   affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  ledgerEntry CommissionLedger?
+}
+
+/* ── Commission ledger (admin-approval, manual payout) ──────── */
+
+enum LedgerStatus {
+  PENDING
+  APPROVED
+  PAID
+  REJECTED
+}
+
+enum LedgerSourceType {
+  REFERRAL
+  AFFILIATE
+}
+
+model CommissionLedger {
+  id                    String           @id @default(cuid())
+  userId                String
+  sourceType            LedgerSourceType
+  referralId            String?          @unique
+  affiliateConversionId String?          @unique
+  amountCents           Int
+  status                LedgerStatus     @default(PENDING)
+  approvedAt            DateTime?
+  approvedByUserId      String?
+  paidAt                DateTime?
+  paidByUserId          String?
+  notes                 String?          @db.Text
+  createdAt             DateTime         @default(now())
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referral            Referral?            @relation(fields: [referralId], references: [id])
+  affiliateConversion AffiliateConversion? @relation(fields: [affiliateConversionId], references: [id])
 }
 
 /* ── Wisdom Arena ─────────────────────────────────────────── */

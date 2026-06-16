@@ -12,7 +12,22 @@ interface ReferralRow {
   joinedAt: Date;
   status: string;
   rewardCents: number;
+  payoutStatus: string | null;
 }
+
+const PAYOUT_STYLES: Record<string, string> = {
+  PENDING: "bg-gray-500/15 text-gray-400",
+  APPROVED: "bg-blue-500/15 text-blue-300",
+  PAID: "bg-green-500/15 text-green-400",
+  REJECTED: "bg-red-500/15 text-red-400",
+};
+
+const PAYOUT_LABELS: Record<string, string> = {
+  PENDING: "Pending review",
+  APPROVED: "Approved",
+  PAID: "Paid",
+  REJECTED: "Rejected",
+};
 
 interface Props {
   code: string;
@@ -76,7 +91,7 @@ export default function ReferralsContent({ code, referrals, totalRewardCents, co
             </button>
           </div>
           <p className="mt-2 text-[11px] text-gray-600">
-            Rewards are tracked automatically here — payout details are handled by the MansaMusaAI team.
+            Rewards are tracked automatically, then reviewed and paid out manually by the MansaMusaAI team — nothing is paid automatically.
           </p>
         </motion.div>
       </motion.div>
@@ -111,6 +126,11 @@ export default function ReferralsContent({ code, referrals, totalRewardCents, co
                   </span>
                   {r.rewardCents > 0 && (
                     <p className="mt-1 text-xs font-bold text-brand-400">£{(r.rewardCents / 100).toFixed(2)}</p>
+                  )}
+                  {r.payoutStatus && (
+                    <p className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[9px] font-bold ${PAYOUT_STYLES[r.payoutStatus] ?? PAYOUT_STYLES.PENDING}`}>
+                      {PAYOUT_LABELS[r.payoutStatus] ?? r.payoutStatus}
+                    </p>
                   )}
                 </div>
               </div>

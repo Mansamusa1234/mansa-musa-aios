@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import CountUp from "@/components/ui/CountUp";
 import { fadeUp, stagger, scaleIn } from "@/lib/motion";
 
@@ -15,10 +16,12 @@ interface RecentUser {
 interface GrowthStats {
   totalReferrals: number;
   convertedReferrals: number;
-  referralRewardOwed: number;
   totalAffiliates: number;
   convertedAffiliateConversions: number;
-  affiliateCommissionOwed: number;
+  pendingPayoutTotal: number;
+  approvedPayoutTotal: number;
+  paidPayoutTotal: number;
+  pendingApprovalCount: number;
 }
 
 interface Props {
@@ -169,14 +172,17 @@ export default function AdminClient({
 
       {/* Growth */}
       <section>
-        <motion.h2 variants={fadeUp} className="mb-4 text-xs font-bold uppercase tracking-widest text-gray-600">
-          Growth
-        </motion.h2>
+        <motion.div variants={fadeUp} className="mb-4 flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-gray-600">Growth</h2>
+          <Link href="/admin/commissions" className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors">
+            Review commissions {growth.pendingApprovalCount > 0 && `(${growth.pendingApprovalCount})`} →
+          </Link>
+        </motion.div>
         <motion.div variants={stagger} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Referrals" value={growth.totalReferrals} sublabel={`${growth.convertedReferrals} converted`} delay={0} />
-          <StatCard label="Referral rewards owed" value={growth.referralRewardOwed} prefix="£" sublabel="Tracking only — not auto-paid" delay={1} />
-          <StatCard label="Affiliates" value={growth.totalAffiliates} sublabel={`${growth.convertedAffiliateConversions} conversions`} delay={2} />
-          <StatCard label="Affiliate commission owed" value={growth.affiliateCommissionOwed} prefix="£" sublabel="Tracking only — not auto-paid" delay={3} />
+          <StatCard label="Affiliates" value={growth.totalAffiliates} sublabel={`${growth.convertedAffiliateConversions} conversions`} delay={1} />
+          <StatCard label="Pending + approved" value={growth.pendingPayoutTotal + growth.approvedPayoutTotal} prefix="£" sublabel="Owed, not yet paid" delay={2} />
+          <StatCard label="Paid out" value={growth.paidPayoutTotal} prefix="£" sublabel="Manually marked paid" delay={3} />
         </motion.div>
       </section>
 

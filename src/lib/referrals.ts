@@ -32,9 +32,10 @@ export async function recordReferralSignup(refCode: string | undefined | null, n
     const referrer = await db.user.findUnique({ where: { referralCode: refCode }, select: { id: true } });
     if (!referrer || referrer.id === newUserId) return;
 
-    await db.referral.create({
-      data: { referrerId: referrer.id, referredUserId: newUserId },
-    });
+    await Promise.all([
+      db.referral.create({ data: { referrerId: referrer.id, referredUserId: newUserId } }),
+      db.user.update({ where: { id: newUserId }, data: { referredByUserId: referrer.id } }),
+    ]);
   } catch (err) {
     console.error("[referrals] recordReferralSignup failed:", err);
   }
@@ -55,7 +56,14 @@ export async function recordAffiliateSignup(affCode: string | undefined | null, 
   }
 }
 
-/** Best-effort: when a referred/affiliate-attributed user's first paid subscription activates, mark the conversion and compute the (tracking-only — not auto-paid) reward. Never throws. */
+/**
+ * Best-effort: when a referred/affiliate-attributed user's first paid subscription activates,
+ * mark the conversion and open a PENDING commission ledger entry for it.
+ *
+ * This never pays anyone automatically — a ledger entry only becomes payable once an admin
+ * approves it via /admin/commissions, and is only ever marked PAID by an explicit admin action.
+ * Never throws.
+ */
 export async function recordConversion(userId: string, priceId: string | null | undefined): Promise<void> {
   try {
     const planPrice = PLANS.find((p) => p.priceId === priceId)?.price ?? 0;
@@ -64,27 +72,37 @@ export async function recordConversion(userId: string, priceId: string | null | 
 
     const referral = await db.referral.findUnique({ where: { referredUserId: userId } });
     if (referral && referral.status !== "CONVERTED") {
+      const rewardCents = Math.round((priceCents * REFERRAL_REWARD_PERCENT) / 100);
       await db.referral.update({
         where: { id: referral.id },
+        data: { status: "CONVERTED", convertedAt: new Date(), rewardCents },
+      });
+      await db.commissionLedger.create({
         data: {
-          status: "CONVERTED",
-          convertedAt: new Date(),
-          rewardCents: Math.round((priceCents * REFERRAL_REWARD_PERCENT) / 100),
+          userId: referral.referrerId,
+          sourceType: "REFERRAL",
+          referralId: referral.id,
+          amountCents: rewardCents,
         },
       });
     }
 
     const conversion = await db.affiliateConversion.findUnique({
       where: { referredUserId: userId },
-      include: { affiliate: { select: { commissionRate: true } } },
+      include: { affiliate: { select: { id: true, userId: true, commissionRate: true } } },
     });
     if (conversion && conversion.status !== "CONVERTED") {
+      const commissionCents = Math.round((priceCents * conversion.affiliate.commissionRate) / 100);
       await db.affiliateConversion.update({
         where: { id: conversion.id },
+        data: { status: "CONVERTED", convertedAt: new Date(), commissionCents },
+      });
+      await db.commissionLedger.create({
         data: {
-          status: "CONVERTED",
-          convertedAt: new Date(),
-          commissionCents: Math.round((priceCents * conversion.affiliate.commissionRate) / 100),
+          userId: conversion.affiliate.userId,
+          sourceType: "AFFILIATE",
+          affiliateConversionId: conversion.id,
+          amountCents: commissionCents,
         },
       });
     }

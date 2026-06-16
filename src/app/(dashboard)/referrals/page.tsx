@@ -20,7 +20,10 @@ export default async function ReferralsPage() {
     db.referral.findMany({
       where: { referrerId: userId },
       orderBy: { createdAt: "desc" },
-      include: { referredUser: { select: { name: true, email: true, createdAt: true } } },
+      include: {
+        referredUser: { select: { name: true, email: true, createdAt: true } },
+        ledgerEntry: { select: { status: true } },
+      },
     }),
   ]);
 
@@ -37,6 +40,7 @@ export default async function ReferralsPage() {
         joinedAt: r.referredUser.createdAt,
         status: r.status,
         rewardCents: r.rewardCents,
+        payoutStatus: r.ledgerEntry?.status ?? null,
       }))}
       totalRewardCents={totalRewardCents}
       convertedCount={convertedCount}
