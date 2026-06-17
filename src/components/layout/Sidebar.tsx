@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { AGENTS } from "@/data/agents";
 
 /* ── Inline SVG icon set ──────────────────────────────────── */
-type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics" | "gift" | "link" | "arena" | "settings" | "crm" | "receptionist" | "workforce" | "support" | "calendar" | "layers";
+type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics" | "gift" | "link" | "arena" | "settings" | "crm" | "receptionist" | "workforce" | "support" | "calendar" | "layers" | "compete" | "wisdom" | "trophy";
 
 const ICONS: Record<IK, React.ReactNode> = {
   home: (
@@ -135,6 +135,31 @@ const ICONS: Record<IK, React.ReactNode> = {
       <circle cx="12" cy="12" r="9"/>
     </svg>
   ),
+  compete: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/>
+      <path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+      <path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/>
+      <path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/>
+      <path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/>
+      <path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/>
+      <path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/>
+      <path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/>
+    </svg>
+  ),
+  wisdom: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M6 3h12l4 6-10 13L2 9z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/>
+    </svg>
+  ),
+  trophy: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+      <path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+    </svg>
+  ),
 };
 
 /* ── Nav structure ────────────────────────────────────────── */
@@ -157,6 +182,14 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/agent-dashboard",  label: "My Agents",    icon: "bot"   },
       { href: "/arena",            label: "Wisdom Arena", icon: "arena", badge: "NEW" },
       { href: "/model-hub",        label: "Model Hub",    icon: "layers", badge: "NEW" },
+    ],
+  },
+  {
+    label: "Wisdom Economy",
+    items: [
+      { href: "/compete",           label: "Compete",        icon: "compete", badge: "NEW" },
+      { href: "/wisdom",            label: "Wisdom Vault",   icon: "wisdom"              },
+      { href: "/wisdom-leaderboard",label: "Leaderboard",    icon: "trophy"              },
     ],
   },
   {

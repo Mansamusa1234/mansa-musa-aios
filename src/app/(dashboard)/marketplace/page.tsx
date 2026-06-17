@@ -1,31 +1,48 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { AGENTS } from "@/data/agents";
+import { ensureMarketplaceAgentsSeeded } from "@/lib/wisdomAgents";
 import MarketplaceContent from "./MarketplaceContent";
 
-export const metadata: Metadata = {
-  title: "Agent Marketplace | MansaMusaAI",
-  description: `Browse and deploy ${AGENTS.length} specialist AI agents for every business function.`,
-};
-
+export const metadata: Metadata = { title: "Agent Marketplace | MansaMusaAI" };
 export const dynamic = "force-dynamic";
 
 export default async function MarketplacePage() {
   const session = await auth();
-  const subscription = await db.subscription.findUnique({
-    where: { userId: session!.user.id },
-    select: { status: true, stripePriceId: true },
-  });
+  if (!session?.user?.id) redirect("/login");
 
-  const activePlan =
-    subscription?.status === "ACTIVE"
-      ? (subscription.stripePriceId?.includes("enterprise")
-          ? "enterprise"
-          : subscription.stripePriceId?.includes("pro")
-          ? "pro"
-          : "basic")
-      : "free";
+  await ensureMarketplaceAgentsSeeded();
 
-  return <MarketplaceContent userPlan={activePlan} />;
+  const [agents, deployments] = await Promise.all([
+    db.marketplaceAgent.findMany({
+      orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+      include: { stats: true },
+    }),
+    db.agentDeployment.findMany({
+      where: { userId: session.user.id, isActive: true },
+      select: { agentId: true },
+    }),
+  ]);
+
+  const deployedIds = new Set(deployments.map((d) => d.agentId));
+
+  const catalog = agents.map((a) => ({
+    id: a.id,
+    name: a.name,
+    slug: a.slug,
+    category: a.category as string,
+    description: a.description,
+    icon: a.icon,
+    color: a.color,
+    planGate: a.planGate,
+    deployed: deployedIds.has(a.id),
+    wins:          a.stats?.wins ?? 0,
+    totalSessions: a.stats?.totalSessions ?? 0,
+    winRate:       +(a.stats?.winRate ?? 0).toFixed(1),
+    accuracyScore: +(a.stats?.accuracyScore ?? 0).toFixed(1),
+    avgRating:     +(a.stats?.avgRating ?? 0).toFixed(1),
+  }));
+
+  return <MarketplaceContent catalog={catalog} deployedCount={deployments.length} />;
 }

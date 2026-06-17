@@ -14,11 +14,14 @@ export default async function WorkforcePage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [leads, tickets, bookings, receptionist] = await Promise.all([
+  const [leads, tickets, bookings, receptionist, deployedAgents, competitions, wisdomAssets] = await Promise.all([
     db.lead.count({ where: { userId } }),
     db.supportTicket.count({ where: { userId, status: { not: "CLOSED" } } }),
     db.calendarBooking.count({ where: { userId, startAt: { gte: new Date() } } }),
     db.receptionist.findUnique({ where: { userId } }),
+    db.agentDeployment.count({ where: { userId, isActive: true } }),
+    db.agentCompetition.count({ where: { userId } }),
+    db.wisdomAsset.count({ where: { userId } }),
   ]);
 
   return (
@@ -28,6 +31,9 @@ export default async function WorkforcePage() {
       upcomingBookings={bookings}
       receptionistActive={!!receptionist?.isActive}
       receptionistChats={receptionist?.totalChats ?? 0}
+      deployedAgents={deployedAgents}
+      competitions={competitions}
+      wisdomAssets={wisdomAssets}
     />
   );
 }

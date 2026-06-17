@@ -66,6 +66,11 @@ model User {
   calendarAvailability     CalendarAvailability?
   approvalRequests         ApprovalRequest[]
   modelPreference          UserModelPreference?
+  agentDeployments         AgentDeployment[]
+  agentCompetitions        AgentCompetition[]
+  wisdomAssets             WisdomAsset[]
+  assetRatings             AssetRating[]
+  agentRatings             AgentRating[]
 }
 
 model Account {
@@ -629,4 +634,146 @@ model ApprovalRequest {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+}
+
+/* ── Phase 6: AI Wisdom Economy ──────────────────────────────── */
+
+enum WisdomCategory {
+  NEWS
+  FINANCE
+  RESEARCH
+  CODING
+  MARKETING
+  SALES
+  STRATEGY
+  OPERATIONS
+}
+
+enum CompStatus {
+  RUNNING
+  SCORING
+  DONE
+  FAILED
+}
+
+model MarketplaceAgent {
+  id           String          @id @default(cuid())
+  name         String
+  slug         String          @unique
+  category     WisdomCategory
+  description  String          @db.Text
+  systemPrompt String          @db.Text
+  icon         String
+  color        String          @default("#6366f1")
+  planGate     String          @default("basic")
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+
+  stats       AgentMarketStats?
+  deployments AgentDeployment[]
+  entries     CompetitionEntry[]
+  ratings     AgentRating[]
+  assets      WisdomAsset[]
+}
+
+model AgentMarketStats {
+  id            String   @id @default(cuid())
+  agentId       String   @unique
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  totalSessions Int      @default(0)
+  winRate       Float    @default(0)
+  accuracyScore Float    @default(0)
+  avgRating     Float    @default(0)
+  ratingCount   Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  agent MarketplaceAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model AgentDeployment {
+  id         String   @id @default(cuid())
+  userId     String
+  agentId    String
+  isActive   Boolean  @default(true)
+  deployedAt DateTime @default(now())
+
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agent MarketplaceAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, agentId])
+}
+
+model AgentCompetition {
+  id          String         @id @default(cuid())
+  userId      String
+  prompt      String         @db.Text
+  category    WisdomCategory
+  status      CompStatus     @default(RUNNING)
+  error       String?
+  createdAt   DateTime       @default(now())
+  completedAt DateTime?
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries CompetitionEntry[]
+  asset   WisdomAsset?
+}
+
+model CompetitionEntry {
+  id            String   @id @default(cuid())
+  competitionId String
+  agentId       String
+  response      String   @db.Text
+  score         Float    @default(0)
+  rank          Int      @default(0)
+  rationale     String   @db.Text @default("")
+
+  competition AgentCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  agent       MarketplaceAgent @relation(fields: [agentId], references: [id])
+}
+
+model WisdomAsset {
+  id            String         @id @default(cuid())
+  competitionId String         @unique
+  agentId       String
+  userId        String
+  title         String
+  content       String         @db.Text
+  category      WisdomCategory
+  prompt        String         @db.Text
+  views         Int            @default(0)
+  saves         Int            @default(0)
+  avgRating     Float          @default(0)
+  ratingCount   Int            @default(0)
+  createdAt     DateTime       @default(now())
+
+  competition AgentCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  agent       MarketplaceAgent @relation(fields: [agentId], references: [id])
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ratings     AssetRating[]
+}
+
+model AssetRating {
+  id      String @id @default(cuid())
+  assetId String
+  userId  String
+  rating  Int
+
+  asset WisdomAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, userId])
+}
+
+model AgentRating {
+  id        String   @id @default(cuid())
+  agentId   String
+  userId    String
+  rating    Int
+  createdAt DateTime @default(now())
+
+  agent MarketplaceAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, userId])
 }

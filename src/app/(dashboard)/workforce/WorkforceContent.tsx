@@ -10,6 +10,9 @@ interface Props {
   upcomingBookings: number;
   receptionistActive: boolean;
   receptionistChats: number;
+  deployedAgents: number;
+  competitions: number;
+  wisdomAssets: number;
 }
 
 const MODULES = [
@@ -113,6 +116,36 @@ const MODULES = [
     status: "live",
     badge: null,
   },
+  {
+    id: "compete",
+    name: "AI Competition System",
+    desc: "24 specialist agents compete on your prompt — judge scores the winner",
+    href: "/compete",
+    icon: "⚔️",
+    channels: ["24 Agents", "8 Categories", "Judge AI"],
+    status: "live",
+    badge: "NEW",
+  },
+  {
+    id: "wisdom",
+    name: "Wisdom Vault",
+    desc: "Every winning competition answer preserved, rated and searchable",
+    href: "/wisdom",
+    icon: "💎",
+    channels: ["Wisdom Assets", "Ratings", "Categories"],
+    status: "live",
+    badge: "NEW",
+  },
+  {
+    id: "wisdom-leaderboard",
+    name: "Agent Leaderboard",
+    desc: "Lifetime rankings — win rate, accuracy score, user ratings per agent",
+    href: "/wisdom-leaderboard",
+    icon: "🏆",
+    channels: ["Win Rate", "Accuracy", "Ratings"],
+    status: "live",
+    badge: "NEW",
+  },
 ];
 
 const COMING = [
@@ -122,7 +155,7 @@ const COMING = [
   { name: "Stripe Payment Collection", desc: "Accept payments inside chat conversations", requires: "Stripe + webhooks", icon: "💳" },
 ];
 
-export default function WorkforceContent({ leadsCount, openTickets, upcomingBookings, receptionistActive, receptionistChats }: Props) {
+export default function WorkforceContent({ leadsCount, openTickets, upcomingBookings, receptionistActive, receptionistChats, deployedAgents, competitions, wisdomAssets }: Props) {
   return (
     <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-8 max-w-6xl">
       {/* Hero */}
@@ -133,12 +166,15 @@ export default function WorkforceContent({ leadsCount, openTickets, upcomingBook
       </motion.div>
 
       {/* Live stats */}
-      <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <motion.div variants={stagger} className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {[
           { label: "Leads tracked", value: leadsCount },
           { label: "Open support tickets", value: openTickets },
           { label: "Upcoming bookings", value: upcomingBookings },
           { label: "Receptionist chats", value: receptionistChats },
+          { label: "Deployed agents", value: deployedAgents },
+          { label: "Competitions run", value: competitions },
+          { label: "Wisdom assets", value: wisdomAssets },
         ].map((s) => (
           <motion.div key={s.label} variants={scaleIn} className="rounded-2xl border border-white/8 bg-white/3 p-4">
             <p className="text-2xl font-extrabold text-brand-400">{s.value.toLocaleString()}</p>
