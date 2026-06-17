@@ -26,7 +26,7 @@ export default async function SettingsPage() {
   const currentJti = (decoded as { jti?: string } | null)?.jti;
 
   const [user, sessions] = await Promise.all([
-    db.user.findUnique({ where: { id: userId }, select: { name: true, email: true, emailVerified: true } }),
+    db.user.findUnique({ where: { id: userId }, select: { name: true, email: true, emailVerified: true, twoFactorEnabled: true } }),
     db.trustedSession.findMany({ where: { userId, revokedAt: null }, orderBy: { lastSeenAt: "desc" } }),
   ]);
 
@@ -35,6 +35,7 @@ export default async function SettingsPage() {
       name={user?.name ?? ""}
       email={user?.email ?? ""}
       emailVerified={!!user?.emailVerified}
+      twoFactorEnabled={!!user?.twoFactorEnabled}
       sessions={sessions.map((s) => ({
         id: s.id,
         ip: s.ip,

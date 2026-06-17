@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { anthropic, SYSTEM_PROMPT, getModelForPlan, buildAgentSystemPrompt } from "@/lib/anthropic";
 import { db } from "@/lib/db";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
+import { PLANS } from "@/lib/stripe";
 import { AGENTS } from "@/data/agents";
 import { NextResponse } from "next/server";
 
@@ -58,6 +59,25 @@ export async function POST(req: Request) {
     else if (priceId === process.env.STRIPE_PRICE_PRO) plan = "pro";
     else if (priceId === process.env.STRIPE_PRICE_BASIC) plan = "basic";
   }
+
+  // Enforce monthly message limits
+  const planDef = PLANS.find((p) => p.id === plan) ?? PLANS[0];
+  if (planDef.messagesPerMonth !== Infinity) {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const msgCount = await db.usageRecord.count({
+      where: { userId: session.user.id, createdAt: { gte: monthStart } },
+    });
+    if (msgCount >= planDef.messagesPerMonth) {
+      return NextResponse.json({
+        error: "MESSAGE_LIMIT_REACHED",
+        limit: planDef.messagesPerMonth,
+        plan: planDef.name,
+        upgradeUrl: "/billing",
+      }, { status: 402 });
+    }
+  }
+
   const model = getModelForPlan(plan);
 
   // Resolve agent persona + saved memory for this conversation (falls back to the

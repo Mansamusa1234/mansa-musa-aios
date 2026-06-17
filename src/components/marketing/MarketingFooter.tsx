@@ -31,8 +31,8 @@ const cols = [
   {
     heading: "Legal",
     links: [
-      { label: "Privacy Policy",    href: "/contact" },
-      { label: "Terms of Service",  href: "/contact" },
+      { label: "Privacy Policy",    href: "/privacy" },
+      { label: "Terms of Service",  href: "/terms" },
       { label: "Cookie Policy",     href: "/contact" },
     ],
   },

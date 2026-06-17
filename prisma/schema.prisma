@@ -32,6 +32,10 @@ model User {
   referredByUserId  String?
   failedLoginAttempts Int     @default(0)
   lockedUntil       DateTime?
+  twoFactorSecret   String?
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorBackupCodes String? @db.Text
+  onboardingComplete Boolean  @default(false)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -55,6 +59,8 @@ model User {
   trustedSessions          TrustedSession[]
   pushSubscriptions        PushSubscription[]
   newsletterSubscriber     NewsletterSubscriber?
+  leads                    Lead[]
+  receptionist             Receptionist?
 }
 
 model Account {
@@ -445,4 +451,76 @@ model EmailCampaign {
   failedCount Int       @default(0)
   createdAt   DateTime  @default(now())
   sentAt      DateTime?
+}
+
+/* ── CRM ──────────────────────────────────────────────────── */
+
+enum LeadStage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+model Lead {
+  id          String     @id @default(cuid())
+  userId      String
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  source      String?
+  stage       LeadStage  @default(NEW)
+  value       Int        @default(0)
+  notes       String?    @db.Text
+  assignedTo  String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activities  LeadActivity[]
+
+  @@index([userId, stage])
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  type      String
+  note      String?  @db.Text
+  createdAt DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+/* ── AI Receptionist ──────────────────────────────────────── */
+
+model Receptionist {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  name           String   @default("AI Assistant")
+  greeting       String   @default("Hello! How can I help you today?") @db.Text
+  persona        String   @default("professional, friendly, helpful") @db.Text
+  businessHours  String?
+  widgetColor    String   @default("#6366f1")
+  isActive       Boolean  @default(true)
+  totalChats     Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chats          ReceptionistChat[]
+}
+
+model ReceptionistChat {
+  id              String   @id @default(cuid())
+  receptionistId  String
+  visitorName     String?
+  visitorEmail    String?
+  messages        String   @db.Text
+  createdAt       DateTime @default(now())
+
+  receptionist Receptionist @relation(fields: [receptionistId], references: [id], onDelete: Cascade)
 }

@@ -18,6 +18,7 @@ interface SessionRow {
 interface Props {
   name: string;
   email: string;
+  twoFactorEnabled: boolean;
   emailVerified: boolean;
   sessions: SessionRow[];
 }
@@ -47,7 +48,7 @@ function deviceLabel(userAgent: string | null): string {
   return "Unknown device";
 }
 
-export default function SettingsContent({ name: initialName, email, emailVerified, sessions: initialSessions }: Props) {
+export default function SettingsContent({ name: initialName, email, emailVerified, twoFactorEnabled: initial2FA, sessions: initialSessions }: Props) {
   const [name, setName] = useState(initialName);
   const [nameStatus, setNameStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [nameSaving, setNameSaving] = useState(false);
@@ -61,6 +62,17 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
   const [emailPassword, setEmailPassword] = useState("");
   const [emailStatus, setEmailStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [emailSaving, setEmailSaving] = useState(false);
+
+  const [twoFAEnabled, setTwoFAEnabled] = useState(initial2FA);
+  const [twoFAStep, setTwoFAStep] = useState<"idle" | "setup" | "backup">("idle");
+  const [twoFAQR, setTwoFAQR] = useState<string>("");
+  const [twoFASecret, setTwoFASecret] = useState<string>("");
+  const [twoFAToken, setTwoFAToken] = useState("");
+  const [twoFABackupCodes, setTwoFABackupCodes] = useState<string[]>([]);
+  const [twoFADisableToken, setTwoFADisableToken] = useState("");
+  const [twoFADisablePassword, setTwoFADisablePassword] = useState("");
+  const [twoFAStatus, setTwoFAStatus] = useState<{ message: string; isError: boolean } | null>(null);
+  const [twoFALoading, setTwoFALoading] = useState(false);
 
   const [sessions, setSessions] = useState(initialSessions);
   const [revokingId, setRevokingId] = useState<string | null>(null);
@@ -143,6 +155,41 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
     } finally {
       setRevokingId(null);
     }
+  }
+
+  async function start2FASetup() {
+    setTwoFALoading(true);
+    setTwoFAStatus(null);
+    try {
+      const res = await fetch("/api/account/2fa/setup", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) { setTwoFAQR(data.qrDataUrl); setTwoFASecret(data.secret); setTwoFAStep("setup"); }
+      else setTwoFAStatus({ message: data.error, isError: true });
+    } finally { setTwoFALoading(false); }
+  }
+
+  async function verify2FA(e: React.FormEvent) {
+    e.preventDefault();
+    setTwoFALoading(true);
+    setTwoFAStatus(null);
+    try {
+      const res = await fetch("/api/account/2fa/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: twoFAToken }) });
+      const data = await res.json();
+      if (res.ok) { setTwoFABackupCodes(data.backupCodes); setTwoFAStep("backup"); setTwoFAEnabled(true); }
+      else setTwoFAStatus({ message: data.error, isError: true });
+    } finally { setTwoFALoading(false); }
+  }
+
+  async function disable2FA(e: React.FormEvent) {
+    e.preventDefault();
+    setTwoFALoading(true);
+    setTwoFAStatus(null);
+    try {
+      const res = await fetch("/api/account/2fa/disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: twoFADisableToken, password: twoFADisablePassword }) });
+      const data = await res.json();
+      if (res.ok) { setTwoFAEnabled(false); setTwoFADisableToken(""); setTwoFADisablePassword(""); setTwoFAStatus({ message: "Two-factor authentication disabled.", isError: false }); }
+      else setTwoFAStatus({ message: data.error, isError: true });
+    } finally { setTwoFALoading(false); }
   }
 
   async function revokeAllOthers() {
@@ -258,6 +305,49 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
           </button>
           {emailStatus && <Banner {...emailStatus} />}
         </form>
+      </Card>
+
+      <Card title="Two-factor authentication">
+        {twoFAStep === "backup" ? (
+          <div>
+            <p className="text-xs text-green-400 font-semibold mb-3">2FA enabled successfully. Save these backup codes — each can only be used once:</p>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {twoFABackupCodes.map((c) => <code key={c} className="rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-xs font-mono text-gray-300 text-center">{c}</code>)}
+            </div>
+            <button onClick={() => setTwoFAStep("idle")} className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">Done</button>
+          </div>
+        ) : twoFAStep === "setup" ? (
+          <div className="space-y-4">
+            <p className="text-xs text-gray-400">Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.), then enter the 6-digit code to confirm.</p>
+            {twoFAQR && <img src={twoFAQR} alt="2FA QR code" className="mx-auto w-44 h-44 rounded-xl border border-white/8 bg-white p-2" />}
+            <p className="text-[11px] text-gray-600">Or enter manually: <code className="text-gray-400 text-[11px]">{twoFASecret}</code></p>
+            <form onSubmit={verify2FA} className="flex gap-2">
+              <input value={twoFAToken} onChange={(e) => setTwoFAToken(e.target.value)} placeholder="6-digit code" maxLength={6} className="flex-1 rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" required />
+              <button type="submit" disabled={twoFALoading} className="rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">Verify</button>
+            </form>
+            {twoFAStatus && <Banner {...twoFAStatus} />}
+          </div>
+        ) : twoFAEnabled ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 rounded-full bg-green-400" /><p className="text-sm text-green-400 font-semibold">Two-factor authentication is enabled</p></div>
+            <p className="text-xs text-gray-500">To disable 2FA, enter your current password and authenticator code.</p>
+            <form onSubmit={disable2FA} className="space-y-3">
+              <input type="password" value={twoFADisablePassword} onChange={(e) => setTwoFADisablePassword(e.target.value)} placeholder="Current password" className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none" required />
+              <input value={twoFADisableToken} onChange={(e) => setTwoFADisableToken(e.target.value)} placeholder="Authenticator code" maxLength={6} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none" required />
+              <button type="submit" disabled={twoFALoading} className="rounded-xl border border-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-50">Disable 2FA</button>
+            </form>
+            {twoFAStatus && <Banner {...twoFAStatus} />}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2"><span className="inline-block w-2 h-2 rounded-full bg-gray-600" /><p className="text-sm text-gray-400">Two-factor authentication is not enabled</p></div>
+            <p className="text-xs text-gray-500">Add an extra layer of security. You'll need an authenticator app on your phone.</p>
+            <button onClick={start2FASetup} disabled={twoFALoading} className="rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors disabled:opacity-50">
+              {twoFALoading ? "Loading..." : "Enable 2FA"}
+            </button>
+            {twoFAStatus && <Banner {...twoFAStatus} />}
+          </div>
+        )}
       </Card>
 
       <Card title="Active sessions">

@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import CountUp from "@/components/ui/CountUp";
 import PushNotificationToggle from "@/components/ui/PushNotificationToggle";
+import OnboardingChecklist from "@/components/ui/OnboardingChecklist";
+import UpgradePrompt from "@/components/ui/UpgradePrompt";
 import { fadeUp, stagger, scaleIn } from "@/lib/motion";
 import { AGENTS } from "@/data/agents";
 
@@ -14,12 +17,25 @@ interface Conversation {
   _count: { messages: number };
 }
 
+interface OnboardingItem {
+  id: string;
+  label: string;
+  description: string;
+  href: string;
+  cta: string;
+  done: boolean;
+}
+
 interface Props {
   userName: string;
   conversations: Conversation[];
   plan: string;
   status: string;
   totalConversations: number;
+  onboardingItems?: OnboardingItem[];
+  onboardingComplete?: boolean;
+  msgUsed?: number;
+  msgLimit?: number | null;
 }
 
 const QUICK_LINKS = [
@@ -29,8 +45,9 @@ const QUICK_LINKS = [
   { icon: "📈", label: "Analytics",         href: "/analytics",       desc: "Usage & insights"     },
 ];
 
-export default function DashboardClient({ userName, conversations, plan, status, totalConversations }: Props) {
+export default function DashboardClient({ userName, conversations, plan, status, totalConversations, onboardingItems, onboardingComplete, msgUsed = 0, msgLimit }: Props) {
   const isActive = status === "active" || status === "ACTIVE";
+  const [showOnboarding, setShowOnboarding] = useState(!onboardingComplete && (onboardingItems?.some((i) => !i.done) ?? false));
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -43,6 +60,20 @@ export default function DashboardClient({ userName, conversations, plan, status,
           </h1>
           <p className="mt-1 text-sm text-gray-500">Your AI workforce is ready.</p>
         </motion.div>
+
+        {/* Onboarding checklist */}
+        {showOnboarding && onboardingItems && (
+          <motion.div variants={fadeUp} className="mt-4">
+            <OnboardingChecklist items={onboardingItems} onDismiss={() => setShowOnboarding(false)} />
+          </motion.div>
+        )}
+
+        {/* Usage limit warning */}
+        {msgLimit && (
+          <motion.div variants={fadeUp} className="mt-2">
+            <UpgradePrompt plan={plan} limit={msgLimit} used={msgUsed} feature="Message" />
+          </motion.div>
+        )}
 
         {/* Stats */}
         <motion.div variants={stagger} className="mt-5 grid gap-3 sm:grid-cols-3">
