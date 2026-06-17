@@ -5,7 +5,7 @@ import Analytics from "@/components/analytics/Analytics";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-const BASE = "https://mansamusaai.vercel.app";
+const BASE = "https://app.mansamusainitiative.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),
