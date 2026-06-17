@@ -61,6 +61,11 @@ model User {
   newsletterSubscriber     NewsletterSubscriber?
   leads                    Lead[]
   receptionist             Receptionist?
+  supportTickets           SupportTicket[]
+  calendarBookings         CalendarBooking[]
+  calendarAvailability     CalendarAvailability?
+  approvalRequests         ApprovalRequest[]
+  modelPreference          UserModelPreference?
 }
 
 model Account {
@@ -142,7 +147,20 @@ model UsageRecord {
   inputTokens  Int      @default(0)
   outputTokens Int      @default(0)
   model        String
+  provider     String   @default("anthropic")
+  costUsdMicro Int      @default(0)
   createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserModelPreference {
+  id       String @id @default(cuid())
+  userId   String @unique
+  mode     String @default("auto")
+  provider String @default("anthropic")
+  modelId  String @default("claude-haiku-4-5-20251001")
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -523,4 +541,92 @@ model ReceptionistChat {
   createdAt       DateTime @default(now())
 
   receptionist Receptionist @relation(fields: [receptionistId], references: [id], onDelete: Cascade)
+}
+
+/* ── Workforce OS ─────────────────────────────────────────── */
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model SupportTicket {
+  id          String         @id @default(cuid())
+  userId      String
+  subject     String
+  body        String         @db.Text
+  status      TicketStatus   @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  aiResponse  String?        @db.Text
+  resolvedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model CalendarBooking {
+  id              String   @id @default(cuid())
+  userId          String
+  guestName       String
+  guestEmail      String
+  guestPhone      String?
+  title           String
+  notes           String?  @db.Text
+  startAt         DateTime
+  endAt           DateTime
+  status          String   @default("CONFIRMED")
+  cancellationToken String @unique @default(cuid())
+  reminderSent    Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startAt])
+}
+
+model CalendarAvailability {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  timezone  String   @default("Europe/London")
+  slotMins  Int      @default(30)
+  bufferMins Int     @default(15)
+  monday    String?
+  tuesday   String?
+  wednesday String?
+  thursday  String?
+  friday    String?
+  saturday  String?
+  sunday    String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  agentId     String?
+  action      String
+  payload     String   @db.Text
+  status      String   @default("PENDING")
+  reviewedBy  String?
+  reviewNote  String?
+  createdAt   DateTime @default(now())
+  reviewedAt  DateTime?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
 }

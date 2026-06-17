@@ -1,10 +1,12 @@
 import { auth } from "@/lib/auth";
-import { anthropic, SYSTEM_PROMPT, getModelForPlan, buildAgentSystemPrompt } from "@/lib/anthropic";
+import { SYSTEM_PROMPT, buildAgentSystemPrompt } from "@/lib/anthropic";
 import { db } from "@/lib/db";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { PLANS } from "@/lib/stripe";
 import { AGENTS } from "@/data/agents";
+import { resolveModel, routeMessage } from "@/lib/modelRouter";
 import { NextResponse } from "next/server";
+import { after } from "next/server";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -20,7 +22,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  // Verify ownership
   const conversation = await db.conversation.findFirst({
     where: { id: conversationId, userId: session.user.id },
   });
@@ -28,12 +29,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Save user message
   await db.message.create({
     data: { conversationId, role: "user", content: message },
   });
 
-  // Update conversation title from first message
   if (conversation.title === "New Conversation") {
     await db.conversation.update({
       where: { id: conversationId },
@@ -41,14 +40,12 @@ export async function POST(req: Request) {
     });
   }
 
-  // Get history
   const history = await db.message.findMany({
     where: { conversationId },
     orderBy: { createdAt: "asc" },
     take: 20,
   });
 
-  // Get plan from subscription price ID
   const subscription = await db.subscription.findUnique({
     where: { userId: session.user.id },
   });
@@ -60,7 +57,6 @@ export async function POST(req: Request) {
     else if (priceId === process.env.STRIPE_PRICE_BASIC) plan = "basic";
   }
 
-  // Enforce monthly message limits
   const planDef = PLANS.find((p) => p.id === plan) ?? PLANS[0];
   if (planDef.messagesPerMonth !== Infinity) {
     const now = new Date();
@@ -78,10 +74,17 @@ export async function POST(req: Request) {
     }
   }
 
-  const model = getModelForPlan(plan);
+  const pref = await db.userModelPreference.findUnique({
+    where: { userId: session.user.id },
+  });
 
-  // Resolve agent persona + saved memory for this conversation (falls back to the
-  // default assistant exactly as before when no agent is set).
+  const modelDef = resolveModel({
+    plan,
+    mode: pref?.mode ?? "auto",
+    provider: pref?.provider,
+    modelId: pref?.modelId,
+  });
+
   let system: string = SYSTEM_PROMPT;
   if (conversation.agentId) {
     const agent = AGENTS.find((a) => a.id === conversation.agentId);
@@ -96,57 +99,58 @@ export async function POST(req: Request) {
     }
   }
 
-  // Stream response
-  const stream = await anthropic.messages.stream({
-    model,
-    max_tokens: 2048,
-    system,
-    messages: history.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
-  });
+  const { stream, onComplete } = routeMessage(
+    modelDef,
+    history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+    system
+  );
 
-  const encoder = new TextEncoder();
   let assistantContent = "";
+  const encoder = new TextEncoder();
 
-  const readableStream = new ReadableStream({
+  const readableStream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      for await (const chunk of stream) {
-        if (
-          chunk.type === "content_block_delta" &&
-          chunk.delta.type === "text_delta"
-        ) {
-          assistantContent += chunk.delta.text;
-          controller.enqueue(encoder.encode(chunk.delta.text));
-        }
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value, { stream: true });
+        assistantContent += text;
+        controller.enqueue(encoder.encode(text));
       }
       controller.close();
-
-      // Persist assistant message after streaming
-      const finalMsg = await stream.finalMessage();
-      await db.message.create({
-        data: {
-          conversationId,
-          role: "assistant",
-          content: assistantContent,
-          inputTokens: finalMsg.usage.input_tokens,
-          outputTokens: finalMsg.usage.output_tokens,
-        },
-      });
-
-      await db.usageRecord.create({
-        data: {
-          userId: session.user.id,
-          model,
-          inputTokens: finalMsg.usage.input_tokens,
-          outputTokens: finalMsg.usage.output_tokens,
-        },
-      });
     },
   });
 
+  after(async () => {
+    const usage = await onComplete;
+    await db.message.create({
+      data: {
+        conversationId,
+        role: "assistant",
+        content: assistantContent,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+      },
+    });
+    await db.usageRecord.create({
+      data: {
+        userId: session.user.id,
+        model: usage.model,
+        provider: usage.provider,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        costUsdMicro: usage.costUsdMicro,
+      },
+    });
+  });
+
   return new Response(readableStream, {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "X-Model": modelDef.modelId,
+      "X-Provider": modelDef.provider,
+    },
   });
 }

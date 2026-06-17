@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { AGENTS } from "@/data/agents";
 
 /* ── Inline SVG icon set ──────────────────────────────────── */
-type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics" | "gift" | "link" | "arena" | "settings" | "crm" | "receptionist";
+type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics" | "gift" | "link" | "arena" | "settings" | "crm" | "receptionist" | "workforce" | "support" | "calendar" | "layers";
 
 const ICONS: Record<IK, React.ReactNode> = {
   home: (
@@ -92,9 +92,29 @@ const ICONS: Record<IK, React.ReactNode> = {
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
   ),
+  workforce: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
+    </svg>
+  ),
+  support: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.07 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    </svg>
+  ),
+  calendar: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  ),
   receptionist: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  layers: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
     </svg>
   ),
   gift: (
@@ -125,8 +145,9 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Overview",
     items: [
-      { href: "/dashboard",   label: "Dashboard",   icon: "home"      },
-      { href: "/analytics",   label: "Analytics",   icon: "analytics" },
+      { href: "/dashboard",   label: "Dashboard",   icon: "home"       },
+      { href: "/workforce",   label: "Workforce OS", icon: "workforce", badge: "HQ" },
+      { href: "/analytics",   label: "Analytics",   icon: "analytics"  },
     ],
   },
   {
@@ -135,6 +156,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/marketplace",      label: "Marketplace",  icon: "store", badge: String(AGENTS.length) },
       { href: "/agent-dashboard",  label: "My Agents",    icon: "bot"   },
       { href: "/arena",            label: "Wisdom Arena", icon: "arena", badge: "NEW" },
+      { href: "/model-hub",        label: "Model Hub",    icon: "layers", badge: "NEW" },
     ],
   },
   {
@@ -147,10 +169,12 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Workspace",
     items: [
-      { href: "/chat",         label: "AI Chat",      icon: "chat"        },
-      { href: "/crm",          label: "CRM",          icon: "crm"         },
-      { href: "/receptionist", label: "Receptionist", icon: "receptionist", badge: "NEW" },
-      { href: "/revenue",      label: "Revenue",      icon: "currency",   adminOnly: true },
+      { href: "/chat",         label: "AI Chat",      icon: "chat"          },
+      { href: "/crm",          label: "CRM",          icon: "crm"           },
+      { href: "/receptionist", label: "Receptionist", icon: "receptionist"  },
+      { href: "/support",      label: "Support",      icon: "support", badge: "NEW" },
+      { href: "/calendar",     label: "Calendar",     icon: "calendar", badge: "NEW" },
+      { href: "/revenue",      label: "Revenue",      icon: "currency", adminOnly: true },
     ],
   },
   {
@@ -172,7 +196,9 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "System",
     items: [
-      { href: "/admin", label: "Admin Panel", icon: "shield", adminOnly: true },
+      { href: "/admin",          label: "Admin Panel",  icon: "shield",   adminOnly: true },
+      { href: "/admin/security", label: "Security",     icon: "shield",   adminOnly: true },
+      { href: "/admin/models",   label: "Model Hub",    icon: "layers",   adminOnly: true },
     ],
   },
 ];
