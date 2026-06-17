@@ -6,11 +6,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const links = [
-  { href: "/features", label: "Features" },
-  { href: "/agents",   label: "Agents"   },
-  { href: "/pricing",  label: "Pricing"  },
-  { href: "/blog",     label: "Blog"     },
-  { href: "/about",    label: "About"    },
+  { href: "/features",     label: "Features"     },
+  { href: "/wisdom-arena", label: "Wisdom Arena" },
+  { href: "/agents",       label: "Agents"       },
+  { href: "/pricing",      label: "Pricing"      },
+  { href: "/blog",         label: "Blog"         },
 ];
 
 export default function MarketingNav() {
