@@ -205,6 +205,8 @@ model Affiliate {
   status         String   @default("APPROVED")
   commissionRate Int      @default(20)
   clicks         Int      @default(0)
+  couponCode     String?
+  socialHandle   String?
   createdAt      DateTime @default(now())
 
   user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)

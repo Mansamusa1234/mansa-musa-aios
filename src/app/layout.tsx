@@ -5,7 +5,7 @@ import Analytics from "@/components/analytics/Analytics";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-const BASE = "https://app.mansamusainitiative.com";
+const BASE = "https://mansamusainitiative.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),
@@ -129,11 +129,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#6366f1" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="MansaMusaAI" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/apple-icon" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -45,16 +45,20 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    return [
-      // Once app.mansamusainitiative.com is added as a Vercel custom domain,
-      // this redirect makes the Vercel deployment URL permanently forward there.
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "mansamusaai.vercel.app" }],
-        destination: "https://app.mansamusainitiative.com/:path*",
-        permanent: true,
-      },
+    const PRIMARY = "https://mansamusainitiative.com";
+    const nonPrimaryHosts = [
+      "mansamusaai.vercel.app",
+      "www.mansamusainitiative.com",
+      "app.mansamusainitiative.com",
+      "mansamusainitiative.co.uk",
+      "www.mansamusainitiative.co.uk",
     ];
+    return nonPrimaryHosts.map((host) => ({
+      source: "/:path*",
+      has: [{ type: "host", value: host }],
+      destination: `${PRIMARY}/:path*`,
+      permanent: true,
+    }));
   },
 };
 

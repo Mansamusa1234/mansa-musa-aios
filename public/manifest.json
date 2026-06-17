@@ -1,23 +1,88 @@
 {
-  "name": "MansaMusaAI — AI Business OS",
+  "id": "/",
+  "name": "MansaMusaAI — AI Workforce OS",
   "short_name": "MansaMusaAI",
-  "description": "AI Operating System for Business — deploy AI agents, automate workflows, scale operations.",
+  "description": "Deploy 41 AI agents, run multi-agent competitions, and build your Wisdom Vault. The world's first AI Wisdom Economy.",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
   "background_color": "#070712",
   "theme_color": "#6366f1",
   "orientation": "portrait-primary",
   "lang": "en-GB",
-  "categories": ["business", "productivity"],
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
+  "handle_links": "preferred",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/icon",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "screenshots": [
-    { "src": "/opengraph-image", "sizes": "1200x630", "type": "image/png", "form_factor": "wide" }
+    {
+      "src": "/screenshots/dashboard-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "MansaMusaAI Dashboard"
+    },
+    {
+      "src": "/screenshots/dashboard-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "MansaMusaAI on mobile"
+    }
   ],
   "shortcuts": [
-    { "name": "Chat", "short_name": "Chat", "description": "Start an AI conversation", "url": "/chat", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
-    { "name": "Marketplace", "short_name": "Agents", "description": "Browse AI agents", "url": "/marketplace", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
-  ]
+    {
+      "name": "Chat with AI",
+      "short_name": "Chat",
+      "description": "Start an AI conversation",
+      "url": "/chat",
+      "icons": [{ "src": "/icon", "sizes": "512x512" }]
+    },
+    {
+      "name": "AI Competition",
+      "short_name": "Compete",
+      "description": "Run a multi-agent competition",
+      "url": "/compete",
+      "icons": [{ "src": "/icon", "sizes": "512x512" }]
+    },
+    {
+      "name": "Wisdom Vault",
+      "short_name": "Wisdom",
+      "description": "Browse your Wisdom Assets",
+      "url": "/wisdom",
+      "icons": [{ "src": "/icon", "sizes": "512x512" }]
+    },
+    {
+      "name": "AI Workforce",
+      "short_name": "Agents",
+      "description": "Manage your AI agents",
+      "url": "/workforce",
+      "icons": [{ "src": "/icon", "sizes": "512x512" }]
+    }
+  ],
+  "share_target": {
+    "action": "/chat",
+    "method": "GET",
+    "params": {
+      "text": "prompt"
+    }
+  }
 }
