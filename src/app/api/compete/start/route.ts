@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { after } from "next/server";
 import { runCompetition } from "@/lib/competitionEngine";
 import { ensureMarketplaceAgentsSeeded } from "@/lib/wisdomAgents";
+import { checkRateLimit, limiters } from "@/lib/ratelimit";
 
 const VALID_CATEGORIES = ["NEWS","FINANCE","RESEARCH","CODING","MARKETING","SALES","STRATEGY","OPERATIONS"] as const;
 
@@ -16,6 +17,9 @@ const schema = z.object({
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limited = await checkRateLimit(limiters.arena, session.user.id);
+  if (limited) return limited;
 
   const body = schema.safeParse(await req.json());
   if (!body.success) return NextResponse.json({ error: body.error.issues[0].message }, { status: 400 });
