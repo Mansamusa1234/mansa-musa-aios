@@ -74,13 +74,13 @@ const sections = [
   },
   {
     badge: "03 · Agents",
-    title: "AI Agent Hub",
-    description: "Deploy specialised AI agents across every business function. Each agent has domain knowledge, memory, and tools for their specific area.",
+    title: "41-Agent Hub",
+    description: "Deploy specialist AI agents across every business function. Each agent has domain knowledge, memory, and tools for their specific area.",
     bullets: [
-      "10 pre-built agents covering every department",
-      "CEO, Finance, Legal, Dev, Marketing and more",
-      "Domain-specific knowledge and context",
-      "Available from Basic plan and above",
+      "41 specialist agents across 8 categories",
+      "C-Suite: CEO, CFO, COO, CMO, CTO",
+      "Plus: Finance, Legal, Research, Operations, Sales & more",
+      "Workforce agents + competition-ready specialists",
     ],
     mockup: (
       <div className="grid grid-cols-2 gap-3">
@@ -138,12 +138,18 @@ const sections = [
 ];
 
 const capabilities = [
-  { icon: "📱", title: "Mobile-First", desc: "Full PWA support, bottom nav, touch-optimised UI." },
-  { icon: "💳", title: "Stripe Billing", desc: "Subscriptions, invoices, webhooks, customer portal." },
+  { icon: "⚔️", title: "AI Competition System", desc: "24 agents compete on any question. AI judge scores 0–100. Winner saved permanently as a Wisdom Asset." },
+  { icon: "💎", title: "Wisdom Vault", desc: "Every winning answer preserved, rated, and searchable — your AI knowledge library." },
+  { icon: "🏟️", title: "Wisdom Arena", desc: "Six agents debate your hardest decisions, critique each other, and synthesise a scored answer." },
+  { icon: "🤖", title: "Workforce OS", desc: "Receptionist, CRM, Support, Calendar, Analytics — a full AI workforce, zero payroll." },
+  { icon: "📡", title: "6 AI Providers", desc: "Claude, OpenAI, Gemini, Grok, Mistral, OpenRouter — switch per conversation." },
+  { icon: "📱", title: "Mobile-First PWA", desc: "Full PWA support, bottom nav, touch-optimised for every device." },
+  { icon: "💳", title: "Stripe Billing", desc: "Subscriptions, invoices, webhooks, customer portal, coupon codes." },
   { icon: "📊", title: "Analytics", desc: "Token usage, message counts, MRR, admin command centre." },
   { icon: "🌍", title: "Global CDN", desc: "Vercel Edge Network — sub-50ms responses worldwide." },
   { icon: "♾️", title: "Infinite History", desc: "Every conversation persisted. Search and resume anytime." },
   { icon: "⚙️", title: "Admin Dashboard", desc: "Full command centre for user, revenue, and system management." },
+  { icon: "🔐", title: "TOTP 2FA + 2-Step Auth", desc: "HMAC challenge tokens, TOTP completion, backup codes, device trust." },
 ];
 
 export default function FeaturesContent() {
@@ -212,11 +218,11 @@ export default function FeaturesContent() {
 
       {/* Capability grid */}
       <section className="bg-white px-6 py-20">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-7xl">
           <motion.h2 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-12 text-center text-3xl font-bold text-gray-900">
-            And much more
+            Everything included
           </motion.h2>
-          <motion.div variants={staggerSlow} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div variants={staggerSlow} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {capabilities.map((c) => (
               <motion.div key={c.title} variants={scaleIn} whileHover={{ y: -3, transition: { duration: 0.15 } }} className="rounded-2xl border border-gray-100 p-6 hover:border-brand-200 hover:shadow-sm transition-all">
                 <div className="mb-3 text-3xl">{c.icon}</div>

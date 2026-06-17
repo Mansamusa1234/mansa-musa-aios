@@ -19,15 +19,15 @@ const AGENT_PHRASES = [
   "Legal Agent",
   "Marketing Agent",
   "Developer Agent",
-  "All 10 AI Agents",
+  "All 41 AI Agents",
 ];
 
 const LIVE_METRICS = [
-  { label: "Platform users",    value: 1200,   suffix: "+",  prefix: "",   color: "text-brand-400"   },
-  { label: "MRR",               value: 4800,   suffix: "",   prefix: "£",  color: "text-green-400"   },
-  { label: "AI conversations",  value: 48000,  suffix: "+",  prefix: "",   color: "text-blue-400"    },
-  { label: "Messages sent",     value: 240000, suffix: "+",  prefix: "",   color: "text-purple-400"  },
-  { label: "Active agents",     value: 10,     suffix: "",   prefix: "",   color: "text-amber-400"   },
+  { label: "AI agents",         value: 41,     suffix: "",   prefix: "",   color: "text-brand-400"   },
+  { label: "AI providers",      value: 6,      suffix: "",   prefix: "",   color: "text-green-400"   },
+  { label: "Wisdom categories", value: 8,      suffix: "",   prefix: "",   color: "text-blue-400"    },
+  { label: "Free to start",     value: 0,      suffix: "",   prefix: "£",  color: "text-purple-400"  },
+  { label: "Security layers",   value: 12,     suffix: "+",  prefix: "",   color: "text-amber-400"   },
   { label: "Uptime SLA",        value: 99,     suffix: ".9%",prefix: "",   color: "text-emerald-400" },
 ];
 
@@ -53,9 +53,33 @@ const FEATURES = [
   { icon: "📱", title: "Mobile-first",         desc: "Fully responsive on every device — from iPhone SE to ultrawide."      },
 ];
 
+const WISDOM_FEATURES = [
+  {
+    icon: "⚔️",
+    title: "AI Competition System",
+    desc: "24 specialist agents compete on any business question. An AI judge scores every response 0–100. Winner's output saved permanently.",
+    href: "/compete",
+    cta: "Run a competition",
+  },
+  {
+    icon: "💎",
+    title: "Wisdom Vault",
+    desc: "Every winning answer preserved, searchable, and rateable. The world's first AI wisdom library — built by competition, not curation.",
+    href: "/wisdom",
+    cta: "Explore the Vault",
+  },
+  {
+    icon: "🏟️",
+    title: "Wisdom Arena",
+    desc: "Six AI agents debate your hardest business decisions. They critique each other's logic and synthesise a scored consensus answer.",
+    href: "/wisdom-arena",
+    cta: "See how it works",
+  },
+];
+
 const STEPS = [
   { step: "01", title: "Create your account", desc: "Sign up in 30 seconds. No credit card required." },
-  { step: "02", title: "Deploy an AI agent",  desc: "Pick from 10 agents and put them to work instantly." },
+  { step: "02", title: "Deploy an AI agent",  desc: "Pick from 41 agents and put them to work instantly." },
   { step: "03", title: "Scale your plan",     desc: "Upgrade when you need more power. Cancel anytime." },
 ];
 
@@ -88,10 +112,11 @@ export default function LandingPage({ plans }: Props) {
 
           <div className="hidden md:flex items-center gap-7">
             {[
-              ["Features", "/features"],
-              ["Agents",   "/agents"],
-              ["Pricing",  "/pricing"],
-              ["Blog",     "/blog"],
+              ["Features",     "/features"    ],
+              ["Agents",       "/agents"      ],
+              ["Wisdom Arena", "/wisdom-arena"],
+              ["Pricing",      "/pricing"     ],
+              ["Affiliate",    "/affiliate"   ],
             ].map(([label, href]) => (
               <Link key={label} href={href} className="text-sm text-gray-400 hover:text-white transition-colors">{label}</Link>
             ))}
@@ -117,7 +142,7 @@ export default function LandingPage({ plans }: Props) {
           className="overflow-hidden md:hidden border-t border-white/8"
         >
           <div className="flex flex-col gap-4 px-6 py-5">
-            {[["Features","/features"],["Agents","/agents"],["Pricing","/pricing"],["Blog","/blog"],["Sign in","/login"]].map(([l,h]) => (
+            {[["Features","/features"],["Agents","/agents"],["Wisdom Arena","/wisdom-arena"],["Pricing","/pricing"],["Affiliate","/affiliate"],["Sign in","/login"]].map(([l,h]) => (
               <Link key={l} href={h} className="text-sm text-gray-400" onClick={() => setNavOpen(false)}>{l}</Link>
             ))}
             <Link href="/register" className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white text-center" onClick={() => setNavOpen(false)}>
@@ -406,6 +431,56 @@ export default function LandingPage({ plans }: Props) {
         </div>
       </section>
 
+      {/* ══ WISDOM ECONOMY ═══════════════════════════════════════ */}
+      <section className="bg-[#06060e] px-6 py-24 border-t border-white/5">
+        <div className="mx-auto max-w-6xl">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-14">
+            <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-2">· NEW · The Wisdom Economy ·</motion.p>
+            <motion.h2 variants={fadeUp} className="text-4xl font-extrabold text-white">
+              AI agents that compete for the right answer
+            </motion.h2>
+            <motion.p variants={fadeUp} className="mt-3 text-gray-500 max-w-2xl mx-auto">
+              Run competitions between 24 specialist agents. The winner&apos;s output is preserved forever as a Wisdom Asset — searchable, rateable, yours.
+            </motion.p>
+          </motion.div>
+
+          <motion.div variants={staggerSlow} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid gap-5 sm:grid-cols-3">
+            {WISDOM_FEATURES.map((f) => (
+              <motion.div
+                key={f.title}
+                variants={scaleIn}
+                whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                className="group relative overflow-hidden rounded-2xl border border-white/8 bg-white/3 p-6 backdrop-blur-sm hover:border-indigo-500/30 transition-colors"
+              >
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-indigo-500/6 to-transparent" />
+                <div className="relative mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/6 text-2xl group-hover:border-indigo-500/30 transition-colors">
+                  {f.icon}
+                </div>
+                <h3 className="relative font-semibold text-white">{f.title}</h3>
+                <p className="relative mt-2 text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+                <Link href={f.href} className="relative mt-4 inline-flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">
+                  {f.cta} →
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-8 text-center"
+          >
+            <Link
+              href="/wisdom-arena"
+              className="inline-flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-6 py-3 text-sm font-semibold text-indigo-300 hover:border-indigo-500/50 hover:bg-indigo-500/15 transition-all"
+            >
+              🏟️ Explore the Wisdom Arena →
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ══ HOW IT WORKS ══════════════════════════════════════════ */}
       <section className="bg-[#030308] px-6 py-24">
         <div className="mx-auto max-w-5xl">
@@ -531,7 +606,7 @@ export default function LandingPage({ plans }: Props) {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-brand-400" />
             </span>
-            10 agents ready to deploy
+            41 agents ready to deploy
           </motion.div>
 
           <motion.h2 variants={fadeUp} className="text-5xl font-extrabold text-white sm:text-6xl">
@@ -564,11 +639,14 @@ export default function LandingPage({ plans }: Props) {
           <span className="text-sm font-bold text-white">
             Mansa<span className="text-brand-400">Musa</span>AI
           </span>
-          <div className="flex gap-6 text-sm text-gray-500">
-            <Link href="/features" className="hover:text-gray-300 transition-colors">Features</Link>
-            <Link href="/agents"   className="hover:text-gray-300 transition-colors">Agents</Link>
-            <Link href="/pricing"  className="hover:text-gray-300 transition-colors">Pricing</Link>
-            <Link href="/login"    className="hover:text-gray-300 transition-colors">Sign in</Link>
+          <div className="flex flex-wrap gap-6 text-sm text-gray-500">
+            <Link href="/features"     className="hover:text-gray-300 transition-colors">Features</Link>
+            <Link href="/agents"       className="hover:text-gray-300 transition-colors">Agents</Link>
+            <Link href="/wisdom-arena" className="hover:text-gray-300 transition-colors">Wisdom Arena</Link>
+            <Link href="/affiliate"    className="hover:text-gray-300 transition-colors">Affiliate</Link>
+            <Link href="/pricing"      className="hover:text-gray-300 transition-colors">Pricing</Link>
+            <Link href="/blog"         className="hover:text-gray-300 transition-colors">Blog</Link>
+            <Link href="/login"        className="hover:text-gray-300 transition-colors">Sign in</Link>
           </div>
           <p className="text-xs text-gray-700">© {new Date().getFullYear()} MansaMusaAI. All rights reserved.</p>
         </div>

@@ -2,14 +2,27 @@ import type { Metadata } from "next";
 import AgentsContent from "./AgentsContent";
 
 export const metadata: Metadata = {
-  title: "AI Agents",
+  title: "41 AI Agents — Deploy Your Full AI Workforce",
   description:
-    "Deploy 10 specialised AI agents for every business function — CEO, Finance, Legal, Developer, Marketing, Sales, Security and more. Your AI workforce, ready now.",
-  keywords: ["AI Agents", "Business AI", "AI Workforce", "Autonomous AI", "AI Automation"],
+    "Deploy 41 specialist AI agents for every business function — CEO, CFO, COO, Finance, Legal, Developer, Marketing, Sales, Security and 32 more. Plus the AI Competition System with 24 specialist competitors.",
+  keywords: [
+    "AI Agents",
+    "Business AI Agents",
+    "AI Workforce Platform",
+    "Autonomous AI Agents",
+    "CEO AI Agent",
+    "Finance AI Agent",
+    "Legal AI Agent",
+    "41 AI agents",
+    "AI Competition System",
+    "Multi-agent AI",
+  ],
   openGraph: {
-    title: "AI Agents — MansaMusaAI",
-    description: "Your AI workforce, ready to deploy. 10 specialised agents for every business function.",
+    title: "41 AI Agents — Your Full AI Workforce | MansaMusaAI",
+    description: "41 specialist AI agents for every business function. Deploy now — free plan available.",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
   },
+  alternates: { canonical: "/agents" },
 };
 
 export default function AgentsPage() {

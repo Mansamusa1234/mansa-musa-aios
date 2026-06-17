@@ -7,10 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const links = [
   { href: "/features",     label: "Features"     },
-  { href: "/wisdom-arena", label: "Wisdom Arena" },
   { href: "/agents",       label: "Agents"       },
+  { href: "/wisdom-arena", label: "Wisdom Arena" },
   { href: "/pricing",      label: "Pricing"      },
-  { href: "/blog",         label: "Blog"         },
+  { href: "/affiliate",    label: "Affiliate"    },
 ];
 
 export default function MarketingNav() {

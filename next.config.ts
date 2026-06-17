@@ -44,6 +44,18 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // Once app.mansamusainitiative.com is added as a Vercel custom domain,
+      // this redirect makes the Vercel deployment URL permanently forward there.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "mansamusaai.vercel.app" }],
+        destination: "https://app.mansamusainitiative.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

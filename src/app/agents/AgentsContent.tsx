@@ -94,7 +94,7 @@ export default function AgentsContent() {
             <span className="flex h-2 w-2 rounded-full bg-brand-400">
               <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-brand-400 opacity-75" />
             </span>
-            10 Agents · All Active
+            41 Agents · All Active
           </motion.span>
 
           <motion.h1 variants={fadeUp} className="mt-6 text-5xl font-extrabold tracking-tight text-white sm:text-6xl">
@@ -105,7 +105,7 @@ export default function AgentsContent() {
           </motion.h1>
 
           <motion.p variants={fadeUp} className="mt-6 text-lg text-gray-400 max-w-2xl mx-auto">
-            Ten specialised AI agents covering every business function — from strategy to security. Each one trained on domain-specific knowledge and ready to execute from day one.
+            41 specialist AI agents covering every business function — from C-Suite to Security. Deploy workforce agents, run multi-agent competitions, and build your Wisdom Vault.
           </motion.p>
 
           <motion.div variants={fadeUp} className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
