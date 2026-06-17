@@ -5,6 +5,7 @@ import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { PLANS } from "@/lib/stripe";
 import { AGENTS } from "@/data/agents";
 import { resolveModel, routeMessage } from "@/lib/modelRouter";
+import { sendEmail, usageLimitWarningEmailHtml } from "@/lib/email";
 import { NextResponse } from "next/server";
 import { after } from "next/server";
 
@@ -144,6 +145,39 @@ export async function POST(req: Request) {
         costUsdMicro: usage.costUsdMicro,
       },
     });
+
+    // 80% usage limit warning — fires exactly once when the threshold is crossed
+    if (planDef.messagesPerMonth !== Infinity) {
+      try {
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        const totalCount = await db.usageRecord.count({
+          where: { userId: session.user.id, createdAt: { gte: monthStart } },
+        });
+        const threshold = Math.round(planDef.messagesPerMonth * 0.8);
+        if (totalCount === threshold) {
+          const user = await db.user.findUnique({
+            where: { id: session.user.id },
+            select: { email: true, name: true },
+          });
+          if (user) {
+            await sendEmail(
+              user.email,
+              `You've used ${totalCount} of ${planDef.messagesPerMonth} messages this month`,
+              usageLimitWarningEmailHtml({
+                name: user.name ?? "there",
+                used: totalCount,
+                limit: planDef.messagesPerMonth,
+                plan: planDef.name,
+              })
+            );
+          }
+        }
+      } catch (err) {
+        console.error("[chat] usage warning email failed:", err);
+      }
+    }
   });
 
   return new Response(readableStream, {

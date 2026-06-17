@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { PLANS } from "@/lib/stripe";
+import { sendEmail, referralConvertedEmailHtml, affiliateConversionEmailHtml } from "@/lib/email";
 
 const REFERRAL_REWARD_PERCENT = 10;
 
@@ -85,6 +86,25 @@ export async function recordConversion(userId: string, priceId: string | null | 
           amountCents: rewardCents,
         },
       });
+      // Notify referrer — best-effort
+      try {
+        const referrer = await db.user.findUnique({
+          where: { id: referral.referrerId },
+          select: { email: true, name: true },
+        });
+        if (referrer) {
+          await sendEmail(
+            referrer.email,
+            "You earned a referral reward — MansaMusaAI",
+            referralConvertedEmailHtml({
+              name: referrer.name ?? "there",
+              rewardGbp: (rewardCents / 100).toFixed(2),
+            })
+          );
+        }
+      } catch (emailErr) {
+        console.error("[referrals] referral converted email failed:", emailErr);
+      }
     }
 
     const conversion = await db.affiliateConversion.findUnique({
@@ -105,6 +125,25 @@ export async function recordConversion(userId: string, priceId: string | null | 
           amountCents: commissionCents,
         },
       });
+      // Notify affiliate owner — best-effort
+      try {
+        const affiliateUser = await db.user.findUnique({
+          where: { id: conversion.affiliate.userId },
+          select: { email: true, name: true },
+        });
+        if (affiliateUser) {
+          await sendEmail(
+            affiliateUser.email,
+            "New affiliate commission earned — MansaMusaAI",
+            affiliateConversionEmailHtml({
+              name: affiliateUser.name ?? "there",
+              commissionGbp: (commissionCents / 100).toFixed(2),
+            })
+          );
+        }
+      } catch (emailErr) {
+        console.error("[referrals] affiliate conversion email failed:", emailErr);
+      }
     }
   } catch (err) {
     console.error("[referrals] recordConversion failed:", err);

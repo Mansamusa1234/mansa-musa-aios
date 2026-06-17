@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 import { recordReferralSignup, recordAffiliateSignup } from "@/lib/referrals";
-import { createAndSendVerificationEmail } from "@/lib/email";
+import { createAndSendVerificationEmail, sendEmail, welcomeEmailHtml } from "@/lib/email";
 import { meetsMinimumRequirements } from "@/lib/passwordStrength";
 import { isPasswordBreached } from "@/lib/passwordBreach";
 
@@ -48,6 +48,7 @@ export async function POST(req: Request) {
       recordReferralSignup(ref, user.id),
       recordAffiliateSignup(affCode, user.id),
       createAndSendVerificationEmail(user.id, user.email),
+      sendEmail(user.email, "Welcome to MansaMusaAI", welcomeEmailHtml(name)),
     ]);
 
     return NextResponse.json({ success: true }, { status: 201 });

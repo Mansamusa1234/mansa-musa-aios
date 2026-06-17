@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
+import { sendEmail, commissionApprovedEmailHtml, commissionPaidEmailHtml } from "@/lib/email";
 
 const TRANSITIONS: Record<string, { from: string; to: string }> = {
   approve: { from: "PENDING", to: "APPROVED" },
@@ -39,6 +40,36 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       ? { status: "PAID" as const, paidAt: now, paidByUserId: session.user.id }
       : { status: transition.to as "APPROVED" | "REJECTED", approvedAt: now, approvedByUserId: session.user.id };
 
-  const updated = await db.commissionLedger.update({ where: { id }, data });
+  const updated = await db.commissionLedger.update({
+    where: { id },
+    data,
+    include: { user: { select: { email: true, name: true } } },
+  });
+
+  after(async () => {
+    try {
+      const amountGbp = (entry.amountCents / 100).toFixed(2);
+      if (action === "approve") {
+        await sendEmail(
+          updated.user.email,
+          "Commission approved — MansaMusaAI",
+          commissionApprovedEmailHtml({
+            name: updated.user.name ?? "there",
+            amountGbp,
+            sourceType: entry.sourceType,
+          })
+        );
+      } else if (action === "mark-paid") {
+        await sendEmail(
+          updated.user.email,
+          "Commission paid — MansaMusaAI",
+          commissionPaidEmailHtml({ name: updated.user.name ?? "there", amountGbp })
+        );
+      }
+    } catch (err) {
+      console.error("[commissions] notification email failed:", err);
+    }
+  });
+
   return NextResponse.json({ success: true, status: updated.status });
 }
