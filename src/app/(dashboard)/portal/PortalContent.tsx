@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { stagger, fadeUp, scaleIn } from "@/lib/motion";
@@ -35,8 +36,20 @@ function formatDate(d: Date | null): string {
 }
 
 export default function PortalContent({ user, subscription, plan, totalMessages, totalConversations, messagesThisMonth }: Props) {
+  const [portalLoading, setPortalLoading] = useState(false);
   const isActive  = subscription?.status === "ACTIVE";
   const isFree    = !subscription || plan.price === 0;
+
+  async function openBillingPortal() {
+    setPortalLoading(true);
+    const res = await fetch("/api/stripe/portal", { method: "POST" });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      setPortalLoading(false);
+    }
+  }
   const renewDate = subscription?.currentPeriodEnd;
   const msgLimit  = plan.messagesPerMonth === Infinity ? null : plan.messagesPerMonth;
   const msgPct    = msgLimit ? Math.min((messagesThisMonth / msgLimit) * 100, 100) : null;
@@ -94,12 +107,22 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
                   {plan.price === 0 ? "Free" : `£${plan.price}/mo`}
                 </p>
               </div>
-              <Link
-                href="/billing"
-                className="flex-shrink-0 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-300 hover:bg-brand-500/20 transition-colors"
-              >
-                {isFree ? "Upgrade" : "Manage"}
-              </Link>
+              {isFree ? (
+                <Link
+                  href="/billing"
+                  className="flex-shrink-0 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-300 hover:bg-brand-500/20 transition-colors"
+                >
+                  Upgrade
+                </Link>
+              ) : (
+                <button
+                  onClick={openBillingPortal}
+                  disabled={portalLoading}
+                  className="flex-shrink-0 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-300 hover:bg-brand-500/20 transition-colors disabled:opacity-50"
+                >
+                  {portalLoading ? "Opening…" : "Manage billing"}
+                </button>
+              )}
             </div>
 
             {/* Features */}

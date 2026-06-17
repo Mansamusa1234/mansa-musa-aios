@@ -3,7 +3,7 @@ import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Mistral } from "@mistralai/mistralai";
 
-export type ModelProvider = "anthropic" | "openai" | "grok" | "gemini" | "mistral";
+export type ModelProvider = "anthropic" | "openai" | "grok" | "gemini" | "mistral" | "openrouter";
 export type RoutingMode = "auto" | "manual";
 
 export interface ModelDef {
@@ -128,6 +128,41 @@ export const MODEL_CATALOG: ModelDef[] = [
     costPer1kOutMicro: 10000,
     available: () => !!process.env.GOOGLE_AI_API_KEY,
   },
+  // ── OpenRouter ────────────────────────────────────────
+  {
+    provider: "openrouter",
+    modelId: "meta-llama/llama-3.1-8b-instruct:free",
+    displayName: "Llama 3.1 8B (Free)",
+    description: "Free open-source model via OpenRouter",
+    planGate: "free",
+    contextWindow: 131072,
+    costPer1kInMicro: 0,
+    costPer1kOutMicro: 0,
+    available: () => !!process.env.OPENROUTER_API_KEY,
+  },
+  {
+    provider: "openrouter",
+    modelId: "meta-llama/llama-3.3-70b-instruct",
+    displayName: "Llama 3.3 70B",
+    description: "Meta's powerful open-source model",
+    planGate: "basic",
+    contextWindow: 131072,
+    costPer1kInMicro: 120,
+    costPer1kOutMicro: 300,
+    available: () => !!process.env.OPENROUTER_API_KEY,
+  },
+  {
+    provider: "openrouter",
+    modelId: "deepseek/deepseek-r1",
+    displayName: "DeepSeek R1",
+    description: "Advanced reasoning model from DeepSeek",
+    planGate: "pro",
+    contextWindow: 65536,
+    costPer1kInMicro: 550,
+    costPer1kOutMicro: 2190,
+    badge: "Pro",
+    available: () => !!process.env.OPENROUTER_API_KEY,
+  },
   // ── Mistral ───────────────────────────────────────────
   {
     provider: "mistral",
@@ -198,11 +233,12 @@ export function routeMessage(
   system: string
 ): RouteResult {
   switch (model.provider) {
-    case "anthropic": return routeAnthropic(model, messages, system);
-    case "openai":    return routeOpenAI(model, messages, system);
-    case "grok":      return routeGrok(model, messages, system);
-    case "gemini":    return routeGemini(model, messages, system);
-    case "mistral":   return routeMistral(model, messages, system);
+    case "anthropic":   return routeAnthropic(model, messages, system);
+    case "openai":      return routeOpenAI(model, messages, system);
+    case "grok":        return routeGrok(model, messages, system);
+    case "gemini":      return routeGemini(model, messages, system);
+    case "mistral":     return routeMistral(model, messages, system);
+    case "openrouter":  return routeOpenRouter(model, messages, system);
   }
 }
 
@@ -365,6 +401,49 @@ function routeMistral(model: ModelDef, messages: ChatMessage[], system: string):
       } catch (err) {
         controller.close();
         resolveFn!({ inputTokens: 0, outputTokens: 0, costUsdMicro: 0, model: model.modelId, provider: "mistral" });
+        throw err;
+      }
+    },
+  });
+
+  return { stream, onComplete };
+}
+
+/* ── OpenRouter (OpenAI-compatible) ─────────────────────────── */
+function routeOpenRouter(model: ModelDef, messages: ChatMessage[], system: string): RouteResult {
+  const client = new OpenAI({
+    apiKey: process.env.OPENROUTER_API_KEY!,
+    baseURL: "https://openrouter.ai/api/v1",
+    defaultHeaders: {
+      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://mansamusaai.vercel.app",
+      "X-Title": "MansaMusaAI",
+    },
+  });
+  const encoder = new TextEncoder();
+  let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
+  const onComplete = new Promise<{ inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }>(
+    (r) => { resolveFn = r; }
+  );
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        let inputTokens = 0, outputTokens = 0;
+        const s = await client.chat.completions.create({
+          model: model.modelId, stream: true, stream_options: { include_usage: true },
+          max_tokens: 2048,
+          messages: [{ role: "system", content: system }, ...messages],
+        });
+        for await (const chunk of s) {
+          const text = chunk.choices[0]?.delta?.content ?? "";
+          if (text) controller.enqueue(encoder.encode(text));
+          if (chunk.usage) { inputTokens = chunk.usage.prompt_tokens; outputTokens = chunk.usage.completion_tokens; }
+        }
+        controller.close();
+        resolveFn!({ inputTokens, outputTokens, costUsdMicro: Math.round(inputTokens * model.costPer1kInMicro / 1000 + outputTokens * model.costPer1kOutMicro / 1000), model: model.modelId, provider: "openrouter" });
+      } catch (err) {
+        controller.close();
+        resolveFn!({ inputTokens: 0, outputTokens: 0, costUsdMicro: 0, model: model.modelId, provider: "openrouter" });
         throw err;
       }
     },

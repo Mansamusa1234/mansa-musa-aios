@@ -13,6 +13,8 @@ import { checkRateLimit, limiters, getIP } from "@/lib/ratelimit";
 import { logAuditEvent } from "@/lib/audit";
 import { sendEmail, suspiciousLoginEmailHtml } from "@/lib/email";
 import { microsoftEntraIdProvider, appleProvider } from "./auth.providers";
+import { verifyChallengeToken } from "./authChallenge";
+import { verifyTotp, verifyBackupCode } from "./twoFactor";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -40,6 +42,47 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...appleProvider,
     Credentials({
       async authorize(credentials, request) {
+        // ── Path A: 2FA completion via HMAC-signed challenge token ──────────
+        if (credentials?.challengeToken && credentials?.totp) {
+          const userId = verifyChallengeToken(credentials.challengeToken as string);
+          if (!userId) return null;
+
+          const user = await db.user.findUnique({ where: { id: userId } });
+          if (!user?.twoFactorEnabled || !user.twoFactorSecret) return null;
+
+          const totpValid = verifyTotp(credentials.totp as string, user.twoFactorSecret);
+          if (!totpValid) {
+            // Allow backup code fallback
+            if (user.twoFactorBackupCodes) {
+              const { valid, remaining } = verifyBackupCode(
+                credentials.totp as string,
+                user.twoFactorBackupCodes
+              );
+              if (!valid) return null;
+              await db.user.update({
+                where: { id: user.id },
+                data: { twoFactorBackupCodes: JSON.stringify(remaining) },
+              });
+            } else {
+              return null;
+            }
+          }
+
+          const rememberMe = credentials.rememberMe === "true";
+          const jti = crypto.randomUUID();
+          const ip = request ? getIP(request) : "anonymous";
+          const userAgent = request?.headers.get("user-agent") ?? undefined;
+
+          await db.trustedSession.create({
+            data: { userId: user.id, tokenId: jti, ip, userAgent, rememberMe },
+          });
+          after(() =>
+            logAuditEvent({ userId: user.id, event: "LOGIN_SUCCESS", ip, userAgent })
+          );
+          return { id: user.id, email: user.email, name: user.name, role: user.role, jti };
+        }
+
+        // ── Path B: Normal credentials ───────────────────────────────────────
         const parsed = credentialsSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
@@ -73,6 +116,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           after(() => logAuditEvent({ userId: user.id, event: shouldLock ? "ACCOUNT_LOCKED" : "LOGIN_FAILURE", ip, userAgent }));
           return null;
         }
+
+        // Users with 2FA enabled must go through the challenge-token path
+        if (user.twoFactorEnabled) return null;
 
         const rememberMe = parsed.data.rememberMe === "true";
         const jti = crypto.randomUUID();

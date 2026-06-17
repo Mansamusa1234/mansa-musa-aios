@@ -208,13 +208,45 @@ function ScoreBoard({ scores }: { scores: AgentScore[] }) {
   );
 }
 
+interface LeaderboardEntry {
+  agentId: string;
+  name: string;
+  key: string;
+  wins: number;
+  sessions: number;
+  avgScore: number;
+  lastSeen: string | null;
+}
+
 export default function ArenaContent({ canUseArena, plan, initialSessionId }: Props) {
   const [question, setQuestion] = useState("");
   const [session, setSession] = useState<SessionData | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<"debate" | "leaderboard">("debate");
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
+  const [lbLoading, setLbLoading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  async function loadLeaderboard() {
+    if (leaderboard) return;
+    setLbLoading(true);
+    try {
+      const res = await fetch("/api/arena/leaderboard");
+      if (res.ok) {
+        const data = await res.json();
+        setLeaderboard(data.leaderboard);
+      }
+    } finally {
+      setLbLoading(false);
+    }
+  }
+
+  function switchTab(t: "debate" | "leaderboard") {
+    setTab(t);
+    if (t === "leaderboard") loadLeaderboard();
+  }
 
   const poll = useCallback(async (sessionId: string) => {
     const res = await fetch(`/api/arena/${sessionId}`);
@@ -314,9 +346,61 @@ export default function ArenaContent({ canUseArena, plan, initialSessionId }: Pr
             📚 My Vault
           </Link>
         </motion.div>
+
+        {/* Tab toggle */}
+        <motion.div variants={fadeUp} className="mt-4 flex gap-2">
+          {(["debate", "leaderboard"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => switchTab(t)}
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
+                tab === t ? "bg-brand-500 text-white" : "border border-white/8 bg-white/3 text-gray-400 hover:bg-white/6"
+              }`}
+            >
+              {t === "debate" ? "⚔️ Debate" : "🏆 Leaderboard"}
+            </button>
+          ))}
+        </motion.div>
       </motion.div>
 
-      {!session ? (
+      {tab === "leaderboard" ? (
+        <div>
+          <h2 className="mb-3 text-sm font-bold text-white">Lifetime Agent Leaderboard</h2>
+          {lbLoading && <p className="text-xs text-gray-500">Loading leaderboard…</p>}
+          {!lbLoading && leaderboard?.length === 0 && (
+            <p className="text-xs text-gray-500">No completed debates yet. Start the first one!</p>
+          )}
+          {leaderboard && leaderboard.length > 0 && (
+            <div className="space-y-2">
+              {leaderboard.map((entry, i) => (
+                <motion.div
+                  key={entry.agentId}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className={`flex items-center gap-4 rounded-xl border p-4 ${
+                    i === 0 ? "border-amber-400/40 bg-amber-500/10" : "border-white/8 bg-white/3"
+                  }`}
+                >
+                  <span className="w-6 text-center text-sm font-extrabold text-gray-600">#{i + 1}</span>
+                  <span className="text-xl">{DEBATER_ICONS[entry.key] ?? "🤖"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate text-sm font-bold text-white">
+                      {entry.name}
+                      {i === 0 && <span className="ml-2 text-amber-300">🏆</span>}
+                    </p>
+                    <p className="text-[11px] text-gray-500">{entry.sessions} debate{entry.sessions !== 1 ? "s" : ""} · avg {entry.avgScore}/80</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className={`text-lg font-extrabold ${i === 0 ? "text-amber-300" : "text-brand-400"}`}>{entry.wins}</p>
+                    <p className="text-[10px] text-gray-600">win{entry.wins !== 1 ? "s" : ""}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : !session ? (
         <motion.div variants={fadeUp} initial="hidden" animate="visible" className="rounded-2xl border border-white/8 bg-white/3 p-5">
           {error && <div className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">{error}</div>}
           <textarea

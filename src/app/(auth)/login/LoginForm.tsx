@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,41 +14,185 @@ interface Props {
 
 export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showApple }: Props) {
   const router = useRouter();
+  const [phase, setPhase] = useState<"credentials" | "totp">("credentials");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
+  const [challengeToken, setChallengeToken] = useState("");
+  const [totp, setTotp] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const totpRef = useRef<HTMLInputElement>(null);
 
   const hasOAuth = showGithub || showGoogle || showMicrosoft || showApple;
 
-  async function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (phase === "totp") totpRef.current?.focus();
+  }, [phase]);
+
+  async function handleCredentials(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const res = await signIn("credentials", {
+    const res = await fetch("/api/auth/2fa/challenge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setLoading(false);
+      setError(data.error ?? "Invalid email or password.");
+      return;
+    }
+
+    if (data.requires2FA) {
+      setLoading(false);
+      setChallengeToken(data.challengeToken);
+      setPhase("totp");
+      return;
+    }
+
+    // No 2FA — complete sign-in normally
+    const result = await signIn("credentials", {
       email,
       password,
       rememberMe: rememberMe ? "true" : "false",
       redirect: false,
     });
-
     setLoading(false);
-    if (res?.error) {
+    if (result?.error) {
       setError("Invalid email or password.");
     } else {
       router.push("/dashboard");
     }
   }
 
+  async function handleTotp(e: React.FormEvent) {
+    e.preventDefault();
+    if (totp.replace(/\s/g, "").length < 6) {
+      setError("Enter the 6-digit code from your authenticator app.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    const result = await signIn("credentials", {
+      challengeToken,
+      totp: totp.replace(/\s/g, ""),
+      rememberMe: rememberMe ? "true" : "false",
+      redirect: false,
+    });
+    setLoading(false);
+    if (result?.error) {
+      setError("Invalid code. Check your authenticator app and try again.");
+      setTotp("");
+    } else {
+      router.push("/dashboard");
+    }
+  }
+
+  // ── TOTP phase ───────────────────────────────────────────────────────────
+
+  if (phase === "totp") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+        <div className="w-full max-w-md">
+          <div className="mb-8 text-center">
+            <Link href="/" className="text-2xl font-bold text-brand-600">MansaMusaAI</Link>
+            <h1 className="mt-4 text-2xl font-semibold text-gray-900">Two-step verification</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Enter the 6-digit code from your authenticator app
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white p-8 shadow-sm border border-gray-100">
+            {/* Authenticator app logos */}
+            <div className="mb-6 flex justify-center gap-6 text-xs text-gray-400">
+              <span className="flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+                  <rect width="24" height="24" rx="4" fill="#4285F4"/>
+                  <path d="M12 7a5 5 0 1 0 0 10A5 5 0 0 0 12 7z" fill="white"/>
+                  <path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" fill="#4285F4"/>
+                </svg>
+                Google Authenticator
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+                  <rect width="24" height="24" rx="4" fill="#00A4EF"/>
+                  <text x="4" y="16" fontSize="10" fill="white" fontWeight="bold">MS</text>
+                </svg>
+                Microsoft Auth
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+                  <rect width="24" height="24" rx="4" fill="#EC1C24"/>
+                  <text x="4" y="16" fontSize="9" fill="white" fontWeight="bold">Authy</text>
+                </svg>
+                Authy
+              </span>
+            </div>
+
+            <form onSubmit={handleTotp} className="space-y-4">
+              {error && (
+                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
+              )}
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Authenticator code
+                </label>
+                <input
+                  ref={totpRef}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[\d\s]{6,7}"
+                  maxLength={7}
+                  required
+                  value={totp}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d]/g, "");
+                    setTotp(v.slice(0, 6));
+                  }}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                  placeholder="000000"
+                  autoComplete="one-time-code"
+                />
+                <p className="mt-1.5 text-xs text-gray-400 text-center">
+                  Or enter a backup code if you've lost access to your app.
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || totp.length < 6}
+                className="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 transition-colors"
+              >
+                {loading ? "Verifying…" : "Verify and sign in"}
+              </button>
+            </form>
+
+            <button
+              onClick={() => { setPhase("credentials"); setTotp(""); setError(""); setChallengeToken(""); }}
+              className="mt-4 w-full text-center text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              ← Back to sign in
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Credentials phase ────────────────────────────────────────────────────
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link href="/" className="text-2xl font-bold text-brand-600">
-            MansaMusaAI
-          </Link>
+          <Link href="/" className="text-2xl font-bold text-brand-600">MansaMusaAI</Link>
           <h1 className="mt-4 text-2xl font-semibold text-gray-900">Welcome back</h1>
           <p className="mt-1 text-sm text-gray-500">Sign in to your account</p>
         </div>
@@ -117,7 +261,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
             </>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleCredentials} className="space-y-4">
             {error && (
               <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
             )}
@@ -162,7 +306,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
               disabled={loading}
               className="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 transition-colors"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Checking…" : "Sign in"}
             </button>
           </form>
         </div>

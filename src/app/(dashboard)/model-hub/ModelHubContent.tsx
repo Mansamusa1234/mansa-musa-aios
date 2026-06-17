@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { stagger, fadeUp, scaleIn } from "@/lib/motion";
 
-type Provider = "anthropic" | "openai" | "grok" | "gemini" | "mistral";
+type Provider = "anthropic" | "openai" | "grok" | "gemini" | "mistral" | "openrouter";
 
 interface CatalogItem {
   provider: Provider;
@@ -24,11 +24,12 @@ interface Preference { mode: string; provider: string; modelId: string }
 interface Props { catalog: CatalogItem[]; plan: string; preference: Preference }
 
 const PROVIDER_META: Record<Provider, { name: string; color: string; bg: string; logo: string }> = {
-  anthropic: { name: "Anthropic", color: "text-orange-400",  bg: "border-orange-500/25 bg-orange-500/5",  logo: "⚙" },
-  openai:    { name: "OpenAI",    color: "text-green-400",   bg: "border-green-500/25 bg-green-500/5",    logo: "◎" },
-  grok:      { name: "xAI",       color: "text-cyan-400",    bg: "border-cyan-500/25 bg-cyan-500/5",      logo: "✕" },
-  gemini:    { name: "Google",    color: "text-blue-400",    bg: "border-blue-500/25 bg-blue-500/5",      logo: "✦" },
-  mistral:   { name: "Mistral",   color: "text-purple-400",  bg: "border-purple-500/25 bg-purple-500/5",  logo: "▲" },
+  anthropic:   { name: "Anthropic",   color: "text-orange-400",  bg: "border-orange-500/25 bg-orange-500/5",  logo: "⚙" },
+  openai:      { name: "OpenAI",      color: "text-green-400",   bg: "border-green-500/25 bg-green-500/5",    logo: "◎" },
+  grok:        { name: "xAI",         color: "text-cyan-400",    bg: "border-cyan-500/25 bg-cyan-500/5",      logo: "✕" },
+  gemini:      { name: "Google",      color: "text-blue-400",    bg: "border-blue-500/25 bg-blue-500/5",      logo: "✦" },
+  mistral:     { name: "Mistral",     color: "text-purple-400",  bg: "border-purple-500/25 bg-purple-500/5",  logo: "▲" },
+  openrouter:  { name: "OpenRouter",  color: "text-pink-400",    bg: "border-pink-500/25 bg-pink-500/5",      logo: "↗" },
 };
 
 const TABS = ["Model Selection", "Compare", "Routing Info"] as const;

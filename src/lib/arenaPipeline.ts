@@ -216,6 +216,16 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
     );
     await db.finalSynthesis.create({ data: { sessionId, content: synthesisContent } });
 
+    // Auto-save WisdomMemory using the synthesis as the distilled answer
+    const session = await db.arenaSession.findUnique({ where: { id: sessionId }, select: { userId: true } });
+    if (session?.userId) {
+      await db.wisdomMemory.upsert({
+        where: { sessionId },
+        create: { sessionId, userId: session.userId, question, summary: synthesisContent.slice(0, 3000) },
+        update: { summary: synthesisContent.slice(0, 3000) },
+      });
+    }
+
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "DONE", completedAt: new Date() } });
   } catch (err) {
     console.error("[arena] pipeline failed:", err);
