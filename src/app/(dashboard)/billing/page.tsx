@@ -17,8 +17,8 @@ export default async function BillingPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold text-gray-900">Billing & Plans</h1>
-      <p className="mt-1 text-sm text-gray-500">Manage your subscription and payment details.</p>
+      <h1 className="text-2xl font-bold text-white">Billing &amp; Plans</h1>
+      <p className="mt-1 text-sm text-gray-400">Manage your subscription and payment details.</p>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan, i) => (
