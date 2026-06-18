@@ -1,0 +1,48 @@
+# Autonomy policy — how far each channel is allowed to act on its own.
+#
+# levels:
+#   off    -> ignore (agent does nothing)
+#   draft  -> generate a reply and queue it for human approval (nothing sent)
+#   auto   -> send automatically WITHOUT a human, but only within the guardrails below
+#
+# Master switch: AUTO_REPLY_ENABLED=true must also be set in .env, otherwise every
+# channel behaves as 'draft' no matter what is configured here (safe default).
+
+channels:
+  email_customer:
+    level: auto            # routine customer emails (hours, menu, booking questions)
+    guardrails:
+      max_words: 180
+      escalate_keywords: [refund, complaint, allergic, ill, lawyer, environmental health, food poisoning]
+  email_supplier:
+    level: draft           # supplier/procurement = money & contracts -> human approves
+  review_positive:
+    level: auto            # 4-5 star reviews -> warm thank-you can go on its own
+    guardrails: {min_stars: 4}
+  review_negative:
+    level: draft           # 1-3 star -> ALWAYS a human before it goes public
+    guardrails: {max_stars: 3}
+  social_comment:
+    level: auto            # public comments/DMs: friendly, on-brand
+    guardrails:
+      max_words: 60
+      escalate_keywords: [refund, complaint, allergic, ill, food poisoning, racist, abuse]
+  social_dm:
+    level: auto
+    guardrails: {max_words: 80}
+  whatsapp_customer:
+    level: auto
+    guardrails: {max_words: 120}
+  sms_customer:
+    level: auto
+    guardrails: {max_words: 60}
+
+# Quiet hours (no automated outbound sends; everything queues as draft instead).
+# Times in RESTAURANT_TIMEZONE. Replies caught here are sent at next open hour.
+quiet_hours: {start: "22:30", end: "08:30"}
+
+# Brand voice applied to every automated reply.
+voice: >
+  You are the voice of Mansa Musa Kitchen & Lounge, a Caribbean kitchen & lounge in
+  Kings Heath, Birmingham. Warm, welcoming, proud of the food, never robotic. Use the
+  customer's name when known. Keep it short. Sign off as "The Mansa Musa team".

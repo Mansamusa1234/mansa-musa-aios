@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mansa Musa Kitchen & Lounge — Caribbean food in Kings Heath, Birmingham</title>
+<meta name="description" content="Mansa Musa Kitchen & Lounge — authentic Caribbean food in Kings Heath, Birmingham. Jerk chicken, curry goat, oxtail and more. Dine in or collect. Call 0121 529 1639." />
+<style>
+  :root{ --bg:#0f0c08; --bg2:#171109; --panel:#1d160d; --line:#2e2415;
+         --gold:#ca9a3e; --gold-soft:#e6c879; --text:#f1e9d8; --muted:#a99d83;
+         --green:#3f7d4f; --red:#c0392b; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font:16px/1.65 system-ui,sans-serif;}
+  h1,h2,h3{font-family:Georgia,'Times New Roman',serif;font-weight:600;letter-spacing:.2px;line-height:1.15;}
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+  .gold{color:var(--gold);}
+
+  nav{position:sticky;top:0;z-index:20;background:rgba(15,12,8,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .brand{font-family:Georgia,serif;font-size:18px;}
+  .brand b{color:var(--gold);}
+  .links{display:flex;gap:26px;font-size:14px;color:var(--muted);}
+  .links a:hover{color:var(--text);}
+  .btn{display:inline-block;background:var(--gold);color:#1a1305;padding:11px 20px;border-radius:999px;
+       font-weight:600;font-size:14px;border:none;cursor:pointer;}
+  .btn:hover{background:var(--gold-soft);}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line);}
+
+  header.hero{position:relative;padding:120px 0 96px;text-align:center;
+    background:radial-gradient(1200px 500px at 50% -10%, #3a2a10 0%, transparent 60%),
+               linear-gradient(180deg,var(--bg2),var(--bg));}
+  .hero .kicker{color:var(--gold);letter-spacing:3px;font-size:13px;text-transform:uppercase;margin-bottom:18px;}
+  .hero h1{font-size:clamp(38px,7vw,72px);}
+  .hero p{max-width:640px;margin:20px auto 32px;color:var(--muted);font-size:18px;}
+  .hero .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+
+  section{padding:84px 0;}
+  .eyebrow{color:var(--gold);letter-spacing:2px;font-size:12px;text-transform:uppercase;margin-bottom:12px;}
+  .lead{font-size:clamp(26px,4vw,38px);max-width:760px;}
+  .muted{color:var(--muted);}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px;margin-top:40px;}
+  .dish{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;}
+  .dish .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;}
+  .dish h3{font-size:19px;}
+  .dish .price{color:var(--gold);font-family:Georgia,serif;font-size:18px;white-space:nowrap;}
+  .dish p{color:var(--muted);font-size:14px;margin-top:8px;}
+
+  .band{background:linear-gradient(180deg,var(--bg),var(--bg2));}
+  .two{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;}
+  @media(max-width:760px){.two{grid-template-columns:1fr;gap:28px;}.links{display:none;}}
+
+  form{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:28px;margin-top:36px;}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:560px){.frow{grid-template-columns:1fr;}}
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;}
+  input,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;color:var(--text);font:inherit;}
+  input:focus,textarea:focus{outline:none;border-color:var(--gold);}
+  .note{font-size:13px;color:var(--muted);margin-top:14px;}
+  .ok{color:#7fc98a;} .bad{color:#d98b7d;}
+
+  .visit{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:36px;}
+  @media(max-width:760px){.visit{grid-template-columns:1fr;}}
+  .visit h3{font-size:16px;margin-bottom:6px;}
+  .visit p{color:var(--muted);font-size:15px;}
+  .map{margin-top:36px;border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  .map iframe{display:block;width:100%;height:340px;border:0;filter:grayscale(.2) contrast(1.05);}
+
+  footer{border-top:1px solid var(--line);padding:40px 0;color:var(--muted);font-size:14px;}
+  footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+  footer a{color:var(--muted);} footer a:hover{color:var(--gold);}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <div class="brand">Mansa Musa <b>Kitchen &amp; Lounge</b></div>
+  <div class="links">
+    <a href="#menu">Menu</a><a href="#story">Our Story</a>
+    <a href="#catering">Catering</a><a href="#visit">Visit</a>
+  </div>
+  <a href="tel:+441215291639" class="btn">Call to order</a>
+</div></nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Caribbean Kitchen &amp; Lounge · Kings Heath, Birmingham</div>
+    <h1>Real Caribbean<br>flavour, <span class="gold">done right</span>.</h1>
+    <p>Jerk chicken, curry goat, oxtail and rice &amp; peas — cooked fresh in the heart of
+       Kings Heath. Dine in, or call ahead and collect.</p>
+    <div class="cta">
+      <a href="tel:+441215291639" class="btn">Call 0121 529 1639</a>
+      <a href="#menu" class="btn ghost">See the menu</a>
+    </div>
+  </div>
+</header>
+
+<!-- STORY -->
+<section id="story"><div class="wrap two">
+  <div>
+    <div class="eyebrow">Our Story</div>
+    <h2 class="lead">Named after the richest king who ever lived — and just as generous.</h2>
+  </div>
+  <p class="muted">Mansa Musa serves authentic Caribbean food the way it should be: marinated
+    overnight, slow-cooked, and packed with flavour. From smoky jerk off the grill to rich,
+    tender oxtail, every box leaves our Poplar Road kitchen fresh and full. Real ingredients,
+    real spice, real Caribbean.</p>
+</div></section>
+
+<!-- MENU -->
+<section id="menu" class="band"><div class="wrap">
+  <div class="eyebrow">Customer favourites</div>
+  <h2 class="lead">From the kitchen</h2>
+  <div class="grid">
+    <div class="dish"><div class="row"><h3>Jerk Chicken</h3><span class="price">£9.50</span></div>
+      <p>Marinated and grilled over a smoky jerk fire. Served with rice &amp; peas.</p></div>
+    <div class="dish"><div class="row"><h3>Curry Goat</h3><span class="price">£10.50</span></div>
+      <p>Slow-cooked goat in rich island curry, fall-off-the-bone tender.</p></div>
+    <div class="dish"><div class="row"><h3>Oxtail &amp; Butter Beans</h3><span class="price">£11.50</span></div>
+      <p>Deep, savoury stewed oxtail — a true Caribbean classic.</p></div>
+    <div class="dish"><div class="row"><h3>Brown Stew Chicken</h3><span class="price">£9.50</span></div>
+      <p>Chicken braised in a rich brown gravy with herbs and spice.</p></div>
+    <div class="dish"><div class="row"><h3>Ackee &amp; Saltfish</h3><span class="price">£10</span></div>
+      <p>The national dish of Jamaica, sautéed with peppers and onion.</p></div>
+    <div class="dish"><div class="row"><h3>Festival &amp; Fried Plantain</h3><span class="price">£3.50</span></div>
+      <p>Sweet fried dumplings and golden plantain. The perfect side.</p></div>
+  </div>
+  <p class="note">Sample menu — send us your full menu &amp; prices and we'll list everything. Allergen info on request.</p>
+</div></section>
+
+<!-- CATERING -->
+<section id="catering"><div class="wrap two">
+  <div>
+    <div class="eyebrow">Catering &amp; Events</div>
+    <h2 class="lead">Caribbean party platters &amp; event catering.</h2>
+  </div>
+  <p class="muted">Birthdays, christenings, office parties, weddings — we cater Caribbean
+    feasts for any occasion, big or small. Tell us the date, the headcount and the vibe,
+    and we'll build a menu around it.
+    <br><br><a class="gold" href="#book">Enquire about catering &rarr;</a></p>
+</div></section>
+
+<!-- BOOK / ENQUIRE -->
+<section id="book" class="band"><div class="wrap">
+  <div class="eyebrow">Order ahead / catering enquiry</div>
+  <h2 class="lead">Place a request</h2>
+  <form id="bookingForm">
+    <div class="frow">
+      <div><label>Name</label><input name="name" required placeholder="Your name" /></div>
+      <div><label>People / portions</label><input name="party_size" type="number" min="1" max="200" value="2" required /></div>
+    </div>
+    <div class="frow">
+      <div><label>Date &amp; time for collection</label><input name="starts_at" type="datetime-local" required /></div>
+      <div><label>Phone</label><input name="phone" placeholder="So we can confirm" /></div>
+    </div>
+    <label>Your order or catering details (dishes, occasion, allergies)</label>
+    <textarea name="notes" rows="3" placeholder="e.g. 2x jerk chicken, 1x curry goat, collection 6pm"></textarea>
+    <div style="margin-top:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <button class="btn" type="submit">Send request</button>
+      <span id="bookingMsg" class="note"></span>
+    </div>
+    <p class="note">Fastest way to order is to call <a class="gold" href="tel:+441215291639">0121 529 1639</a>.</p>
+  </form>
+</div></section>
+
+<!-- VISIT -->
+<section id="visit"><div class="wrap">
+  <div class="eyebrow">Find us</div>
+  <h2 class="lead">Visit</h2>
+  <div class="visit">
+    <div><h3>Address</h3><p>32 Poplar Road<br>Kings Heath, Birmingham<br>B14 7AD</p></div>
+    <div><h3>Opening hours</h3><p>Monday – Saturday: 12 noon – 10pm<br>Sunday: 12 noon – 8pm</p></div>
+    <div><h3>Contact</h3><p>0121 529 1639<br>bookings@mansa-musa.co.uk</p></div>
+  </div>
+  <div class="map">
+    <iframe loading="lazy" title="Mansa Musa, 32 Poplar Road, Kings Heath, Birmingham B14 7AD"
+      src="https://www.google.com/maps?q=32+Poplar+Road,+Kings+Heath,+Birmingham+B14+7AD&output=embed"></iframe>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div>© <span id="yr"></span> Mansa Musa Kitchen &amp; Lounge · 32 Poplar Road, Kings Heath, Birmingham B14 7AD</div>
+  <div>
+    <a href="https://www.facebook.com/mansamusabirmingham" target="_blank" rel="noopener">Facebook</a> ·
+    <a href="https://www.instagram.com/mansamusakitchenandlounge" target="_blank" rel="noopener">Instagram</a> ·
+    <a href="https://www.tiktok.com/@mansamusakitchenlounge" target="_blank" rel="noopener">TikTok</a>
+    <!-- Tripadvisor: add exact profile URL when confirmed (not guessed). -->
+  </div>
+</div></footer>
+
+<script>
+  // Served by the backend at /web, so bookings post same-origin (relative).
+  // Opened from disk during dev? use the local server.
+  const API = (location.protocol === "file:") ? "http://localhost:8000" : "";
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  document.getElementById('bookingForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const msg = document.getElementById('bookingMsg');
+    const f = e.target;
+    const payload = {
+      name: f.name.value, party_size: Number(f.party_size.value),
+      starts_at: f.starts_at.value, phone: f.phone.value, notes: f.notes.value
+    };
+    if(!API){
+      msg.className='note ok';
+      msg.textContent = "Thanks "+payload.name+"! (Demo mode — set the API URL to send this to the kitchen.)";
+      f.reset(); return;
+    }
+    msg.className='note'; msg.textContent = "Sending…";
+    try{
+      const r = await fetch(API+"/reservations",{method:"POST",
+        headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const d = await r.json();
+      if(d.status==="confirmed"){ msg.className='note ok';
+        msg.textContent = "Request received — we'll confirm by phone shortly. Thank you!"; f.reset(); }
+      else { msg.className='note bad'; msg.textContent="Something went wrong — please call us on 0121 529 1639."; }
+    }catch(err){ msg.className='note bad'; msg.textContent="Couldn't reach the system — please call 0121 529 1639."; }
+  });
+</script>
+</body>
+</html>

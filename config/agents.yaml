@@ -1,0 +1,160 @@
+# Mansa Musa AI OS — agent registry
+# The whole org chart as data. The runtime (backend/base_agent.py) reads this file;
+# you scale by flipping `enabled: true`, NOT by writing new programs.
+#
+# Per-agent fields:
+#   layer            grouping (1-10)
+#   team             operations | marketing | finance | customers | executive | intelligence | automation
+#   enabled          true = orchestrator may run it
+#   handler          python class in backend/agents (only the Phase-1 four are implemented;
+#                    others fall back to GenericAgent which drafts + logs)
+#   requires_approval anything touching money/contracts/hiring -> true (never auto-runs)
+#   auto_publish     social agents only; default false = DRAFT mode
+#   schedule         cron-ish slot used by scheduler/daily_workflow.py (optional)
+
+defaults:
+  enabled: false
+  handler: GenericAgent
+  requires_approval: false
+  auto_publish: false
+
+layers:
+
+  1_executive:
+    team: executive
+    agents:
+      - {name: CEO Agent}
+      - {name: COO Agent}
+      - {name: CFO Agent}
+      - {name: Marketing Director Agent}
+      - {name: Operations Director Agent}
+      - {name: Customer Experience Director Agent}
+      - {name: Events Director Agent}
+      - {name: Compliance Agent}
+      - {name: Growth Agent}
+      - {name: Business Intelligence Agent}
+
+  2_operations:
+    team: operations
+    agents:
+      - {name: Opening Checklist Agent, schedule: "06:00"}
+      - {name: Closing Checklist Agent, schedule: "21:00"}
+      - {name: Kitchen Manager Agent}
+      - {name: Head Chef Agent}
+      - {name: Food Safety Agent}
+      - {name: Stock Controller Agent, handler: InventoryAgent, enabled: true, schedule: "06:00"}
+      - {name: Waste Reduction Agent}
+      - {name: Supplier Agent, requires_approval: true}
+      - {name: Procurement Agent, requires_approval: true}
+      - {name: Maintenance Agent}
+
+  3_menu_engineering:
+    team: operations
+    agents:
+      - {name: Menu Optimizer Agent, handler: MenuEngineeringAgent, enabled: true, schedule: "15:00"}
+      - {name: Recipe Costing Agent}
+      - {name: Margin Analysis Agent}
+      - {name: Seasonal Menu Agent}
+      - {name: African Cuisine Research Agent}
+      - {name: Pricing Agent, requires_approval: true}
+      - {name: Specials Generator Agent}
+      - {name: Menu Copywriter Agent}
+      - {name: Nutritional Analysis Agent}
+      - {name: Upsell Agent}
+
+  4_marketing:
+    team: marketing
+    agents:
+      - {name: Instagram Agent, handler: MarketingAgent, enabled: true, schedule: "09:00"}
+      - {name: Facebook Agent, handler: MarketingAgent, enabled: true, schedule: "09:00"}
+      - {name: TikTok Agent, handler: MarketingAgent}
+      - {name: YouTube Agent}
+      - {name: Email Marketing Agent, handler: CampaignAgent, enabled: true, schedule: "09:00"}
+      - {name: SMS Marketing Agent, handler: CampaignAgent}
+      - {name: Google Business Profile Agent}
+      - {name: Review Response Agent, handler: ReviewAgent, enabled: true, schedule: "12:00"}
+      - {name: Influencer Outreach Agent}
+      - {name: Content Calendar Agent}
+
+  5_events:
+    team: marketing
+    agents:
+      - {name: Event Planner Agent, enabled: true, schedule: "09:00"}
+      - {name: Private Dining Agent, enabled: true}
+      - {name: Live Music Agent}
+      - {name: DJ Booking Agent}
+      - {name: Venue Hire Agent}
+      - {name: Corporate Event Agent}
+      - {name: Wedding Agent}
+      - {name: Community Events Agent}
+      - {name: Ticket Sales Agent}
+      - {name: Event Promotion Agent, handler: MarketingAgent, enabled: true}
+
+  6_customers:
+    team: customers
+    agents:
+      - {name: Reservation Agent, handler: ReservationAgent, enabled: true, schedule: "06:00"}
+      - {name: VIP Guest Agent}
+      - {name: Loyalty Agent, handler: CRMAgent, enabled: true, schedule: "12:00"}
+      - {name: Customer Support Agent}
+      - {name: Complaint Resolution Agent, requires_approval: true}
+      - {name: Feedback Agent}
+      - {name: Birthday Campaign Agent}
+      - {name: Customer Retention Agent}
+      - {name: CRM Agent}
+      - {name: Lead Capture Agent}
+
+  7_finance:
+    team: finance
+    agents:
+      - {name: Revenue Agent, handler: RevenueAgent, enabled: true, schedule: "15:00"}
+      - {name: Cashflow Agent}
+      - {name: Payroll Agent, requires_approval: true}
+      - {name: Invoice Agent, requires_approval: true}
+      - {name: Stripe Billing Agent, requires_approval: true}
+      - {name: Tax Preparation Agent, requires_approval: true}
+      - {name: Profitability Agent, handler: FinanceAgent, enabled: true, schedule: "21:00"}
+      - {name: Forecasting Agent, handler: ForecastAgent, enabled: true, schedule: "06:00"}
+      - {name: Budget Agent, requires_approval: true}
+      - {name: Fraud Detection Agent}
+
+  8_staff:
+    team: operations
+    agents:
+      - {name: Recruitment Agent, requires_approval: true}
+      - {name: Interview Agent, requires_approval: true}
+      - {name: Training Agent}
+      - {name: Scheduling Agent, handler: LabourAgent, enabled: true, schedule: "06:00"}
+      - {name: Performance Agent, requires_approval: true}
+      - {name: HR Assistant Agent, requires_approval: true}
+      - {name: Shift Coverage Agent}
+      - {name: Staff Communications Agent}
+      - {name: Policy Agent}
+      - {name: Staff Retention Agent}
+
+  9_intelligence:
+    team: intelligence
+    agents:
+      - {name: Data Analyst Agent}
+      - {name: Dashboard Agent, enabled: true, schedule: "21:00"}
+      - {name: KPI Agent}
+      - {name: Competitor Research Agent, handler: CompetitorAgent, enabled: true, schedule: "06:00"}
+      - {name: Trend Monitoring Agent, handler: TrendAgent, enabled: true, schedule: "09:00"}
+      - {name: Local Events Monitoring Agent}
+      - {name: Market Intelligence Agent}
+      - {name: Demand Forecast Agent}
+      - {name: Predictive Analytics Agent}
+      - {name: Reporting Agent}
+
+  10_automation:
+    team: automation
+    agents:
+      - {name: Workflow Builder Agent}
+      - {name: API Agent}
+      - {name: Supabase Agent}
+      - {name: Stripe Agent}
+      - {name: Vercel Agent}
+      - {name: Render Agent}
+      - {name: Claude Agent}
+      - {name: OpenAI Agent}
+      - {name: Orchestrator Agent, enabled: true}

@@ -1,0 +1,58 @@
+# Render blueprint — one-click deploy of the API, the scheduler worker, and a
+# nightly closing-report cron. Push this repo to GitHub, then in Render:
+#   New + -> Blueprint -> pick this repo. Set the secret env vars when prompted.
+services:
+  - type: web
+    name: mansa-musa-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    plan: starter
+    envVars:
+      - key: LLM_PROVIDER
+        value: openai
+      - key: LLM_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ALLOW_AUTO_PUBLISH
+        value: "false"
+
+  - type: worker
+    name: mansa-musa-scheduler
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python scheduler/daily_workflow.py
+    plan: starter
+    envVars:
+      - fromGroup: mansa-musa-shared
+
+  - type: cron
+    name: mansa-musa-closing-report
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    schedule: "0 22 * * *"            # 22:00 daily
+    dockerCommand: python scheduler/daily_workflow.py --run-now closing
+    plan: starter
+    envVars:
+      - fromGroup: mansa-musa-shared
+
+envVarGroups:
+  - name: mansa-musa-shared
+    envVars:
+      - key: LLM_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: STRIPE_RESTRICTED_KEY
+        sync: false
+      - key: ALLOW_AUTO_PUBLISH
+        value: "false"
