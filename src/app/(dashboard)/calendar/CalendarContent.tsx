@@ -65,7 +65,7 @@ export default function CalendarContent({ bookings: initialBookings, availabilit
             <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
               <p className="text-3xl mb-3">📅</p>
               <p className="text-gray-400 font-medium">No upcoming bookings</p>
-              <p className="text-sm text-gray-600 mt-1">Add a booking or share your availability link.</p>
+              <p className="text-sm text-gray-400 mt-1">Add a booking or share your availability link.</p>
             </div>
           ) : bookings.map((b) => (
             <div key={b.id} className="rounded-2xl border border-white/8 bg-white/3 p-4 flex items-start justify-between gap-4">
@@ -75,8 +75,8 @@ export default function CalendarContent({ bookings: initialBookings, availabilit
                   <span className={`text-[10px] font-bold ${STATUS_COLORS[b.status] ?? "text-gray-400"}`}>{b.status}</span>
                 </div>
                 <p className="text-xs text-gray-400">{b.guestName} · {b.guestEmail}</p>
-                <p className="text-xs text-gray-600 mt-1">{fmt(b.startAt)} → {fmt(b.endAt)}</p>
-                {b.notes && <p className="text-xs text-gray-600 mt-1 italic">"{b.notes}"</p>}
+                <p className="text-xs text-gray-400 mt-1">{fmt(b.startAt)} → {fmt(b.endAt)}</p>
+                {b.notes && <p className="text-xs text-gray-400 mt-1 italic">"{b.notes}"</p>}
               </div>
               {b.status === "CONFIRMED" && (
                 <button onClick={() => cancelBooking(b.id)} className="flex-shrink-0 rounded-lg border border-red-500/20 px-3 py-1 text-xs text-red-400 hover:bg-red-500/10">Cancel</button>

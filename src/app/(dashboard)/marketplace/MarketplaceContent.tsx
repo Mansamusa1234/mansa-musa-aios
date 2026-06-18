@@ -91,7 +91,7 @@ export default function MarketplaceContent({ catalog, deployedCount: _deployedCo
           ].map((s) => (
             <motion.div key={s.label} variants={scaleIn} className="rounded-2xl border border-white/8 bg-white/3 p-4">
               <p className={`truncate text-lg font-extrabold ${s.color}`}>{s.val}</p>
-              <p className="mt-0.5 text-xs text-gray-600">{s.label}</p>
+              <p className="mt-0.5 text-xs text-gray-400">{s.label}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -177,7 +177,7 @@ export default function MarketplaceContent({ catalog, deployedCount: _deployedCo
                   ].map((s) => (
                     <div key={s.label} className="text-center">
                       <p className="text-sm font-bold text-white">{s.val}</p>
-                      <p className="text-[9px] text-gray-600">{s.label}</p>
+                      <p className="text-[9px] text-gray-400">{s.label}</p>
                     </div>
                   ))}
                 </div>
@@ -200,7 +200,7 @@ export default function MarketplaceContent({ catalog, deployedCount: _deployedCo
       </AnimatePresence>
 
       {visible.length === 0 && (
-        <p className="py-8 text-center text-sm text-gray-600">No agents match your search.</p>
+        <p className="py-8 text-center text-sm text-gray-400">No agents match your search.</p>
       )}
     </div>
   );

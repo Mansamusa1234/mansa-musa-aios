@@ -39,7 +39,7 @@ export default function DashboardError({ error, reset }: Props) {
         </p>
 
         {error.digest && (
-          <p className="mb-6 font-mono text-[11px] text-gray-600">
+          <p className="mb-6 font-mono text-[11px] text-gray-400">
             Reference: {error.digest}
           </p>
         )}

@@ -85,7 +85,7 @@ export default function AnalyticsContent({
                 {s.format ? s.format(s.value) : <CountUp value={s.value} suffix={s.suffix} duration={1200} />}
               </p>
               <p className="mt-0.5 text-[11px] font-semibold text-white">{s.label}</p>
-              <p className="mt-0.5 text-[10px] text-gray-600">{s.desc}</p>
+              <p className="mt-0.5 text-[10px] text-gray-400">{s.desc}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -109,19 +109,19 @@ export default function AnalyticsContent({
                         className="w-full bg-brand-500/60 hover:bg-brand-400 transition-colors"
                       />
                     </div>
-                    <span className="text-[10px] text-gray-600">{d.day}</span>
-                    <span className="text-[9px] text-gray-700">{d.msgs}</span>
+                    <span className="text-[10px] text-gray-400">{d.day}</span>
+                    <span className="text-[9px] text-gray-500">{d.msgs}</span>
                   </div>
                 );
               })}
             </div>
             <div className="mt-4 flex items-center justify-between border-t border-white/6 pt-3">
               <div>
-                <p className="text-xs text-gray-600">Daily average (30d)</p>
+                <p className="text-xs text-gray-400">Daily average (30d)</p>
                 <p className="text-lg font-extrabold text-brand-400">{avgPerDay.toLocaleString()}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-gray-600">Total this month</p>
+                <p className="text-xs text-gray-400">Total this month</p>
                 <p className="text-lg font-extrabold text-blue-400"><CountUp value={messagesThisMonth} /></p>
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function AnalyticsContent({
 
           {isAdmin && (
             <div className="mt-3 rounded-2xl border border-white/8 bg-white/3 p-4">
-              <p className="text-[10px] text-gray-600 mb-2 uppercase tracking-widest font-bold">Platform Growth</p>
+              <p className="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">Platform Growth</p>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-xs text-gray-400">Total users</span>
                 <span className="text-sm font-bold text-white"><CountUp value={totalUsers} /></span>

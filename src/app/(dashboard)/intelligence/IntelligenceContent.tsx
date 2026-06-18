@@ -138,7 +138,7 @@ export default function IntelligenceContent() {
         <motion.div variants={fadeUp} className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-5">
           {indices.slice(0, 5).map((idx) => (
             <div key={idx.name} className="rounded-xl border border-white/8 bg-white/3 p-3">
-              <p className="text-[10px] text-gray-600 mb-1">{idx.name}</p>
+              <p className="text-[10px] text-gray-400 mb-1">{idx.name}</p>
               <p className="text-sm font-bold text-white">{idx.value}</p>
               <p className={`text-[11px] font-semibold ${idx.up ? "text-green-400" : "text-red-400"}`}>{idx.pct}</p>
             </div>
@@ -149,7 +149,7 @@ export default function IntelligenceContent() {
         <motion.div variants={fadeUp} className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
           {indices.slice(5).map((idx) => (
             <div key={idx.name} className="rounded-xl border border-white/8 bg-white/3 p-3">
-              <p className="text-[10px] text-gray-600 mb-1">{idx.name}</p>
+              <p className="text-[10px] text-gray-400 mb-1">{idx.name}</p>
               <p className="text-sm font-bold text-white">{idx.value}</p>
               <p className={`text-[11px] font-semibold ${idx.up ? "text-green-400" : "text-red-400"}`}>{idx.pct}</p>
             </div>
@@ -157,7 +157,7 @@ export default function IntelligenceContent() {
         </motion.div>
       </motion.div>
 
-      <p className="text-[10px] text-gray-600">
+      <p className="text-[10px] text-gray-400">
         Market data is simulated for demo purposes and does not reflect real prices.
       </p>
 
@@ -189,7 +189,7 @@ export default function IntelligenceContent() {
         <div className="lg:col-span-2">
           <h2 className="text-sm font-bold text-white mb-3">Competitive Landscape — AI Platforms</h2>
           <div className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
-            <div className="grid grid-cols-5 border-b border-white/6 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+            <div className="grid grid-cols-5 border-b border-white/6 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
               <span className="col-span-2">Company</span>
               <span>Users</span>
               <span>Funding</span>
@@ -205,7 +205,7 @@ export default function IntelligenceContent() {
               >
                 <div className="col-span-2 min-w-0">
                   <p className="text-xs font-semibold text-white truncate">{c.name}</p>
-                  <p className="text-[10px] text-gray-600 truncate">{c.moat}</p>
+                  <p className="text-[10px] text-gray-400 truncate">{c.moat}</p>
                 </div>
                 <p className="text-[11px] text-gray-400">{c.users}</p>
                 <p className="text-[11px] text-gray-400">{c.funding}</p>
@@ -234,10 +234,10 @@ export default function IntelligenceContent() {
         <motion.div variants={stagger} initial="hidden" animate="visible" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {TRENDS.map((t, i) => (
             <motion.div key={t.topic} variants={scaleIn} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/3 p-3">
-              <span className="text-sm font-bold text-gray-600 w-5 flex-shrink-0">#{i + 1}</span>
+              <span className="text-sm font-bold text-gray-400 w-5 flex-shrink-0">#{i + 1}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-gray-200 truncate">{t.topic}</p>
-                <p className="text-[10px] text-gray-600">{t.mentions.toLocaleString()} mentions</p>
+                <p className="text-[10px] text-gray-400">{t.mentions.toLocaleString()} mentions</p>
               </div>
               <span className={`text-[10px] font-bold flex-shrink-0 ${t.rising ? "text-green-400" : "text-gray-400"}`}>
                 {t.rising ? "↑" : "→"}

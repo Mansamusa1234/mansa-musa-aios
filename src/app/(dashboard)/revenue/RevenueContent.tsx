@@ -47,7 +47,7 @@ function Bar({ label, value, max, color }: { label: string; value: number; max: 
         />
         <span className="absolute top-1 text-[9px] font-bold text-white/80">£{(value / 1000).toFixed(1)}k</span>
       </div>
-      <span className="text-[10px] text-gray-600">{label}</span>
+      <span className="text-[10px] text-gray-400">{label}</span>
     </div>
   );
 }
@@ -86,7 +86,7 @@ export default function RevenueContent({
                 {m.prefix}<CountUp value={m.value} suffix={m.suffix} duration={1400} />
               </p>
               <p className="mt-0.5 text-[11px] font-semibold text-white">{m.label}</p>
-              <p className="mt-0.5 text-[10px] text-gray-600">{m.desc}</p>
+              <p className="mt-0.5 text-[10px] text-gray-400">{m.desc}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -105,11 +105,11 @@ export default function RevenueContent({
             </div>
             <div className="mt-4 flex items-center justify-between border-t border-white/6 pt-3">
               <div>
-                <p className="text-xs text-gray-600">This month</p>
+                <p className="text-xs text-gray-400">This month</p>
                 <p className="text-lg font-extrabold text-brand-400">£{mrr.toLocaleString()}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-gray-600">Projected ARR</p>
+                <p className="text-xs text-gray-400">Projected ARR</p>
                 <p className="text-lg font-extrabold text-green-400">£{arr.toLocaleString()}</p>
               </div>
             </div>
@@ -143,9 +143,9 @@ export default function RevenueContent({
               </div>
             ))}
             <div className="mt-2 rounded-xl border border-white/6 bg-white/2 p-3 text-center">
-              <p className="text-xs text-gray-600">Conversion rate</p>
+              <p className="text-xs text-gray-400">Conversion rate</p>
               <p className="text-xl font-extrabold text-brand-400">{conversionRate}%</p>
-              <p className="text-[10px] text-gray-600">free → paid</p>
+              <p className="text-[10px] text-gray-400">free → paid</p>
             </div>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function RevenueContent({
       <div>
         <h2 className="text-sm font-bold text-white mb-3">Revenue by Plan</h2>
         <div className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
-          <div className="grid grid-cols-4 border-b border-white/6 px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+          <div className="grid grid-cols-4 border-b border-white/6 px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
             <span>Plan</span>
             <span>Price / mo</span>
             <span>Subscribers</span>
@@ -189,7 +189,7 @@ export default function RevenueContent({
             );
           })}
           {planBreakdown.length === 0 && (
-            <div className="px-5 py-8 text-center text-sm text-gray-600">
+            <div className="px-5 py-8 text-center text-sm text-gray-400">
               No paid subscriptions yet
             </div>
           )}

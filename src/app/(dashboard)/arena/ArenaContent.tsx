@@ -382,7 +382,7 @@ export default function ArenaContent({ canUseArena, plan, initialSessionId }: Pr
                     i === 0 ? "border-amber-400/40 bg-amber-500/10" : "border-white/8 bg-white/3"
                   }`}
                 >
-                  <span className="w-6 text-center text-sm font-extrabold text-gray-600">#{i + 1}</span>
+                  <span className="w-6 text-center text-sm font-extrabold text-gray-400">#{i + 1}</span>
                   <span className="text-xl">{DEBATER_ICONS[entry.key] ?? "🤖"}</span>
                   <div className="flex-1 min-w-0">
                     <p className="truncate text-sm font-bold text-white">
@@ -393,7 +393,7 @@ export default function ArenaContent({ canUseArena, plan, initialSessionId }: Pr
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className={`text-lg font-extrabold ${i === 0 ? "text-amber-300" : "text-brand-400"}`}>{entry.wins}</p>
-                    <p className="text-[10px] text-gray-600">win{entry.wins !== 1 ? "s" : ""}</p>
+                    <p className="text-[10px] text-gray-400">win{entry.wins !== 1 ? "s" : ""}</p>
                   </div>
                 </motion.div>
               ))}
@@ -412,7 +412,7 @@ export default function ArenaContent({ canUseArena, plan, initialSessionId }: Pr
             className="w-full resize-none rounded-xl border border-white/8 bg-white/4 p-3 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-brand-500/40"
           />
           <div className="mt-3 flex items-center justify-between">
-            <p className="text-[11px] text-gray-600">{question.length}/1000 — each debate runs ~20 AI calls and takes about a minute.</p>
+            <p className="text-[11px] text-gray-400">{question.length}/1000 — each debate runs ~20 AI calls and takes about a minute.</p>
             <button
               onClick={startArena}
               disabled={starting || question.trim().length < 8}
@@ -425,7 +425,7 @@ export default function ArenaContent({ canUseArena, plan, initialSessionId }: Pr
       ) : (
         <div className="space-y-6">
           <div className="rounded-2xl border border-white/8 bg-white/3 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">Question</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Question</p>
             <p className="mt-1 text-sm text-gray-200">{session.question}</p>
           </div>
 

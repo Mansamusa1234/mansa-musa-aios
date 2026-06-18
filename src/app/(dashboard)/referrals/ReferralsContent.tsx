@@ -83,7 +83,7 @@ export default function ReferralsContent({ code, referrals, totalRewardCents, co
                 {s.prefix}
                 <CountUp value={s.value} />
               </p>
-              <p className="text-[10px] text-gray-600 mt-0.5">{s.label}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{s.label}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -104,7 +104,7 @@ export default function ReferralsContent({ code, referrals, totalRewardCents, co
               {copied ? "Copied ✓" : "Copy link"}
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-gray-600">
+          <p className="mt-2 text-[11px] text-gray-400">
             Rewards are tracked automatically, then reviewed and paid out manually by the MansaMusaAI team — nothing is paid automatically.
           </p>
         </motion.div>
@@ -117,7 +117,7 @@ export default function ReferralsContent({ code, referrals, totalRewardCents, co
           <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/10 text-3xl">🔗</div>
             <p className="text-gray-400 font-medium">No referrals yet.</p>
-            <p className="mt-1 text-sm text-gray-600">Share your link above to start earning rewards.</p>
+            <p className="mt-1 text-sm text-gray-400">Share your link above to start earning rewards.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -129,7 +129,7 @@ export default function ReferralsContent({ code, referrals, totalRewardCents, co
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-white text-sm truncate">{r.name ?? r.email}</p>
-                    <p className="text-xs text-gray-600">Joined {new Date(r.joinedAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-400">Joined {new Date(r.joinedAt).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">

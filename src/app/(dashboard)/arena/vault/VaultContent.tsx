@@ -32,7 +32,7 @@ export default function VaultContent({ memories }: { memories: Memory[] }) {
         <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/10 text-3xl">📚</div>
           <p className="text-gray-400 font-medium">Your vault is empty.</p>
-          <p className="mt-1 text-sm text-gray-600">Run a Wisdom Arena debate and save the answer to build your collection.</p>
+          <p className="mt-1 text-sm text-gray-400">Run a Wisdom Arena debate and save the answer to build your collection.</p>
         </div>
       ) : (
         <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-2">
@@ -44,7 +44,7 @@ export default function VaultContent({ memories }: { memories: Memory[] }) {
               >
                 <p className="text-sm font-bold text-white">{m.question}</p>
                 <p className="mt-1 text-xs text-gray-500 line-clamp-2">{m.summary}</p>
-                <p className="mt-2 text-[10px] text-gray-600">Saved {new Date(m.savedAt).toLocaleDateString()}</p>
+                <p className="mt-2 text-[10px] text-gray-400">Saved {new Date(m.savedAt).toLocaleDateString()}</p>
               </Link>
             </motion.div>
           ))}

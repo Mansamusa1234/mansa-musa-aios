@@ -78,15 +78,15 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-white truncate">{t.subject}</p>
-                      {isAdmin && <p className="text-xs text-gray-600">{t.userName ?? t.userEmail}</p>}
+                      {isAdmin && <p className="text-xs text-gray-400">{t.userName ?? t.userEmail}</p>}
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className={`text-[10px] font-bold ${PRIORITY_COLORS[t.priority]}`}>{t.priority}</span>
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[t.status]}`}>{t.status.replace("_", " ")}</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-600 mt-1.5 line-clamp-2">{t.body}</p>
-                  <p className="text-[10px] text-gray-700 mt-1">{new Date(t.createdAt).toLocaleDateString("en-GB")}</p>
+                  <p className="text-xs text-gray-400 mt-1.5 line-clamp-2">{t.body}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">{new Date(t.createdAt).toLocaleDateString("en-GB")}</p>
                 </motion.div>
               ))}
             </div>
@@ -106,7 +106,7 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
             <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
               <p className="text-3xl mb-3">🎧</p>
               <p className="text-gray-400 font-medium">No support tickets yet</p>
-              <p className="text-sm text-gray-600 mt-1">When you submit a ticket, our AI responds in seconds.</p>
+              <p className="text-sm text-gray-400 mt-1">When you submit a ticket, our AI responds in seconds.</p>
             </div>
           )}
         </div>
@@ -116,7 +116,7 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
           <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="rounded-2xl border border-white/8 bg-white/3 p-5 h-fit sticky top-4 space-y-4">
             <div className="flex items-start justify-between gap-2">
               <h2 className="text-sm font-bold text-white leading-snug">{selected.subject}</h2>
-              <button onClick={() => setSelected(null)} className="text-gray-600 hover:text-gray-300 text-lg leading-none">×</button>
+              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-300 text-lg leading-none">×</button>
             </div>
             <div className="flex gap-2 flex-wrap">
               <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[selected.status]}`}>{selected.status.replace("_", " ")}</span>

@@ -320,7 +320,7 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
           <div className="space-y-4">
             <p className="text-xs text-gray-400">Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.), then enter the 6-digit code to confirm.</p>
             {twoFAQR && <img src={twoFAQR} alt="2FA QR code" className="mx-auto w-44 h-44 rounded-xl border border-white/8 bg-white p-2" />}
-            <p className="text-[11px] text-gray-600">Or enter manually: <code className="text-gray-400 text-[11px]">{twoFASecret}</code></p>
+            <p className="text-[11px] text-gray-400">Or enter manually: <code className="text-gray-400 text-[11px]">{twoFASecret}</code></p>
             <form onSubmit={verify2FA} className="flex gap-2">
               <input value={twoFAToken} onChange={(e) => setTwoFAToken(e.target.value)} placeholder="6-digit code" maxLength={6} className="flex-1 rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" required />
               <button type="submit" disabled={twoFALoading} className="rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">Verify</button>
@@ -363,7 +363,7 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
           </div>
         )}
         {sessions.length === 0 ? (
-          <p className="text-sm text-gray-600">No active sessions.</p>
+          <p className="text-sm text-gray-400">No active sessions.</p>
         ) : (
           <div className="space-y-2">
             {sessions.map((s) => (
@@ -373,7 +373,7 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
                     {deviceLabel(s.userAgent)}
                     {s.isCurrent && <span className="ml-2 rounded-full bg-brand-500/15 px-2 py-0.5 text-[10px] font-bold text-brand-300">This device</span>}
                   </p>
-                  <p className="mt-0.5 text-xs text-gray-600">
+                  <p className="mt-0.5 text-xs text-gray-400">
                     {s.ip ?? "Unknown IP"} · Last active {new Date(s.lastSeenAt).toLocaleString()}
                   </p>
                 </div>

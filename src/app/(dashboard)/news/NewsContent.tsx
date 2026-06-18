@@ -202,19 +202,19 @@ export default function NewsContent() {
               <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${CAT_STYLES[featured.category]}`}>
                 {featured.category}
               </span>
-              <span className="text-[10px] text-gray-600">{featured.source}</span>
-              <span className="text-[10px] text-gray-600">·</span>
-              <span className="text-[10px] text-gray-600">{featured.time}</span>
+              <span className="text-[10px] text-gray-400">{featured.source}</span>
+              <span className="text-[10px] text-gray-400">·</span>
+              <span className="text-[10px] text-gray-400">{featured.time}</span>
             </div>
             <h2 className={`text-lg font-bold leading-snug ${read.has(featured.id) ? "text-gray-400" : "text-white"}`}>
               {featured.headline}
             </h2>
             <p className="mt-2 text-sm text-gray-500 leading-relaxed">{featured.excerpt}</p>
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-xs text-gray-600">{featured.readTime} read</span>
+              <span className="text-xs text-gray-400">{featured.readTime} read</span>
               <button
                 onClick={(e) => { e.stopPropagation(); setSaved((s) => { const n = new Set(s); n.has(featured.id) ? n.delete(featured.id) : n.add(featured.id); return n; }); }}
-                className={`text-xs font-medium transition-colors ${saved.has(featured.id) ? "text-brand-400" : "text-gray-600 hover:text-gray-300"}`}
+                className={`text-xs font-medium transition-colors ${saved.has(featured.id) ? "text-brand-400" : "text-gray-400 hover:text-gray-300"}`}
               >
                 {saved.has(featured.id) ? "★ Saved" : "☆ Save"}
               </button>
@@ -239,7 +239,7 @@ export default function NewsContent() {
             >
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${CAT_STYLES[article.category]}`}>{article.category}</span>
-                <span className="text-[9px] text-gray-600">{article.source} · {article.time}</span>
+                <span className="text-[9px] text-gray-400">{article.source} · {article.time}</span>
               </div>
               <h3 className={`text-xs font-bold leading-snug flex-1 ${read.has(article.id) ? "text-gray-500" : "text-gray-200"}`}>
                 {article.headline}
@@ -250,7 +250,7 @@ export default function NewsContent() {
                 </span>
                 <button
                   onClick={(e) => { e.stopPropagation(); setSaved((s) => { const n = new Set(s); n.has(article.id) ? n.delete(article.id) : n.add(article.id); return n; }); }}
-                  className={`text-[11px] ${saved.has(article.id) ? "text-brand-400" : "text-gray-700 hover:text-gray-400"} transition-colors`}
+                  className={`text-[11px] ${saved.has(article.id) ? "text-brand-400" : "text-gray-500 hover:text-gray-400"} transition-colors`}
                 >
                   {saved.has(article.id) ? "★" : "☆"}
                 </button>

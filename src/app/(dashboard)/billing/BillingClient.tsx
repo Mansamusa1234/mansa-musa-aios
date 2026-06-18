@@ -48,8 +48,8 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
         plan.highlighted
           ? "border-brand-400 bg-gradient-to-b from-brand-500 to-brand-600 text-white"
           : isCurrent
-          ? "border-brand-200 bg-brand-50"
-          : "border-gray-200 bg-white"
+          ? "border-brand-200 dark:border-brand-500/30 bg-brand-50 dark:bg-brand-500/10"
+          : "border-gray-200 dark:border-white/8 bg-white dark:bg-white/5"
       }`}
     >
       {plan.highlighted && (
@@ -73,7 +73,7 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
       </p>
 
       <div className="mt-3 flex items-end gap-1">
-        <span className={`text-3xl font-extrabold ${plan.highlighted ? "text-white" : "text-gray-900"}`}>
+        <span className={`text-3xl font-extrabold ${plan.highlighted ? "text-white" : "text-gray-900 dark:text-white"}`}>
           {price}
         </span>
         {plan.price > 0 && (
@@ -85,7 +85,7 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
         {plan.features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-xs">
             <span className={plan.highlighted ? "text-brand-100" : "text-brand-500"}>✓</span>
-            <span className={plan.highlighted ? "text-brand-50" : "text-gray-600"}>{f}</span>
+            <span className={plan.highlighted ? "text-brand-50" : "text-gray-400 dark:text-gray-400"}>{f}</span>
           </li>
         ))}
       </ul>
@@ -95,10 +95,10 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
         disabled={isCurrent || loading || !plan.priceId}
         className={`mt-6 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 active:scale-95 ${
           isCurrent
-            ? "cursor-not-allowed bg-gray-100 text-gray-400"
+            ? "cursor-not-allowed bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500"
             : plan.highlighted
             ? "bg-white text-brand-600 hover:bg-brand-50 shadow-md"
-            : "border border-gray-200 text-gray-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+            : "border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-300 hover:border-brand-300 dark:hover:border-brand-500/40 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-400"
         }`}
       >
         {isCurrent ? "Current plan" : loading ? "Redirecting…" : `Upgrade to ${plan.name}`}

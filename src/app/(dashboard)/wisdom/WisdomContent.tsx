@@ -55,7 +55,7 @@ export default function WisdomContent({ assets, totalAssets, totalCompetitions }
           ].map((s) => (
             <motion.div key={s.label} variants={scaleIn} className="rounded-2xl border border-white/8 bg-white/3 p-4">
               <p className={`text-xl font-extrabold ${s.color}`}>{s.val}</p>
-              <p className="mt-0.5 text-xs text-gray-600">{s.label}</p>
+              <p className="mt-0.5 text-xs text-gray-400">{s.label}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -122,20 +122,20 @@ export default function WisdomContent({ assets, totalAssets, totalCompetitions }
                       >
                         {meta?.icon} {meta?.label ?? asset.category}
                       </span>
-                      <span className="text-[10px] text-gray-600">by {asset.agentName}</span>
+                      <span className="text-[10px] text-gray-400">by {asset.agentName}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Prompt */}
-                <p className="mb-2 text-[11px] italic text-gray-600 line-clamp-1">"{asset.prompt}"</p>
+                <p className="mb-2 text-[11px] italic text-gray-400 line-clamp-1">"{asset.prompt}"</p>
 
                 {/* Preview */}
                 <p className="flex-1 text-xs leading-relaxed text-gray-400 line-clamp-4">{asset.content}…</p>
 
                 {/* Footer */}
                 <div className="mt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-[11px] text-gray-600">
+                  <div className="flex items-center gap-3 text-[11px] text-gray-400">
                     <span>{stars(asset.avgRating)}</span>
                     {asset.ratingCount > 0 && <span>({asset.ratingCount})</span>}
                     <span>👁 {asset.views}</span>

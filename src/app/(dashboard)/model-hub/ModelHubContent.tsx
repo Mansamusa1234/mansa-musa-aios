@@ -177,7 +177,7 @@ export default function ModelHubContent({ catalog, plan, preference: initPref }:
                     <p className="text-sm font-bold text-white leading-snug">{model.displayName}</p>
                     <p className={`text-[10px] font-medium mt-0.5 ${meta.color}`}>{meta.name}</p>
                     <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">{model.description}</p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-gray-600">
+                    <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-gray-400">
                       <span>{(model.contextWindow / 1000).toFixed(0)}K ctx</span>
                       <span>· ${(model.costPer1kInMicro / 1000000).toFixed(4)}/1K in</span>
                     </div>

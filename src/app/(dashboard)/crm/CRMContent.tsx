@@ -105,7 +105,7 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
         ].map((s) => (
           <motion.div key={s.label} variants={scaleIn} className="rounded-2xl border border-white/8 bg-white/3 p-4">
             <p className="text-xl font-extrabold text-brand-400">{s.value}</p>
-            <p className="text-[10px] text-gray-600 mt-0.5">{s.label}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{s.label}</p>
           </motion.div>
         ))}
       </motion.div>
@@ -125,7 +125,7 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
                 <div className="flex items-center gap-2 mb-3">
                   <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
                   <p className="text-xs font-bold text-gray-300">{meta.label}</p>
-                  <span className="ml-auto text-[10px] text-gray-600 bg-white/5 rounded-full px-2 py-0.5">{leads.length}</span>
+                  <span className="ml-auto text-[10px] text-gray-400 bg-white/5 rounded-full px-2 py-0.5">{leads.length}</span>
                 </div>
                 <div className="space-y-2 min-h-[80px]">
                   {leads.map((lead) => (

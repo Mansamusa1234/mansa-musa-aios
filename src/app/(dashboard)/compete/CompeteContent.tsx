@@ -108,7 +108,7 @@ export default function CompeteContent() {
                 );
               })}
             </div>
-            <p className="mt-2 text-[11px] text-gray-600">{CATEGORY_META[category].description}</p>
+            <p className="mt-2 text-[11px] text-gray-400">{CATEGORY_META[category].description}</p>
           </div>
 
           <div>
@@ -121,7 +121,7 @@ export default function CompeteContent() {
               placeholder={`Ask something for ${CATEGORY_META[category].label} agents — e.g. "${EXAMPLE_PROMPTS[category]}"`}
               className="w-full resize-none rounded-xl border border-white/8 bg-white/4 p-3 text-sm text-gray-200 placeholder-gray-600 outline-none focus:border-brand-500/40"
             />
-            <p className="mt-1 text-[11px] text-gray-600">{prompt.length}/2000 — 3 agents compete, judge scores all, winner stored as Wisdom Asset</p>
+            <p className="mt-1 text-[11px] text-gray-400">{prompt.length}/2000 — 3 agents compete, judge scores all, winner stored as Wisdom Asset</p>
           </div>
 
           <button
@@ -220,7 +220,7 @@ export default function CompeteContent() {
                           {entry.response}
                         </p>
                         {entry.rationale && (
-                          <p className="mt-2 text-[11px] italic text-gray-600">{entry.rationale}</p>
+                          <p className="mt-2 text-[11px] italic text-gray-400">{entry.rationale}</p>
                         )}
                       </motion.div>
                     );

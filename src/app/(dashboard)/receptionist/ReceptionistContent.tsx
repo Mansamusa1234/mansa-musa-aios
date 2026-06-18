@@ -81,7 +81,7 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
           <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/3 px-3 py-2">
             <span className={`w-2 h-2 rounded-full ${rec.isActive ? "bg-green-400" : "bg-gray-500"}`} />
             <span className="text-xs text-gray-300">{rec.isActive ? "Active" : "Paused"}</span>
-            <span className="text-xs text-gray-600 ml-2">{rec.totalChats} chats</span>
+            <span className="text-xs text-gray-400 ml-2">{rec.totalChats} chats</span>
           </div>
         )}
       </motion.div>
@@ -177,16 +177,16 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
       {activeTab === "chats" && (
         <motion.div variants={fadeUp} className="rounded-2xl border border-white/8 bg-white/3 p-5">
           {recentChats.length === 0 ? (
-            <p className="text-sm text-gray-600">No chats yet. Embed the widget on your website to start capturing visitors.</p>
+            <p className="text-sm text-gray-400">No chats yet. Embed the widget on your website to start capturing visitors.</p>
           ) : (
             <div className="space-y-2">
               {recentChats.map((c) => (
                 <div key={c.id} className="flex items-center justify-between rounded-xl border border-white/8 bg-white/3 p-3">
                   <div>
                     <p className="text-sm font-medium text-white">{c.visitorName ?? "Anonymous visitor"}</p>
-                    <p className="text-xs text-gray-600">{c.visitorEmail ?? "No email"}</p>
+                    <p className="text-xs text-gray-400">{c.visitorEmail ?? "No email"}</p>
                   </div>
-                  <p className="text-xs text-gray-600">{new Date(c.createdAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>

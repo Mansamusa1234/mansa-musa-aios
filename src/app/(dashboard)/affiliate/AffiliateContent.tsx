@@ -192,7 +192,7 @@ export default function AffiliateContent({
           ].map((s) => (
             <motion.div key={s.label} variants={scaleIn} className="rounded-2xl border border-white/8 bg-white/3 p-4 text-center">
               <p className="text-xl font-extrabold text-brand-400">{s.value}</p>
-              <p className="text-[10px] text-gray-600 mt-0.5">{s.sub}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">{s.sub}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -200,7 +200,7 @@ export default function AffiliateContent({
         <motion.div variants={fadeUp} className="rounded-2xl border border-white/8 bg-white/3 p-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/10 text-3xl">🤝</div>
           <p className="text-gray-300 font-medium mb-1">You're not an affiliate yet</p>
-          <p className="text-sm text-gray-600 mb-5">Join in one click — no review, no wait. Start sharing immediately.</p>
+          <p className="text-sm text-gray-400 mb-5">Join in one click — no review, no wait. Start sharing immediately.</p>
           <button
             onClick={apply}
             disabled={applying}
@@ -239,7 +239,7 @@ export default function AffiliateContent({
         <h1 className="text-2xl font-extrabold text-white sm:text-3xl">Your affiliate dashboard</h1>
         <p className="mt-1 text-sm text-gray-500">
           Earning <span className="font-semibold text-brand-400">{affiliate?.commissionRate ?? 20}%</span> commission.
-          {currentUserRank && <span className="ml-2 text-gray-600"> Ranked #{currentUserRank} globally.</span>}
+          {currentUserRank && <span className="ml-2 text-gray-400"> Ranked #{currentUserRank} globally.</span>}
         </p>
       </div>
 
@@ -283,7 +283,7 @@ export default function AffiliateContent({
                 ].map((s) => (
                   <div key={s.label} className="rounded-2xl border border-white/8 bg-white/3 p-4 text-center">
                     <p className="text-xl font-extrabold text-brand-400">{s.prefix}<CountUp value={s.value} /></p>
-                    <p className="text-[10px] text-gray-600 mt-0.5">{s.label}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -299,7 +299,7 @@ export default function AffiliateContent({
                     </div>
                   </div>
                   {tier.next && (
-                    <p className="text-xs text-gray-600 text-right">
+                    <p className="text-xs text-gray-400 text-right">
                       {tier.threshold - conversionCount} more conversions<br />
                       <span className="text-gray-500">for {tier.next}</span>
                     </p>
@@ -333,7 +333,7 @@ export default function AffiliateContent({
 
                 {/* Quick share */}
                 <div>
-                  <p className="text-[10px] text-gray-600 mb-2">Quick share</p>
+                  <p className="text-[10px] text-gray-400 mb-2">Quick share</p>
                   <div className="flex flex-wrap gap-2">
                     {[
                       {
@@ -394,11 +394,11 @@ export default function AffiliateContent({
                 <div className="flex flex-col sm:flex-row gap-5 items-start">
                   <div className="flex h-[240px] w-[240px] shrink-0 items-center justify-center rounded-xl bg-white/5 border border-white/8">
                     {qrLoading ? (
-                      <p className="text-xs text-gray-600">Generating…</p>
+                      <p className="text-xs text-gray-400">Generating…</p>
                     ) : qrDataUrl ? (
                       <img src={qrDataUrl} alt="Affiliate QR code" className="rounded-lg" />
                     ) : (
-                      <p className="text-xs text-gray-600">No QR yet</p>
+                      <p className="text-xs text-gray-400">No QR yet</p>
                     )}
                   </div>
                   <div className="flex-1 space-y-3">
@@ -453,7 +453,7 @@ export default function AffiliateContent({
                     ] as const
                   ).map((field) => (
                     <div key={field.label}>
-                      <label className="block text-[10px] font-semibold uppercase tracking-wider text-gray-600 mb-1">
+                      <label className="block text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">
                         utm_{field.label.toLowerCase()}
                       </label>
                       <input
@@ -468,7 +468,7 @@ export default function AffiliateContent({
 
                 {utmLink !== link && utmLink && (
                   <div className="rounded-xl bg-white/3 border border-white/8 p-3 space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">Generated UTM link</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Generated UTM link</p>
                     <p className="text-xs font-mono text-gray-400 break-all">{utmLink}</p>
                     <button
                       onClick={() => copyText(utmLink, "utm")}
@@ -504,7 +504,7 @@ export default function AffiliateContent({
                   },
                 ].map((t) => (
                   <div key={t.key} className="rounded-xl bg-white/3 border border-white/8 p-3 space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-600">{t.platform}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t.platform}</p>
                     <p className="text-xs text-gray-400 whitespace-pre-line leading-relaxed">{t.text}</p>
                     <button
                       onClick={() => copyText(t.text, `social-${t.key}`)}
@@ -526,7 +526,7 @@ export default function AffiliateContent({
                 <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-500/10 text-3xl">📈</div>
                   <p className="text-gray-400 font-medium">No signups yet.</p>
-                  <p className="mt-1 text-sm text-gray-600">Share your link to start earning.</p>
+                  <p className="mt-1 text-sm text-gray-400">Share your link to start earning.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -534,7 +534,7 @@ export default function AffiliateContent({
                     <div key={c.id} className="flex items-center justify-between rounded-xl border border-white/8 bg-white/3 p-4">
                       <div>
                         <p className="text-sm font-medium text-white">Referred signup</p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-400">
                           {new Date(c.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                         </p>
                       </div>
@@ -591,13 +591,13 @@ export default function AffiliateContent({
                       </span>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-bold text-white">£{(entry.totalEarningsCents / 100).toFixed(0)}</p>
-                        <p className="text-[10px] text-gray-600">{entry.conversions} conversions</p>
+                        <p className="text-[10px] text-gray-400">{entry.conversions} conversions</p>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              <p className="text-[10px] text-gray-700 text-center pt-1">Codes are anonymised — only first 3 characters shown.</p>
+              <p className="text-[10px] text-gray-500 text-center pt-1">Codes are anonymised — only first 3 characters shown.</p>
             </div>
           )}
 
@@ -618,7 +618,7 @@ export default function AffiliateContent({
                   ].map((row) => (
                     <div key={row.label} className={`rounded-2xl border ${row.border} ${row.bg} p-4 text-center`}>
                       <p className={`text-xl font-extrabold ${row.style}`}>£{(row.value / 100).toFixed(2)}</p>
-                      <p className="text-[10px] text-gray-600 mt-0.5">{row.label}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{row.label}</p>
                     </div>
                   ))}
                 </div>
@@ -637,7 +637,7 @@ export default function AffiliateContent({
                 </div>
 
                 <div className="rounded-xl border border-white/5 bg-white/3 px-4 py-3">
-                  <p className="text-xs text-gray-600 leading-relaxed">
+                  <p className="text-xs text-gray-400 leading-relaxed">
                     <span className="font-semibold text-gray-400">Payout process:</span> Minimum £50 per request. Reviewed within 5 business days. Payment sent via bank transfer or PayPal. Email{" "}
                     <span className="text-brand-400">affiliates@mansamusainitiative.com</span> with your payment details before requesting.
                   </p>
@@ -668,7 +668,7 @@ export default function AffiliateContent({
             >
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold text-white">Request payout</h2>
-                <button onClick={() => setShowPayout(false)} className="text-gray-600 hover:text-gray-400 text-xl leading-none">✕</button>
+                <button onClick={() => setShowPayout(false)} className="text-gray-400 hover:text-gray-400 text-xl leading-none">✕</button>
               </div>
 
               {payoutOk ? (
@@ -682,14 +682,14 @@ export default function AffiliateContent({
                   <div className="rounded-xl border border-white/8 bg-white/3 p-4 mb-4">
                     <p className="text-xs text-gray-500 mb-1">Requesting payout of</p>
                     <p className="text-3xl font-extrabold text-brand-400">£{(totalCommissionCents / 100).toFixed(2)}</p>
-                    <p className="text-xs text-gray-600 mt-1">from {conversionCount} conversions</p>
+                    <p className="text-xs text-gray-400 mt-1">from {conversionCount} conversions</p>
                   </div>
                   {payoutErr && (
                     <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 mb-4 text-xs text-red-400">
                       {payoutErr}
                     </div>
                   )}
-                  <p className="text-xs text-gray-600 mb-5 leading-relaxed">
+                  <p className="text-xs text-gray-400 mb-5 leading-relaxed">
                     By requesting you confirm your payment details are on file. If not, email{" "}
                     <span className="text-brand-400">affiliates@mansamusainitiative.com</span> first.
                   </p>

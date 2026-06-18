@@ -70,7 +70,7 @@ export default function AgentDashboardContent({ totalConversations, totalMessage
               <p className={`text-2xl font-extrabold ${s.color}`}>
                 <CountUp value={s.value} suffix={s.suffix} duration={1200} />
               </p>
-              <p className="mt-1 text-xs text-gray-600">{s.label}</p>
+              <p className="mt-1 text-xs text-gray-400">{s.label}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -116,18 +116,18 @@ export default function AgentDashboardContent({ totalConversations, totalMessage
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-white truncate">{agent.name}</p>
-                        <p className="text-[10px] text-gray-600 truncate">{agent.role}</p>
+                        <p className="text-[10px] text-gray-400 truncate">{agent.role}</p>
                       </div>
                     </div>
                     {view === "grid" && (
                       <div className="grid grid-cols-2 gap-2 mb-3">
                         <div className="rounded-lg border border-white/6 bg-white/2 p-2 text-center">
                           <p className="text-xs font-bold text-white">{tasks}</p>
-                          <p className="text-[9px] text-gray-600">Tasks today</p>
+                          <p className="text-[9px] text-gray-400">Tasks today</p>
                         </div>
                         <div className="rounded-lg border border-white/6 bg-white/2 p-2 text-center">
                           <p className="text-xs font-bold text-green-400">{agent.metrics.accuracy}%</p>
-                          <p className="text-[9px] text-gray-600">Accuracy</p>
+                          <p className="text-[9px] text-gray-400">Accuracy</p>
                         </div>
                       </div>
                     )}
@@ -150,7 +150,7 @@ export default function AgentDashboardContent({ totalConversations, totalMessage
 
           <Link
             href="/marketplace"
-            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 py-4 text-sm text-gray-600 hover:border-brand-500/30 hover:text-brand-400 transition-colors"
+            className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 py-4 text-sm text-gray-400 hover:border-brand-500/30 hover:text-brand-400 transition-colors"
           >
             <span className="text-lg">+</span> Deploy more agents from Marketplace
           </Link>

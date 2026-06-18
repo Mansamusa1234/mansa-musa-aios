@@ -271,7 +271,7 @@ export default function Sidebar({ user }: Props) {
               <span className="text-gray-500">AI</span>
             </span>
           </Link>
-          <p className="mt-0.5 text-[10px] text-gray-600 uppercase tracking-widest">AI Operating System</p>
+          <p className="mt-0.5 text-[10px] text-gray-400 uppercase tracking-widest">AI Operating System</p>
         </div>
 
         {/* Nav groups */}
@@ -281,7 +281,7 @@ export default function Sidebar({ user }: Props) {
             if (visibleItems.length === 0) return null;
             return (
               <div key={group.label}>
-                <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-widest text-gray-700">
+                <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
                   {group.label}
                 </p>
                 <div className="space-y-0.5">
@@ -304,7 +304,7 @@ export default function Sidebar({ user }: Props) {
                             transition={{ type: "spring", stiffness: 380, damping: 32 }}
                           />
                         )}
-                        <span className={`relative z-10 flex-shrink-0 ${active ? "text-brand-400" : "text-gray-600"}`}>
+                        <span className={`relative z-10 flex-shrink-0 ${active ? "text-brand-400" : "text-gray-500"}`}>
                           {ICONS[item.icon]}
                         </span>
                         <span className="relative z-10 flex-1">{item.label}</span>
@@ -330,7 +330,7 @@ export default function Sidebar({ user }: Props) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[12px] font-semibold text-gray-300">{user.name ?? "User"}</p>
-              <p className="truncate text-[10px] text-gray-600">{user.role ?? "Member"}</p>
+              <p className="truncate text-[10px] text-gray-500">{user.role ?? "Member"}</p>
             </div>
           </div>
         </div>
@@ -350,7 +350,7 @@ export default function Sidebar({ user }: Props) {
               key={item.href}
               href={item.href}
               className={`relative flex flex-1 flex-col items-center py-3 text-[10px] font-semibold transition-colors ${
-                active ? "text-brand-400" : "text-gray-600 hover:text-gray-400"
+                active ? "text-brand-400" : "text-gray-500 hover:text-gray-300"
               }`}
             >
               {active && (
@@ -360,7 +360,7 @@ export default function Sidebar({ user }: Props) {
                   transition={{ type: "spring", stiffness: 380, damping: 32 }}
                 />
               )}
-              <span className={`${active ? "text-brand-400" : "text-gray-600"}`}>{ICONS[item.icon]}</span>
+              <span className={`${active ? "text-brand-400" : "text-gray-500"}`}>{ICONS[item.icon]}</span>
               <span className="mt-1">{item.label}</span>
             </Link>
           );

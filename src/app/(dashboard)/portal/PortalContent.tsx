@@ -76,7 +76,7 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
           ].map((s) => (
             <motion.div key={s.label} variants={scaleIn} className="rounded-2xl border border-white/8 bg-white/3 p-4">
               <p className={`text-xl font-extrabold ${s.color}`}>{s.display}</p>
-              <p className="mt-1 text-xs text-gray-600">{s.label}</p>
+              <p className="mt-1 text-xs text-gray-400">{s.label}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -183,7 +183,7 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
                       className={`h-full rounded-full ${msgPct >= 90 ? "bg-red-500" : msgPct >= 70 ? "bg-amber-500" : "bg-brand-500"}`}
                     />
                   </div>
-                  <p className="mt-1 text-[10px] text-gray-600">{msgPct.toFixed(1)}% of monthly limit</p>
+                  <p className="mt-1 text-[10px] text-gray-400">{msgPct.toFixed(1)}% of monthly limit</p>
                   {msgPct >= 80 && (
                     <div className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/10 p-2.5 text-xs text-amber-400">
                       Approaching your limit — <Link href="/billing" className="underline">upgrade now</Link> for unlimited messages
@@ -235,7 +235,7 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
               <span className="text-2xl">{s.icon}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-white">{s.title}</p>
-                <p className="text-xs text-gray-600">{s.sub}</p>
+                <p className="text-xs text-gray-400">{s.sub}</p>
               </div>
               <span className="text-xs text-brand-400 flex-shrink-0">{s.label} →</span>
             </Link>
