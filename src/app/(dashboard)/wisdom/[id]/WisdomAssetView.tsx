@@ -81,7 +81,7 @@ export default function WisdomAssetView({ asset }: Props) {
               onMouseLeave={() => setHoveredStar(null)}
               className="text-2xl transition-transform hover:scale-110"
             >
-              <span className={n <= (hoveredStar ?? userRating ?? 0) ? "text-amber-400" : "text-gray-700"}>★</span>
+              <span className={n <= (hoveredStar ?? userRating ?? 0) ? "text-amber-400" : "text-gray-500"}>★</span>
             </button>
           ))}
           {asset.ratingCount > 0 && (

@@ -137,12 +137,12 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
             {/* Renewal / billing */}
             <div className="rounded-xl border border-white/6 bg-white/2 p-3 space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-600">Billing period end</span>
+                <span className="text-gray-400">Billing period end</span>
                 <span className="text-white font-medium">{formatDate(renewDate ?? null)}</span>
               </div>
               {subscription?.stripeCustomerId && (
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Customer ID</span>
+                  <span className="text-gray-400">Customer ID</span>
                   <span className="text-gray-400 font-mono text-[10px] truncate max-w-[140px]">
                     {subscription.stripeCustomerId}
                   </span>
@@ -150,7 +150,7 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
               )}
               {subscription?.stripeSubscriptionId && (
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Subscription ID</span>
+                  <span className="text-gray-400">Subscription ID</span>
                   <span className="text-gray-400 font-mono text-[10px] truncate max-w-[140px]">
                     {subscription.stripeSubscriptionId}
                   </span>

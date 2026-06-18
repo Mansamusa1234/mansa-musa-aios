@@ -23,7 +23,7 @@ interface Props {
 
 function stars(n: number) {
   return ["★","★","★","★","★"].map((s, i) => (
-    <span key={i} className={i < Math.round(n) ? "text-amber-400" : "text-gray-700"}>{s}</span>
+    <span key={i} className={i < Math.round(n) ? "text-amber-400" : "text-gray-500"}>{s}</span>
   ));
 }
 

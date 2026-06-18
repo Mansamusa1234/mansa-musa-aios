@@ -152,17 +152,17 @@ export default function AnalyticsContent({
             {/* Token summary */}
             <div className="mt-2 rounded-xl border border-white/6 bg-white/2 p-3 space-y-2">
               <div className="flex justify-between text-[11px]">
-                <span className="text-gray-600">Total tokens</span>
+                <span className="text-gray-400">Total tokens</span>
                 <span className="font-bold text-white">{formatTokens(totalTokens)}</span>
               </div>
               <div className="flex justify-between text-[11px]">
-                <span className="text-gray-600">Avg / conversation</span>
+                <span className="text-gray-400">Avg / conversation</span>
                 <span className="font-bold text-white">
                   {totalConversations > 0 ? formatTokens(Math.round(totalTokens / totalConversations)) : "—"}
                 </span>
               </div>
               <div className="flex justify-between text-[11px]">
-                <span className="text-gray-600">Avg / message</span>
+                <span className="text-gray-400">Avg / message</span>
                 <span className="font-bold text-white">
                   {totalMessages > 0 ? formatTokens(Math.round(totalTokens / totalMessages)) : "—"}
                 </span>

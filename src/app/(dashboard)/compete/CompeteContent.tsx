@@ -150,7 +150,7 @@ export default function CompeteContent() {
                 {STAGES.map((s, i) => (
                   <div key={s} className="flex flex-1 flex-col items-center">
                     <div className={`h-2.5 w-2.5 rounded-full transition-colors ${i < stageIdx ? "bg-green-400" : i === stageIdx ? "bg-brand-400 animate-pulse" : "bg-white/10"}`} />
-                    <p className={`mt-1 text-[10px] font-semibold ${i === stageIdx ? "text-brand-300" : "text-gray-600"}`}>
+                    <p className={`mt-1 text-[10px] font-semibold ${i === stageIdx ? "text-brand-300" : "text-gray-400"}`}>
                       {s === "RUNNING" ? "Generating" : s === "SCORING" ? "Judging" : "Done"}
                     </p>
                   </div>

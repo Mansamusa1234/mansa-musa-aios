@@ -90,7 +90,7 @@ export default function DashboardClient({ userName, conversations, plan, status,
               className="rounded-2xl border border-white/8 bg-white/3 p-5 hover:border-brand-500/25 hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-600">{s.label}</p>
+                <p className="text-xs text-gray-500">{s.label}</p>
                 <span className="text-lg">{s.icon}</span>
               </div>
               <p className={`mt-2 text-2xl font-extrabold capitalize ${s.color}`}>
@@ -112,7 +112,7 @@ export default function DashboardClient({ userName, conversations, plan, status,
               >
                 <span className="text-2xl mb-2">{q.icon}</span>
                 <p className="text-xs font-semibold text-white">{q.label}</p>
-                <p className="text-[10px] text-gray-600 mt-0.5">{q.desc}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">{q.desc}</p>
               </Link>
             ))}
           </div>
@@ -141,7 +141,7 @@ export default function DashboardClient({ userName, conversations, plan, status,
                 💬
               </div>
               <p className="text-gray-400 font-medium">No conversations yet.</p>
-              <p className="mt-1 text-sm text-gray-600">Start your first AI conversation now.</p>
+              <p className="mt-1 text-sm text-gray-500">Start your first AI conversation now.</p>
               <Link
                 href="/chat"
                 className="mt-4 inline-block rounded-xl bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors"
@@ -168,12 +168,12 @@ export default function DashboardClient({ userName, conversations, plan, status,
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-white text-sm truncate">{c.title}</p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-500">
                           {c._count.messages} messages · {new Date(c.updatedAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                    <span className="text-gray-600 text-sm flex-shrink-0">→</span>
+                    <span className="text-gray-500 text-sm flex-shrink-0">→</span>
                   </Link>
                 </motion.div>
               ))}

@@ -239,7 +239,7 @@ export default function IntelligenceContent() {
                 <p className="text-xs font-semibold text-gray-200 truncate">{t.topic}</p>
                 <p className="text-[10px] text-gray-600">{t.mentions.toLocaleString()} mentions</p>
               </div>
-              <span className={`text-[10px] font-bold flex-shrink-0 ${t.rising ? "text-green-400" : "text-gray-600"}`}>
+              <span className={`text-[10px] font-bold flex-shrink-0 ${t.rising ? "text-green-400" : "text-gray-400"}`}>
                 {t.rising ? "↑" : "→"}
               </span>
             </motion.div>

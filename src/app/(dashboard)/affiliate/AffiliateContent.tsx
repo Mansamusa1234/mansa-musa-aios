@@ -301,7 +301,7 @@ export default function AffiliateContent({
                   {tier.next && (
                     <p className="text-xs text-gray-600 text-right">
                       {tier.threshold - conversionCount} more conversions<br />
-                      <span className="text-gray-700">for {tier.next}</span>
+                      <span className="text-gray-500">for {tier.next}</span>
                     </p>
                   )}
                 </div>
