@@ -2,68 +2,109 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design tokens ─────────────────────────────────────────────── */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --surface-base:      249 250 251;
+    --surface-raised:    255 255 255;
+    --surface-elevated:  243 244 246;
+    --border-default:    229 231 235;
+    --border-strong:     209 213 219;
+    --ink-primary:       17 24 39;
+    --ink-secondary:     107 114 128;
+    --ink-tertiary:      156 163 175;
   }
 
-  * {
-    @apply border-gray-200;
+  .dark {
+    --surface-base:      7 7 18;
+    --surface-raised:    9 9 26;
+    --surface-elevated:  14 14 32;
+    --border-default:    255 255 255;
+    --border-strong:     255 255 255;
+    --ink-primary:       255 255 255;
+    --ink-secondary:     156 163 175;
+    --ink-tertiary:      107 114 128;
   }
+}
 
-  body {
-    @apply bg-white text-gray-900 antialiased;
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
   }
 
   html {
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-white text-gray-900;
+  }
+
+  /* Accessible focus ring */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2;
   }
 }
 
 @layer utilities {
+  /* ── Scrollbars ──────────────────────────────────────────────── */
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: theme(colors.gray.300) transparent;
   }
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-  }
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: theme(colors.gray.300);
     border-radius: 9999px;
   }
+  .dark .scrollbar-thin {
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(255,255,255,0.1);
+  }
 
+  /* ── Text gradients ──────────────────────────────────────────── */
   .gradient-text {
+    @apply bg-gradient-to-r from-brand-400 to-violet-400 bg-clip-text text-transparent;
+  }
+  .gradient-text-brand {
     @apply bg-gradient-to-r from-brand-500 to-brand-400 bg-clip-text text-transparent;
   }
 
+  /* ── Glass ───────────────────────────────────────────────────── */
   .glass {
     @apply border border-white/10 bg-white/5 backdrop-blur-xl;
   }
-
-  .glow-brand {
-    box-shadow: 0 0 40px theme(colors.brand.500 / 0.2);
+  .glass-light {
+    @apply border border-black/5 bg-white/80 backdrop-blur-xl shadow-card;
   }
-
-  .gradient-sweep {
-    background-size: 200% auto;
-    animation: sweep 3s linear infinite;
-  }
-
-  @keyframes sweep {
-    0%   { background-position: 0%   center; }
-    100% { background-position: 200% center; }
-  }
-
   .glass-dark {
     @apply border border-white/8 bg-white/4 backdrop-blur-md;
   }
 
+  /* ── Glow ────────────────────────────────────────────────────── */
+  .glow-brand {
+    box-shadow: 0 0 40px rgb(99 102 241 / 0.2);
+  }
   .glow-sm {
-    box-shadow: 0 0 20px theme(colors.brand.500 / 0.15);
+    box-shadow: 0 0 20px rgb(99 102 241 / 0.15);
+  }
+
+  /* ── Shimmer skeleton ────────────────────────────────────────── */
+  .shimmer {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s linear infinite;
+  }
+
+  /* ── Sweep animation ─────────────────────────────────────────── */
+  .gradient-sweep {
+    background-size: 200% auto;
+    animation: sweep 3s linear infinite;
   }
 }
