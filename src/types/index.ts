@@ -10,6 +10,7 @@ export interface PricingPlan {
   features: string[];
   highlighted: boolean;
   messagesPerMonth: number;
+  messagesPerDay?: number;
 }
 
 export interface ChatMessage {

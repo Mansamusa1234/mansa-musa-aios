@@ -2,12 +2,10 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { runArenaPipeline } from "@/lib/arenaPipeline";
-import { getActivePlan } from "@/lib/subscription";
+import { getActivePlan, hasFeature } from "@/lib/subscription";
 import { after, NextResponse } from "next/server";
 
 export const maxDuration = 300;
-
-const ARENA_PLANS = ["pro", "enterprise"];
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -19,8 +17,8 @@ export async function POST(req: Request) {
   if (limited) return limited;
 
   const plan = await getActivePlan(session.user.id);
-  if (!ARENA_PLANS.includes(plan)) {
-    return NextResponse.json({ error: "Wisdom Arena requires a Pro or Enterprise plan." }, { status: 403 });
+  if (!hasFeature(plan, "agent_arena")) {
+    return NextResponse.json({ error: "Agent Arena requires a Professional or Enterprise plan." }, { status: 403 });
   }
 
   const { question } = await req.json();

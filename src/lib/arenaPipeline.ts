@@ -118,7 +118,7 @@ async function scoreAnswers(
 export async function runArenaPipeline(sessionId: string, question: string): Promise<void> {
   await ensureArenaAgentsSeeded();
 
-  const debaters = await db.agent.findMany({ where: { key: { in: DEBATER_KEYS } } });
+  const debaters = await db.agent.findMany({ where: { key: { in: DEBATER_KEYS } }, orderBy: { sortOrder: "asc" } });
   const judgeAgent = await db.agent.findUnique({ where: { key: "wisdom-judge" } });
   const synthesisAgent = await db.agent.findUnique({ where: { key: "synthesis" } });
 
@@ -134,7 +134,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
       debaters.map(async (agent) => {
         const content = await callAgent(
           agent.systemPrompt,
-          `Question: ${question}\n\nGive your answer in 4-8 sentences.`,
+          `Question: ${question}\n\nGive your own specialist answer. Include source/fact-check notes where possible, flag uncertainty, and never present legal theories as guaranteed law. This is informational support, not advice from a solicitor. 5-9 concise sentences.`,
           DEBATER_MODEL,
           700
         );
@@ -153,7 +153,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
           .join("\n\n");
         const content = await callAgent(
           agent.systemPrompt,
-          `Question: ${question}\n\nHere are the other agents' initial answers:\n\n${othersBlock}\n\nCritique these answers from your perspective — what's missing, wrong, or weak? Be specific, in 3-5 sentences.`,
+          `Question: ${question}\n\nHere are the other agents' initial answers:\n\n${othersBlock}\n\nCritique these answers from your perspective. Score their accuracy, usefulness, risk awareness, and clarity informally. What is missing, wrong, unsafe, unsupported, unclear, or commercially weak? Be specific in 3-5 sentences.`,
           DEBATER_MODEL,
           500
         );
@@ -169,7 +169,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
       initial.map(async ({ agent, content: ownInitial }) => {
         const content = await callAgent(
           agent.systemPrompt,
-          `Question: ${question}\n\nYour initial answer was:\n${ownInitial}\n\nHow the debate critiqued the answers so far:\n\n${critiquesBlock}\n\nGive your improved, final answer — incorporate valid critiques, defend points you still believe, and make this the best version of your answer. 5-9 sentences.`,
+          `Question: ${question}\n\nYour initial answer was:\n${ownInitial}\n\nHow the debate critiqued the answers so far:\n\n${critiquesBlock}\n\nGive your improved final answer. Include: source/fact-check notes where possible, evidence needed, risks, and practical next steps. Do not guarantee legal outcomes. 6-10 sentences.`,
           DEBATER_MODEL,
           700
         );
@@ -210,7 +210,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
       .join("\n");
     const synthesisContent = await callAgent(
       synthesisAgent.systemPrompt,
-      `Question: ${question}\n\nFinal answers from each agent:\n\n${answersBlock}\n\nWisdom Judge's scores:\n${scoresBlock}\n\nProduce the Deep Wisdom Answer.`,
+      `Question: ${question}\n\nFinal answers from each agent:\n\n${answersBlock}\n\nArena Judge scores:\n${scoresBlock}\n\nProduce the strongest final answer and select the best-supported conclusion. Include source/fact-check notes where possible, evidence needed, risk limits, plain-English next steps, and commercial templates/workflows. Do not present legal theories as guaranteed law.`,
       SYNTHESIS_MODEL,
       3000
     );

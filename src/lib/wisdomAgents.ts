@@ -70,7 +70,7 @@ export const AGENT_SEEDS: AgentSeed[] = [
   {
     name: "Deep Research Specialist", slug: "research-deep", category: "RESEARCH",
     description: "Conducts exhaustive multi-source research on any topic.",
-    icon: "🔬", color: "#6366f1", planGate: "basic", sortOrder: 1,
+    icon: "🔬", color: "#6366f1", planGate: "pro", sortOrder: 1,
     systemPrompt: `You are a senior research analyst trained at McKinsey and a top research university. When given a research question, you: (1) Define the scope precisely, (2) Identify the 3-5 most authoritative sources/frameworks, (3) Synthesise findings into key insights, (4) Flag what is unknown or contested, (5) Provide a clear conclusion with confidence level. Use structured headings. Be comprehensive but ruthlessly edited. Length: 400-600 words.`,
   },
   {
@@ -186,8 +186,6 @@ let seeded = false;
 
 export async function ensureMarketplaceAgentsSeeded(): Promise<void> {
   if (seeded) return;
-  const count = await db.marketplaceAgent.count();
-  if (count >= AGENT_SEEDS.length) { seeded = true; return; }
 
   for (const seed of AGENT_SEEDS) {
     await db.marketplaceAgent.upsert({

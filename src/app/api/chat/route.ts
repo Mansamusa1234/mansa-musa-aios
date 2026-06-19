@@ -3,6 +3,7 @@ import { SYSTEM_PROMPT, buildAgentSystemPrompt } from "@/lib/anthropic";
 import { db } from "@/lib/db";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { PLANS } from "@/lib/stripe";
+import { getActivePlan } from "@/lib/subscription";
 import { AGENTS } from "@/data/agents";
 import { resolveModel, routeMessage } from "@/lib/modelRouter";
 import { sendEmail, usageLimitWarningEmailHtml } from "@/lib/email";
@@ -47,28 +48,19 @@ export async function POST(req: Request) {
     take: 20,
   });
 
-  const subscription = await db.subscription.findUnique({
-    where: { userId: session.user.id },
-  });
-  let plan = "free";
-  if (subscription?.status === "ACTIVE" && subscription.stripePriceId) {
-    const priceId = subscription.stripePriceId;
-    if (priceId === process.env.STRIPE_PRICE_ENTERPRISE) plan = "enterprise";
-    else if (priceId === process.env.STRIPE_PRICE_PRO) plan = "pro";
-    else if (priceId === process.env.STRIPE_PRICE_BASIC) plan = "basic";
-  }
+  const plan = await getActivePlan(session.user.id);
 
   const planDef = PLANS.find((p) => p.id === plan) ?? PLANS[0];
-  if (planDef.messagesPerMonth !== Infinity) {
+  if (planDef.messagesPerDay) {
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const msgCount = await db.usageRecord.count({
-      where: { userId: session.user.id, createdAt: { gte: monthStart } },
+      where: { userId: session.user.id, createdAt: { gte: dayStart } },
     });
-    if (msgCount >= planDef.messagesPerMonth) {
+    if (msgCount >= planDef.messagesPerDay) {
       return NextResponse.json({
         error: "MESSAGE_LIMIT_REACHED",
-        limit: planDef.messagesPerMonth,
+        limit: planDef.messagesPerDay,
         plan: planDef.name,
         upgradeUrl: "/billing",
       }, { status: 402 });
@@ -147,15 +139,14 @@ export async function POST(req: Request) {
     });
 
     // 80% usage limit warning — fires exactly once when the threshold is crossed
-    if (planDef.messagesPerMonth !== Infinity) {
+    if (planDef.messagesPerDay) {
       try {
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
+        const dayStart = new Date();
+        dayStart.setHours(0, 0, 0, 0);
         const totalCount = await db.usageRecord.count({
-          where: { userId: session.user.id, createdAt: { gte: monthStart } },
+          where: { userId: session.user.id, createdAt: { gte: dayStart } },
         });
-        const threshold = Math.round(planDef.messagesPerMonth * 0.8);
+        const threshold = Math.round(planDef.messagesPerDay * 0.8);
         if (totalCount === threshold) {
           const user = await db.user.findUnique({
             where: { id: session.user.id },
@@ -164,11 +155,11 @@ export async function POST(req: Request) {
           if (user) {
             await sendEmail(
               user.email,
-              `You've used ${totalCount} of ${planDef.messagesPerMonth} messages this month`,
+              `You've used ${totalCount} of ${planDef.messagesPerDay} free chats today`,
               usageLimitWarningEmailHtml({
                 name: user.name ?? "there",
                 used: totalCount,
-                limit: planDef.messagesPerMonth,
+                limit: planDef.messagesPerDay,
                 plan: planDef.name,
               })
             );

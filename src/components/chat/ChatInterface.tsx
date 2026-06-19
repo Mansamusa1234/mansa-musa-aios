@@ -9,13 +9,17 @@ interface Props {
   conversationId: string;
   initialMessages: ChatMessage[];
   initialAgentId?: string | null;
+  canUseArena?: boolean;
+  canExportLetters?: boolean;
+  planName?: string;
 }
 
-export default function ChatInterface({ conversationId, initialMessages, initialAgentId = null }: Props) {
+export default function ChatInterface({ conversationId, initialMessages, initialAgentId = null, canUseArena = false, planName = "Free" }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
+  const [mode, setMode] = useState<"chat" | "arena">("chat");
   const [agentSaving, setAgentSaving] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [memory, setMemory] = useState("");
@@ -25,6 +29,57 @@ export default function ChatInterface({ conversationId, initialMessages, initial
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const agent = agentId ? AGENTS.find((a) => a.id === agentId) ?? null : null;
+
+  async function pollArenaResult(sessionId: string, assistantMessageId: string) {
+    for (let attempt = 0; attempt < 80; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const res = await fetch(`/api/arena/${sessionId}`);
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      if (data.status === "FAILED") {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId
+              ? { ...m, content: `Agent Competition Results failed: ${data.error ?? "Unknown error"}` }
+              : m
+          )
+        );
+        return;
+      }
+
+      if (data.status === "DONE") {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId
+              ? {
+                  ...m,
+                  content: [
+                    "Agent Competition Results",
+                    "",
+                    "Best Answer",
+                    data.synthesis ?? "The best answer could not be loaded.",
+                    "",
+                    `View full results: /arena?session=${sessionId}`,
+                    "",
+                    "Disclaimer: This is informational support, not advice from a solicitor.",
+                  ].join("\n"),
+                }
+              : m
+          )
+        );
+        return;
+      }
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMessageId
+            ? { ...m, content: `Agent Arena is running (${data.status}). Eight agents are competing...\n\nView live results: /arena?session=${sessionId}` }
+            : m
+        )
+      );
+    }
+  }
 
   async function handleAgentChange(newAgentId: string) {
     const value = newAgentId || null;
@@ -96,6 +151,37 @@ export default function ChatInterface({ conversationId, initialMessages, initial
     setMessages((prev) => [...prev, assistantMsg]);
 
     try {
+      if (mode === "arena") {
+        if (!canUseArena) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsg.id
+                ? { ...m, content: `Agent Arena requires the Professional plan or higher. You are currently on ${planName}. Upgrade in Billing to unlock agent-vs-agent results, Deep Research, and legal/commercial scoring.` }
+                : m
+            )
+          );
+          return;
+        }
+
+        const res = await fetch("/api/arena/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: content }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Could not start Agent Arena.");
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsg.id
+              ? { ...m, content: `Agent Arena started. Eight agents are competing...\n\nView live results: /arena?session=${data.sessionId}` }
+              : m
+          )
+        );
+        await pollArenaResult(data.sessionId, assistantMsg.id);
+        return;
+      }
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,11 +203,11 @@ export default function ChatInterface({ conversationId, initialMessages, initial
           )
         );
       }
-    } catch {
+    } catch (err) {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantMsg.id
-            ? { ...m, content: "Sorry, something went wrong. Please try again." }
+            ? { ...m, content: err instanceof Error ? err.message : "Sorry, something went wrong. Please try again." }
             : m
         )
       );
@@ -140,8 +226,26 @@ export default function ChatInterface({ conversationId, initialMessages, initial
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-8rem)]">
       {/* Agent bar */}
-      <div className="mb-3 flex items-center gap-2">
-        {messages.length === 0 ? (
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="flex rounded-xl border border-gray-200 bg-white p-1 text-xs font-semibold text-gray-600">
+          <button
+            type="button"
+            onClick={() => setMode("chat")}
+            className={`rounded-lg px-3 py-1 transition-colors ${mode === "chat" ? "bg-brand-500 text-white" : "hover:bg-gray-50"}`}
+          >
+            Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("arena")}
+            className={`rounded-lg px-3 py-1 transition-colors ${mode === "arena" ? "bg-brand-500 text-white" : "hover:bg-gray-50"}`}
+            title={canUseArena ? "Run eight specialist agents against each other" : "Agent Arena requires Professional"}
+          >
+            Agent Arena
+          </button>
+        </div>
+
+        {mode === "chat" && messages.length === 0 ? (
           <select
             value={agentId ?? ""}
             disabled={agentSaving}
@@ -155,13 +259,19 @@ export default function ChatInterface({ conversationId, initialMessages, initial
               </option>
             ))}
           </select>
-        ) : agent ? (
+        ) : mode === "chat" && agent ? (
           <span className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700">
             {agent.icon} {agent.name}
           </span>
         ) : null}
 
-        {agent && (
+        {mode === "arena" && (
+          <span className={`rounded-xl border px-3 py-1.5 text-xs font-medium ${canUseArena ? "border-brand-200 bg-brand-50 text-brand-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
+            {canUseArena ? "Professional Agent Arena enabled" : `Locked on ${planName}`}
+          </span>
+        )}
+
+        {mode === "chat" && agent && (
           <button
             onClick={toggleMemory}
             className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-brand-600 transition-colors"
@@ -234,7 +344,7 @@ export default function ChatInterface({ conversationId, initialMessages, initial
             disabled={!input.trim() || streaming}
             className="rounded-xl bg-brand-500 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-40 transition-colors"
           >
-            {streaming ? "Thinking…" : "Send"}
+            {streaming ? (mode === "arena" ? "Competing…" : "Thinking…") : mode === "arena" ? "Start Arena" : "Send"}
           </button>
         </div>
       </div>

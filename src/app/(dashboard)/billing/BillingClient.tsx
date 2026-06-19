@@ -16,6 +16,10 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
   const isCurrent = plan.priceId ? currentPriceId === plan.priceId : !currentPriceId;
 
   async function handleSubscribe() {
+    if (plan.id === "enterprise") {
+      window.location.href = "/enterprise";
+      return;
+    }
     if (!plan.priceId) return;
     setLoading(true);
     const res = await fetch("/api/stripe/create-checkout", {
@@ -29,7 +33,9 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
   }
 
   const price =
-    plan.price === 0
+    plan.id === "enterprise"
+      ? "Custom"
+      : plan.price === 0
       ? "Free"
       : new Intl.NumberFormat("en-GB", {
           style: "currency",
@@ -76,7 +82,7 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
         <span className={`text-3xl font-extrabold ${plan.highlighted ? "text-white" : "text-gray-900 dark:text-white"}`}>
           {price}
         </span>
-        {plan.price > 0 && (
+        {plan.price > 0 && plan.id !== "enterprise" && (
           <span className={`mb-1 text-sm ${plan.highlighted ? "text-brand-100" : "text-gray-400"}`}>/mo</span>
         )}
       </div>
@@ -92,7 +98,7 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
 
       <button
         onClick={handleSubscribe}
-        disabled={isCurrent || loading || !plan.priceId}
+        disabled={isCurrent || loading || (!plan.priceId && plan.id !== "enterprise")}
         className={`mt-6 rounded-xl py-2.5 text-sm font-semibold transition-all duration-200 active:scale-95 ${
           isCurrent
             ? "cursor-not-allowed bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500"
@@ -101,7 +107,7 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
             : "border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-300 hover:border-brand-300 dark:hover:border-brand-500/40 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-400"
         }`}
       >
-        {isCurrent ? "Current plan" : loading ? "Redirecting…" : `Upgrade to ${plan.name}`}
+        {isCurrent ? "Current plan" : loading ? "Redirecting…" : plan.id === "enterprise" ? "Contact sales" : `Upgrade to ${plan.name}`}
       </button>
     </motion.div>
   );

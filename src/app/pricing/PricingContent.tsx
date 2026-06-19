@@ -9,10 +9,13 @@ import { fadeUp, stagger, staggerSlow, scaleIn } from "@/lib/motion";
 import type { PricingPlan } from "@/types";
 
 const tableFeatures = [
-  { label: "AI messages / month",    values: ["20", "500", "Unlimited", "Unlimited"] },
+  { label: "AI chats",               values: ["5 / day", "Unlimited", "Unlimited", "Unlimited"] },
   { label: "AI model",               values: ["Haiku 4.5", "Haiku 4.5", "Sonnet 4.6", "Opus 4.8"] },
   { label: "Conversation history",   values: ["7 days", "30 days", "Unlimited", "Unlimited"] },
   { label: "AI Agent Hub",           values: [false, "10 agents", "All 41", "All 41"] },
+  { label: "Agent Arena",            values: [false, false, true, true] },
+  { label: "Export Letter Pack",     values: [false, true, true, true] },
+  { label: "Deep Research",          values: [false, false, true, true] },
   { label: "Analytics dashboard",    values: ["Basic", "Standard", "Advanced", "Enterprise"] },
   { label: "API access",             values: [false, false, true, true] },
   { label: "Priority support",       values: [false, "Email", "Priority", "Dedicated"] },
@@ -37,6 +40,44 @@ interface Props { plans: PricingPlan[] }
 
 export default function PricingContent({ plans }: Props) {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
+
+  async function startCheckout(plan: PricingPlan) {
+    setCheckoutError("");
+    if (plan.id === "enterprise") {
+      window.location.href = "/enterprise";
+      return;
+    }
+    if (plan.price === 0) {
+      window.location.href = "/register";
+      return;
+    }
+    if (!plan.priceId) {
+      window.location.href = "/billing";
+      return;
+    }
+
+    setCheckoutLoading(plan.id);
+    try {
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId: plan.priceId }),
+      });
+      if (res.status === 401) {
+        window.location.href = "/register";
+        return;
+      }
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else setCheckoutError(data.error ?? "Could not start Stripe checkout. Please sign in and try again from Billing.");
+    } catch {
+      setCheckoutError("Could not start Stripe checkout. Please sign in and try again from Billing.");
+    } finally {
+      setCheckoutLoading(null);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -67,7 +108,9 @@ export default function PricingContent({ plans }: Props) {
           >
             {plans.map((plan) => {
               const price =
-                plan.price === 0
+                plan.id === "enterprise"
+                  ? "Custom"
+                  : plan.price === 0
                   ? "Free"
                   : new Intl.NumberFormat("en-GB", { style: "currency", currency: plan.currency.toUpperCase(), minimumFractionDigits: 0 }).format(plan.price);
 
@@ -90,7 +133,7 @@ export default function PricingContent({ plans }: Props) {
                   <p className={`text-xs font-bold uppercase tracking-widest ${plan.highlighted ? "text-brand-100" : "text-brand-600"}`}>{plan.name}</p>
                   <div className="mt-3 flex items-end gap-1">
                     <span className={`text-4xl font-extrabold ${plan.highlighted ? "text-white" : "text-gray-900"}`}>{price}</span>
-                    {plan.price > 0 && <span className={`mb-1 text-sm ${plan.highlighted ? "text-brand-100" : "text-gray-400"}`}>/mo</span>}
+                    {plan.price > 0 && plan.id !== "enterprise" && <span className={`mb-1 text-sm ${plan.highlighted ? "text-brand-100" : "text-gray-400"}`}>/mo</span>}
                   </div>
                   <p className={`mt-2 text-sm ${plan.highlighted ? "text-brand-100" : "text-gray-500"}`}>{plan.description}</p>
                   <ul className="mt-5 flex-1 space-y-2">
@@ -101,20 +144,23 @@ export default function PricingContent({ plans }: Props) {
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    href="/register"
+                  <button
+                    type="button"
+                    onClick={() => startCheckout(plan)}
+                    disabled={checkoutLoading === plan.id}
                     className={`mt-6 block rounded-xl py-2.5 text-center text-sm font-semibold transition-all ${
                       plan.highlighted
                         ? "bg-white text-brand-600 hover:bg-brand-50"
                         : "border border-gray-200 text-gray-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
                     }`}
                   >
-                    {plan.price === 0 ? "Start free" : "Get started"}
-                  </Link>
+                    {checkoutLoading === plan.id ? "Opening Stripe..." : plan.id === "enterprise" ? "Contact sales" : plan.price === 0 ? "Start free" : "Checkout with Stripe"}
+                  </button>
                 </motion.div>
               );
             })}
           </motion.div>
+          {checkoutError && <p className="mt-4 text-center text-sm text-red-600">{checkoutError}</p>}
         </div>
       </section>
 
@@ -129,7 +175,7 @@ export default function PricingContent({ plans }: Props) {
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="py-4 pl-6 text-left text-sm font-semibold text-gray-700 w-1/3">Feature</th>
-                  {["Free", "Basic", "Pro", "Enterprise"].map((p, i) => (
+                  {["Free", "Starter", "Professional", "Enterprise"].map((p, i) => (
                     <th key={p} className={`py-4 px-4 text-center text-sm font-bold ${i === 2 ? "text-brand-600" : "text-gray-700"}`}>{p}</th>
                   ))}
                 </tr>
