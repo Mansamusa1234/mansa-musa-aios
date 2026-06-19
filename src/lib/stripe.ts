@@ -29,6 +29,8 @@ export function requireStripe(): Stripe {
   return stripe;
 }
 
+export const stripe = requireStripe();
+
 export const PLANS: PricingPlan[] = [
   {
     id: "free",
@@ -43,30 +45,35 @@ export const PLANS: PricingPlan[] = [
     messagesPerDay: 5,
   },
   {
-    id: "basic",
+    id: "starter",
     name: "Starter",
     price: 49,
     currency: "gbp",
     priceId: process.env.STRIPE_PRICE_STARTER ?? process.env.STRIPE_PRICE_BASIC ?? "",
-    description: "For creators and operators",
-    features: ["Unlimited standard chat", "Export Letter Pack", "Claude Haiku 4.5", "Chat history (30 days)", "Email support"],
+    description: "For small businesses",
+    features: [
+      "1 AI receptionist",
+      "Up to 200 calls / month",
+      "Appointment booking",
+      "Lead capture & CRM",
+      "Email support",
+    ],
     highlighted: false,
     messagesPerMonth: Infinity,
   },
   {
-    id: "pro",
+    id: "professional",
     name: "Professional",
     price: 149,
     currency: "gbp",
     priceId: process.env.STRIPE_PRICE_PROFESSIONAL ?? process.env.STRIPE_PRICE_PRO ?? "",
-    description: "For advanced legal/commercial research",
+    description: "For growing businesses",
     features: [
-      "Unlimited messages",
-      "Agent Arena",
-      "Deep Research",
-      "Export Letter Pack",
-      "Claude Sonnet 4.6",
-      "Unlimited history",
+      "3 AI receptionists",
+      "Unlimited calls",
+      "CRM + WhatsApp integration",
+      "Email automation sequences",
+      "Affiliate programme access",
       "Priority support",
     ],
     highlighted: true,
@@ -75,17 +82,18 @@ export const PLANS: PricingPlan[] = [
   {
     id: "enterprise",
     name: "Enterprise",
-    price: 0,
+    price: 499,
     currency: "gbp",
-    priceId: "",
-    description: "Custom support, governance, and scale",
+    priceId: process.env.STRIPE_PRICE_ENTERPRISE ?? "",
+    description: "For larger teams",
     features: [
-      "Everything in Professional",
-      "Claude Opus 4.8",
-      "Team workspaces",
+      "Unlimited AI receptionists",
+      "Unlimited calls",
+      "Custom training & branding",
+      "Business automation workflows",
       "SSO / SAML",
-      "Dedicated support",
-      "Custom terms",
+      "Dedicated account manager",
+      "SLA guarantee",
     ],
     highlighted: false,
     messagesPerMonth: Infinity,

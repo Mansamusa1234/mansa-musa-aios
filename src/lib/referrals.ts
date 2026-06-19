@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { PLANS } from "@/lib/stripe";
 import { sendEmail, referralConvertedEmailHtml, affiliateConversionEmailHtml } from "@/lib/email";
 
-const REFERRAL_REWARD_PERCENT = 10;
+const REFERRAL_REWARD_PERCENT = 20;
 
 function generateCode(): string {
   return crypto.randomBytes(4).toString("hex");
