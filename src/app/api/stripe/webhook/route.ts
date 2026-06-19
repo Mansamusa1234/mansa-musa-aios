@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { after } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { PLANS } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { recordConversion } from "@/lib/referrals";
@@ -29,10 +29,16 @@ function formatAmount(unitAmount: number | null, currency: string) {
 export async function POST(req: Request) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature")!;
+  const stripe = getStripe();
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!stripe || !webhookSecret) {
+    return NextResponse.json({ error: "Stripe webhook is not configured." }, { status: 503 });
+  }
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err) {
     return NextResponse.json({ error: `Webhook error: ${err}` }, { status: 400 });
   }

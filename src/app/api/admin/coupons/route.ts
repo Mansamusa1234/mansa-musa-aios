@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { NextResponse } from "next/server";
 
@@ -7,6 +7,11 @@ export async function GET() {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const stripe = getStripe();
+  if (!stripe) {
+    return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
 
   const promotionCodes = await stripe.promotionCodes.list({ limit: 100, expand: ["data.coupon"] });
@@ -34,6 +39,11 @@ export async function POST(req: Request) {
 
   const limited = await checkRateLimit(limiters.admin, session.user.id);
   if (limited) return limited;
+
+  const stripe = getStripe();
+  if (!stripe) {
+    return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
+  }
 
   const { code, percentOff, durationMonths, maxRedemptions, expiresInDays } = await req.json();
 

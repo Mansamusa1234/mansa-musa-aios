@@ -1,6 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import { db } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { anthropic } from "@/lib/anthropic";
 
 export interface ConnectorResult {
@@ -91,9 +91,14 @@ export const CONNECTORS: Connector[] = [
     name: "Stripe Connector",
     category: "Finance",
     description: "Live billing/revenue data from your own Stripe account.",
-    isConfigured: () => !!process.env.STRIPE_SECRET_KEY,
+    isConfigured: () => !!process.env.STRIPE_SECRET_KEY?.trim(),
     notConfiguredReason: "Needs STRIPE_SECRET_KEY — not set.",
     fetchSample: async () => {
+      const stripe = getStripe();
+      if (!stripe) {
+        return { ok: false, summary: "Needs STRIPE_SECRET_KEY — not set." };
+      }
+
       const balance = await stripe.balance.retrieve();
       return { ok: true, summary: "Live Stripe balance retrieved.", data: balance };
     },
