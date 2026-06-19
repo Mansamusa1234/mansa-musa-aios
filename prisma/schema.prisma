@@ -74,6 +74,8 @@ model User {
   evidenceDocuments        EvidenceDocument[]
   evidenceChunks           EvidenceChunk[]
   exportedDocuments        ExportedDocument[]
+  whatsAppMessages         WhatsAppMessage[]
+  emailWorkflows           EmailWorkflow[]
 }
 
 model Account {
@@ -119,6 +121,8 @@ model Subscription {
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean            @default(false)
+  trialEndsAt          DateTime?
+  trialUsed            Boolean            @default(false)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
@@ -568,6 +572,89 @@ model LeadActivity {
   createdAt DateTime @default(now())
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+/* ── WhatsApp ─────────────────────────────────────────────── */
+
+enum WhatsAppDirection {
+  INBOUND
+  OUTBOUND
+}
+
+model WhatsAppMessage {
+  id          String             @id @default(cuid())
+  userId      String
+  from        String
+  to          String
+  body        String             @db.Text
+  direction   WhatsAppDirection
+  twilioSid   String?            @unique
+  status      String             @default("received")
+  mediaUrl    String?
+  createdAt   DateTime           @default(now())
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+/* ── Email Automation ─────────────────────────────────────── */
+
+enum WorkflowTrigger {
+  LEAD_CREATED
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  TRIAL_STARTED
+  TRIAL_ENDING
+  SUBSCRIPTION_ACTIVATED
+  SUBSCRIPTION_CANCELLED
+  MANUAL
+}
+
+model EmailWorkflow {
+  id          String           @id @default(cuid())
+  userId      String
+  name        String
+  trigger     WorkflowTrigger
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  steps       EmailWorkflowStep[]
+  runs        EmailWorkflowRun[]
+}
+
+model EmailWorkflowStep {
+  id           String   @id @default(cuid())
+  workflowId   String
+  stepOrder    Int
+  delayHours   Int      @default(0)
+  subject      String
+  bodyHtml     String   @db.Text
+  createdAt    DateTime @default(now())
+
+  workflow     EmailWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+enum WorkflowRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model EmailWorkflowRun {
+  id          String            @id @default(cuid())
+  workflowId  String
+  toEmail     String
+  toName      String?
+  status      WorkflowRunStatus @default(PENDING)
+  currentStep Int               @default(0)
+  startedAt   DateTime          @default(now())
+  completedAt DateTime?
+
+  workflow    EmailWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 }
 
 /* ── AI Receptionist ──────────────────────────────────────── */
