@@ -27,7 +27,7 @@ export default async function DashboardPage() {
       include: { _count: { select: { messages: true } } },
     }),
     db.subscription.findUnique({ where: { userId } }),
-    db.user.findUnique({ where: { id: userId }, select: { name: true, emailVerified: true, twoFactorEnabled: true, onboardingComplete: true } }),
+    db.user.findUnique({ where: { id: userId }, select: { name: true, createdAt: true, emailVerified: true, twoFactorEnabled: true, onboardingComplete: true } }),
     db.usageRecord.count({ where: { userId, createdAt: { gte: monthStart } } }),
   ]);
 
@@ -46,16 +46,21 @@ export default async function DashboardPage() {
     { id: "2fa", label: "Enable two-factor authentication", description: "Secure your account with 2FA", href: "/settings", cta: "Enable", done: !!user?.twoFactorEnabled },
     { id: "upgrade", label: "Upgrade your plan", description: "Unlock unlimited messages and more", href: "/billing", cta: "View plans", done: planId !== "free" },
   ];
+  const completedOnboardingItems = onboardingItems.filter((item) => item.done).length;
+  const onboardingProgress = onboardingItems.length > 0 ? completedOnboardingItems / onboardingItems.length : 1;
+  const isRecentlyRegistered = user?.createdAt ? Date.now() - user.createdAt.getTime() < 24 * 60 * 60 * 1000 : false;
+  const shouldShowFirstWelcome = isRecentlyRegistered || onboardingProgress === 0;
 
   return (
     <DashboardClient
-      userName={session!.user.name?.split(" ")[0] ?? "there"}
+      userName={(user?.name ?? session!.user.name)?.split(" ")[0] ?? "there"}
       conversations={conversations}
       plan={planDef.name}
       status={subscription?.status ?? "Inactive"}
       totalConversations={conversations.length}
       onboardingItems={onboardingItems}
       onboardingComplete={!!user?.onboardingComplete}
+      showFirstWelcome={shouldShowFirstWelcome}
       msgUsed={msgThisMonth}
       msgLimit={planDef.messagesPerMonth === Infinity ? null : planDef.messagesPerMonth}
     />

@@ -34,6 +34,7 @@ interface Props {
   totalConversations: number;
   onboardingItems?: OnboardingItem[];
   onboardingComplete?: boolean;
+  showFirstWelcome?: boolean;
   msgUsed?: number;
   msgLimit?: number | null;
 }
@@ -45,9 +46,10 @@ const QUICK_LINKS = [
   { icon: "📈", label: "Analytics",         href: "/analytics",       desc: "Usage & insights"     },
 ];
 
-export default function DashboardClient({ userName, conversations, plan, status, totalConversations, onboardingItems, onboardingComplete, msgUsed = 0, msgLimit }: Props) {
+export default function DashboardClient({ userName, conversations, plan, status, totalConversations, onboardingItems, onboardingComplete, showFirstWelcome = false, msgUsed = 0, msgLimit }: Props) {
   const isActive = status === "active" || status === "ACTIVE";
   const [showOnboarding, setShowOnboarding] = useState(!onboardingComplete && (onboardingItems?.some((i) => !i.done) ?? false));
+  const welcomeMessage = showFirstWelcome ? `Welcome to MansaMusaAI, ${userName}` : `Welcome back, ${userName}`;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -56,7 +58,7 @@ export default function DashboardClient({ userName, conversations, plan, status,
         <motion.div variants={fadeUp}>
           <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· Dashboard ·</p>
           <h1 className="text-2xl font-extrabold text-white sm:text-3xl">
-            Welcome back, {userName}
+            {welcomeMessage}
           </h1>
           <p className="mt-1 text-sm text-gray-500">Your AI workforce is ready.</p>
         </motion.div>
