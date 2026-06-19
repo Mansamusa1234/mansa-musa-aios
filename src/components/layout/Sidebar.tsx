@@ -180,7 +180,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/marketplace",      label: "Marketplace",  icon: "store", badge: String(AGENTS.length) },
       { href: "/agent-dashboard",  label: "My Agents",    icon: "bot"   },
-      { href: "/arena",            label: "Wisdom Arena", icon: "arena", badge: "NEW" },
+      { href: "/arena",            label: "Agent Arena",  icon: "arena", badge: "NEW" },
       { href: "/model-hub",        label: "Model Hub",    icon: "layers", badge: "NEW" },
     ],
   },
@@ -197,6 +197,8 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/news",         label: "News Feed",    icon: "news"     },
       { href: "/intelligence", label: "Market Intel", icon: "globe"    },
+      { href: "/evidence",     label: "Evidence Vault", icon: "shield", badge: "NEW" },
+      { href: "/legal-dictionary", label: "Legal Dictionary", icon: "wisdom" },
     ],
   },
   {

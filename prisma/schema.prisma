@@ -71,6 +71,9 @@ model User {
   wisdomAssets             WisdomAsset[]
   assetRatings             AssetRating[]
   agentRatings             AgentRating[]
+  evidenceDocuments        EvidenceDocument[]
+  evidenceChunks           EvidenceChunk[]
+  exportedDocuments        ExportedDocument[]
 }
 
 model Account {
@@ -181,6 +184,53 @@ model AgentMemory {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, agentId])
+}
+
+model EvidenceDocument {
+  id          String   @id @default(cuid())
+  userId      String
+  filename    String
+  mimeType    String
+  sizeBytes   Int
+  sourceType  String   @default("USER_UPLOAD")
+  status      String   @default("READY")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks EvidenceChunk[]
+
+  @@index([userId, createdAt])
+}
+
+model EvidenceChunk {
+  id           String   @id @default(cuid())
+  documentId   String
+  userId       String
+  text         String   @db.Text
+  pageNumber   Int?
+  sectionLabel String?
+  createdAt    DateTime @default(now())
+
+  document EvidenceDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([documentId])
+}
+
+model ExportedDocument {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  type      String
+  content   String   @db.Text
+  sources   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Referral {

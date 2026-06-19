@@ -345,9 +345,20 @@ export default function ArenaContent({ canUseArena, canExportLetters, plan, init
     }
   }
 
-  function exportAsLetter() {
+  async function exportAsLetter() {
     if (!session?.synthesis || !canExportLetters) return;
-    const blob = new Blob([buildLetterPack(session)], { type: "text/plain;charset=utf-8" });
+    const res = await fetch("/api/export/letter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: `Agent Arena Letter Pack - ${session.id}`,
+        question: session.question,
+        answer: session.synthesis,
+        sources: extractSourceNotes(session),
+      }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

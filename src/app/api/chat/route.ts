@@ -7,6 +7,7 @@ import { getActivePlan } from "@/lib/subscription";
 import { AGENTS } from "@/data/agents";
 import { resolveModel, routeMessage } from "@/lib/modelRouter";
 import { findDictionaryEntriesInText, formatDictionaryEntriesForPrompt, formatDictionarySources } from "@/lib/legalDictionary";
+import { formatEvidenceForPrompt, formatEvidenceSourcesPanel, searchEvidenceChunks } from "@/lib/evidenceVault";
 import { sendEmail, usageLimitWarningEmailHtml } from "@/lib/email";
 import { NextResponse } from "next/server";
 import { after } from "next/server";
@@ -95,7 +96,15 @@ export async function POST(req: Request) {
   if (dictionaryEntries.length > 0) {
     system += `\n\nLegal dictionary context for explanation only (not legal authority):\n${formatDictionaryEntriesForPrompt(dictionaryEntries)}\nIf relevant, include a short "Sources Used" section in your answer using these source labels. Do not treat dictionary definitions as legal authority.`;
   }
-  const dictionarySources = formatDictionarySources(dictionaryEntries);
+  const evidenceSources = await searchEvidenceChunks(session.user.id, message, 5);
+  if (evidenceSources.length > 0) {
+    system += `\n\nEvidence Vault context. Cite exact source labels like [E1] when using this material. Do not cite evidence that is not listed here:\n${formatEvidenceForPrompt(evidenceSources)}`;
+  }
+  const sourceLines = [
+    ...formatDictionarySources(dictionaryEntries).split("\n").filter((line) => line && line !== "Sources Used"),
+    ...formatEvidenceSourcesPanel(evidenceSources).split("\n").filter((line) => line && line !== "Evidence Used"),
+  ];
+  const sourcesPanel = sourceLines.length > 0 ? `Sources Used\n${sourceLines.join("\n")}` : "";
 
   const { stream, onComplete } = routeMessage(
     modelDef,
@@ -117,8 +126,8 @@ export async function POST(req: Request) {
         assistantContent += text;
         controller.enqueue(encoder.encode(text));
       }
-      if (dictionarySources) {
-        const sourceBlock = `\n\n${dictionarySources}`;
+      if (sourcesPanel) {
+        const sourceBlock = `\n\n${sourcesPanel}`;
         assistantContent += sourceBlock;
         controller.enqueue(encoder.encode(sourceBlock));
       }
