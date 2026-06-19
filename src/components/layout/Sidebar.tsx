@@ -205,8 +205,11 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Workspace",
     items: [
       { href: "/chat",         label: "AI Chat",      icon: "chat"          },
+      { href: "/agents",       label: "AI Agents",    icon: "bot", badge: "NEW" },
       { href: "/crm",          label: "CRM",          icon: "crm"           },
       { href: "/receptionist", label: "Receptionist", icon: "receptionist"  },
+      { href: "/whatsapp",       label: "WhatsApp",     icon: "chat", badge: "NEW" },
+      { href: "/email-automation", label: "Email Auto",  icon: "chat" },
       { href: "/support",      label: "Support",      icon: "support", badge: "NEW" },
       { href: "/calendar",     label: "Calendar",     icon: "calendar", badge: "NEW" },
       { href: "/revenue",      label: "Revenue",      icon: "currency", adminOnly: true },

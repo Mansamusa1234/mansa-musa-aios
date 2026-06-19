@@ -17,12 +17,15 @@ interface ReceptionistData {
 
 interface ChatRow { id: string; visitorName: string | null; visitorEmail: string | null; createdAt: Date }
 
+interface Stats { weeklyChats: number; leadsFromChats: number; totalChats: number }
+
 interface Props {
   receptionist: ReceptionistData | null;
   recentChats: ChatRow[];
+  stats: Stats;
 }
 
-export default function ReceptionistContent({ receptionist: initial, recentChats }: Props) {
+export default function ReceptionistContent({ receptionist: initial, recentChats, stats }: Props) {
   const [rec, setRec] = useState(initial);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -33,6 +36,7 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
     widgetColor: initial?.widgetColor ?? "#6366f1",
     isActive: initial?.isActive ?? true,
   });
+  const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"config" | "preview" | "embed" | "chats">("config");
   const [previewMessages, setPreviewMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([
     { role: "assistant", content: form.greeting },
@@ -65,6 +69,12 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
     setPreviewing(false);
   }
 
+  function copyEmbed() {
+    navigator.clipboard.writeText(embedCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   const embedCode = rec
     ? `<script src="https://www.mansamusainitiative.com/receptionist-widget.js" data-id="${rec.id}" data-color="${rec.widgetColor}" defer></script>`
     : "Save your configuration first to generate the embed code.";
@@ -84,6 +94,20 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
             <span className="text-xs text-gray-400 ml-2">{rec.totalChats} chats</span>
           </div>
         )}
+      </motion.div>
+
+      {/* Stats */}
+      <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3">
+        {[
+          { label: "Total chats", value: stats.totalChats },
+          { label: "This week", value: stats.weeklyChats },
+          { label: "Leads captured", value: stats.leadsFromChats },
+        ].map((s) => (
+          <div key={s.label} className="rounded-2xl border border-white/8 bg-white/3 p-4 text-center">
+            <p className="text-2xl font-extrabold text-white">{s.value}</p>
+            <p className="mt-1 text-xs text-gray-500">{s.label}</p>
+          </div>
+        ))}
       </motion.div>
 
       {/* Tabs */}
@@ -170,7 +194,9 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
         <motion.div variants={fadeUp} className="rounded-2xl border border-white/8 bg-white/3 p-5 space-y-4">
           <p className="text-sm text-gray-400">Add this snippet to your website's <code className="text-brand-400 text-xs">&lt;body&gt;</code> tag:</p>
           <pre className="rounded-xl border border-white/8 bg-black/40 p-4 text-xs text-green-400 overflow-x-auto whitespace-pre-wrap break-all">{embedCode}</pre>
-          <button onClick={() => navigator.clipboard.writeText(embedCode)} className="rounded-xl border border-white/8 px-4 py-2 text-xs font-semibold text-gray-300 hover:text-white">Copy code</button>
+          <button onClick={copyEmbed} className={`rounded-xl border px-4 py-2 text-xs font-semibold transition-colors ${copied ? "border-green-500/40 text-green-400" : "border-white/8 text-gray-300 hover:text-white"}`}>
+            {copied ? "✓ Copied!" : "Copy code"}
+          </button>
         </motion.div>
       )}
 

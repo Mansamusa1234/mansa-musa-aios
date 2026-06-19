@@ -38,5 +38,5 @@ export default async function CRMPage() {
   const wonCount = leads.filter((l) => l.stage === "WON").length;
   const pipelineValue = leads.filter((l) => !["WON", "LOST"].includes(l.stage)).reduce((s, l) => s + l.value, 0);
 
-  return <CRMContent pipeline={pipeline} totalLeads={leads.length} totalValue={totalValue} wonCount={wonCount} pipelineValue={pipelineValue} />;
+  return <CRMContent pipeline={pipeline} totalLeads={leads.length} totalValue={totalValue} wonCount={wonCount} pipelineValue={pipelineValue} userId={session!.user.id} />;
 }

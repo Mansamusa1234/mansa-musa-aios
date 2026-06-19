@@ -26,6 +26,7 @@ interface Props {
   totalValue: number;
   wonCount: number;
   pipelineValue: number;
+  userId: string;
 }
 
 const STAGE_META: Record<Stage, { label: string; color: string; dot: string }> = {
@@ -37,12 +38,23 @@ const STAGE_META: Record<Stage, { label: string; color: string; dot: string }> =
   LOST:      { label: "Lost",      color: "border-red-500/30 bg-red-500/5",     dot: "bg-red-400"   },
 };
 
-export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount, pipelineValue }: Props) {
+export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount, pipelineValue, userId }: Props) {
   const [cols, setCols] = useState(pipeline);
   const [showAdd, setShowAdd] = useState(false);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", company: "", phone: "", value: "0", source: "", notes: "", stage: "NEW" as Stage });
   const [dragId, setDragId] = useState<string | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  const captureUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/lead-capture/${userId}`
+    : `/lead-capture/${userId}`;
+
+  function copyCaptureUrl() {
+    navigator.clipboard.writeText(captureUrl);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
+  }
 
   const fmtGBP = (p: number) => `£${(p / 100).toLocaleString("en-GB", { minimumFractionDigits: 0 })}`;
 
@@ -108,6 +120,20 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
             <p className="text-[10px] text-gray-400 mt-0.5">{s.label}</p>
           </motion.div>
         ))}
+      </motion.div>
+
+      {/* Lead capture link */}
+      <motion.div variants={fadeUp} className="rounded-2xl border border-white/8 bg-white/3 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-gray-300 mb-1">Your lead capture page</p>
+          <p className="text-xs text-gray-500 truncate">{captureUrl}</p>
+        </div>
+        <button onClick={copyCaptureUrl} className={`shrink-0 rounded-xl border px-4 py-2 text-xs font-semibold transition-colors ${copiedUrl ? "border-green-500/40 text-green-400" : "border-white/8 text-gray-300 hover:text-white"}`}>
+          {copiedUrl ? "✓ Copied!" : "Copy URL"}
+        </button>
+        <a href={captureUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-xl border border-white/8 px-4 py-2 text-xs font-semibold text-gray-300 hover:text-white transition-colors">
+          Preview
+        </a>
       </motion.div>
 
       {/* Kanban */}
