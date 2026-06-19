@@ -177,6 +177,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
   const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingOAuth, setLoadingOAuth] = useState<string | null>(null);
   const [ref, setRef] = useState<string | null>(null);
@@ -245,9 +246,10 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
     setLoading(true);
     setError("");
+    setNotice("");
 
     const normalizedEmail = email.trim().toLowerCase();
-    let data: { error?: string; success?: boolean } = {};
+    let data: { error?: string; success?: boolean; warning?: string; requestId?: string } = {};
 
     try {
       const res = await fetch("/api/auth/register", {
@@ -265,7 +267,8 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
       data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(data.error ?? "Could not create your account. Please check your details and try again.");
+        const suffix = data.requestId ? ` Reference: ${data.requestId}` : "";
+        setError(`${data.error ?? "Could not create your account. Please check your details and try again."}${suffix}`);
         setLoading(false);
         return;
       }
@@ -277,15 +280,23 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
     try {
       const signInResult = await signIn("credentials", { email: normalizedEmail, password, redirect: false });
+      if (data.warning) {
+        setNotice(data.warning);
+      }
       if (signInResult?.error) {
-        setError("Account created. Please sign in with your email and password to continue.");
+        setNotice(data.warning ?? "Account created. Please sign in with your email and password to continue.");
         router.push(`/login?email=${encodeURIComponent(normalizedEmail)}`);
+        return;
+      }
+
+      if (data.warning) {
+        setLoading(false);
         return;
       }
 
       router.push("/dashboard");
     } catch {
-      setError("Account created. Please sign in with your email and password to continue.");
+      setNotice(data.warning ?? "Account created. Please sign in with your email and password to continue.");
       router.push(`/login?email=${encodeURIComponent(normalizedEmail)}`);
     } finally {
       setLoading(false);
@@ -427,6 +438,17 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
                 <span className="text-sm text-red-700 dark:text-red-400">{error}</span>
+              </div>
+            )}
+            {notice && (
+              <div role="status" className="flex items-start gap-2.5 rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 px-4 py-3">
+                <svg className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                </svg>
+                <span className="text-sm text-amber-800 dark:text-amber-300">
+                  {notice}{" "}
+                  <Link href="/dashboard" className="font-semibold underline">Continue to dashboard</Link>
+                </span>
               </div>
             )}
 
