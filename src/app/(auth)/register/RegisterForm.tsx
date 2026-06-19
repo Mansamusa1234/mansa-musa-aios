@@ -246,8 +246,10 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
     setLoading(true);
     setError("");
 
+    const normalizedEmail = email.trim().toLowerCase();
+    let data: { error?: string; success?: boolean } = {};
+
     try {
-      const normalizedEmail = email.trim().toLowerCase();
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -261,22 +263,30 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? "Could not create your account. Please check your details and try again.");
+        setLoading(false);
         return;
       }
+    } catch {
+      setError("Could not reach the registration server. Please check your connection, then try again in Safari, Chrome, or your normal browser.");
+      setLoading(false);
+      return;
+    }
 
+    try {
       const signInResult = await signIn("credentials", { email: normalizedEmail, password, redirect: false });
       if (signInResult?.error) {
-        setError("Account created, but automatic sign-in failed. Redirecting you to sign in.");
+        setError("Account created. Please sign in with your email and password to continue.");
         router.push(`/login?email=${encodeURIComponent(normalizedEmail)}`);
         return;
       }
 
       router.push("/dashboard");
     } catch {
-      setError("Could not create your account. Please check your connection and try again.");
+      setError("Account created. Please sign in with your email and password to continue.");
+      router.push(`/login?email=${encodeURIComponent(normalizedEmail)}`);
     } finally {
       setLoading(false);
     }

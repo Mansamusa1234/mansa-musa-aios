@@ -10,6 +10,8 @@ import { createAndSendVerificationEmail, sendEmail, welcomeEmailHtml } from "@/l
 import { meetsMinimumRequirements } from "@/lib/passwordStrength";
 import { isPasswordBreached } from "@/lib/passwordBreach";
 
+export const runtime = "nodejs";
+
 const schema = z.object({
   name: z.string().trim().min(2, "Enter your first and last name.").max(100, "Name must be under 100 characters."),
   email: z.string().trim().email("Enter a valid email address.").transform((value) => value.toLowerCase()),
@@ -19,6 +21,10 @@ const schema = z.object({
 
 function isUniqueConstraintError(err: unknown) {
   return typeof err === "object" && err !== null && "code" in err && err.code === "P2002";
+}
+
+function getPrismaErrorCode(err: unknown): string | null {
+  return typeof err === "object" && err !== null && "code" in err && typeof err.code === "string" ? err.code : null;
 }
 
 export async function POST(req: Request) {
@@ -83,7 +89,16 @@ export async function POST(req: Request) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
     }
+    const prismaCode = getPrismaErrorCode(err);
+    if (prismaCode === "P1001") {
+      console.error("[register] database unavailable:", err);
+      return NextResponse.json({ error: "Registration service is temporarily unavailable. Please try again shortly." }, { status: 503 });
+    }
+    if (prismaCode === "P2021" || prismaCode === "P2022") {
+      console.error("[register] database schema unavailable:", err);
+      return NextResponse.json({ error: "Registration service is being updated. Please try again shortly." }, { status: 503 });
+    }
     console.error("[register]", (err as Error)?.message);
-    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
+    return NextResponse.json({ error: "Could not create your account right now. Please try again shortly." }, { status: 500 });
   }
 }
