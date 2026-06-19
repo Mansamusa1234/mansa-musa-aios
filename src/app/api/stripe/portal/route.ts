@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
@@ -16,6 +16,11 @@ export async function POST() {
 
   if (!subscription?.stripeCustomerId) {
     return NextResponse.json({ error: "No billing account found." }, { status: 404 });
+  }
+
+  const stripe = getStripe();
+  if (!stripe) {
+    return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
 
   const portalSession = await stripe.billingPortal.sessions.create({

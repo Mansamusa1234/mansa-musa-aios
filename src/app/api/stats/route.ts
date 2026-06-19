@@ -96,7 +96,7 @@ export async function GET() {
     recentUsers,
     topUsage,
     health: {
-      stripe: !!process.env.STRIPE_SECRET_KEY,
+      stripe: !!process.env.STRIPE_SECRET_KEY?.trim(),
       redis: !!process.env.UPSTASH_REDIS_REST_URL,
       ai: !!process.env.ANTHROPIC_API_KEY,
       database: true,

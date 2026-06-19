@@ -1,10 +1,33 @@
 import Stripe from "stripe";
 import type { PricingPlan } from "@/types";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia",
-  typescript: true,
-});
+const STRIPE_API_VERSION = "2025-02-24.acacia";
+
+let stripeClient: Stripe | null = null;
+let stripeClientKey: string | null = null;
+
+export function getStripe(): Stripe | null {
+  const apiKey = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!apiKey) return null;
+
+  if (!stripeClient || stripeClientKey !== apiKey) {
+    stripeClient = new Stripe(apiKey, {
+      apiVersion: STRIPE_API_VERSION,
+      typescript: true,
+    });
+    stripeClientKey = apiKey;
+  }
+
+  return stripeClient;
+}
+
+export function requireStripe(): Stripe {
+  const stripe = getStripe();
+  if (!stripe) {
+    throw new Error("Stripe is not configured. Set STRIPE_SECRET_KEY.");
+  }
+  return stripe;
+}
 
 export const PLANS: PricingPlan[] = [
   {
@@ -68,6 +91,9 @@ export const PLANS: PricingPlan[] = [
 
 /** Fetch live unit_amount + currency from Stripe for all paid plans. */
 export async function getLivePrices(): Promise<Record<string, { amount: number; currency: string }>> {
+  const stripe = getStripe();
+  if (!stripe) return {};
+
   const paid = PLANS.filter((p) => p.priceId);
   const results = await Promise.all(paid.map((p) => stripe.prices.retrieve(p.priceId)));
   return Object.fromEntries(
@@ -76,6 +102,7 @@ export async function getLivePrices(): Promise<Record<string, { amount: number; 
 }
 
 export async function getOrCreateStripeCustomer(userId: string, email: string): Promise<string> {
+  const stripe = requireStripe();
   const { db } = await import("./db");
   const sub = await db.subscription.findUnique({ where: { userId } });
   if (sub?.stripeCustomerId) return sub.stripeCustomerId;

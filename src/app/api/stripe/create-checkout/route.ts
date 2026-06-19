@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { stripe, getOrCreateStripeCustomer } from "@/lib/stripe";
+import { getOrCreateStripeCustomer, getStripe } from "@/lib/stripe";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { NextResponse } from "next/server";
 
@@ -15,6 +15,11 @@ export async function POST(req: Request) {
   const { priceId } = await req.json();
   if (!priceId) {
     return NextResponse.json({ error: "Missing priceId" }, { status: 400 });
+  }
+
+  const stripe = getStripe();
+  if (!stripe) {
+    return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
 
   const customerId = await getOrCreateStripeCustomer(

@@ -1,6 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
 import { db } from "@/lib/db";
-import { stripe } from "@/lib/stripe";
 import { anthropic } from "@/lib/anthropic";
 
 export interface ConnectorResult {
@@ -91,12 +90,9 @@ export const CONNECTORS: Connector[] = [
     name: "Stripe Connector",
     category: "Finance",
     description: "Live billing/revenue data from your own Stripe account.",
-    isConfigured: () => !!process.env.STRIPE_SECRET_KEY,
-    notConfiguredReason: "Needs STRIPE_SECRET_KEY — not set.",
-    fetchSample: async () => {
-      const balance = await stripe.balance.retrieve();
-      return { ok: true, summary: "Live Stripe balance retrieved.", data: balance };
-    },
+    isConfigured: () => false,
+    notConfiguredReason: "Stripe connector tests are temporarily disabled for deployment.",
+    fetchSample: async () => ({ ok: false, summary: "Stripe connector tests are temporarily disabled for deployment." }),
   },
   {
     key: "supabase-analytics",

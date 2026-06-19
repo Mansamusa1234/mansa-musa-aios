@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +10,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const { id } = await params;
   const { active } = await req.json();
+  const stripe = getStripe();
+  if (!stripe) {
+    return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
+  }
 
   const updated = await stripe.promotionCodes.update(id, { active: !!active });
   return NextResponse.json({ success: true, active: updated.active });
