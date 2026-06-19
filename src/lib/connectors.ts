@@ -90,18 +90,9 @@ export const CONNECTORS: Connector[] = [
     name: "Stripe Connector",
     category: "Finance",
     description: "Live billing/revenue data from your own Stripe account.",
-    isConfigured: () => !!process.env.STRIPE_SECRET_KEY?.trim(),
-    notConfiguredReason: "Needs STRIPE_SECRET_KEY — not set.",
-    fetchSample: async () => {
-      const { getStripe } = await import("@/lib/stripe");
-      const stripe = getStripe();
-      if (!stripe) {
-        return { ok: false, summary: "Needs STRIPE_SECRET_KEY — not set." };
-      }
-
-      const balance = await stripe.balance.retrieve();
-      return { ok: true, summary: "Live Stripe balance retrieved.", data: balance };
-    },
+    isConfigured: () => false,
+    notConfiguredReason: "Stripe connector tests are temporarily disabled for deployment.",
+    fetchSample: async () => ({ ok: false, summary: "Stripe connector tests are temporarily disabled for deployment." }),
   },
   {
     key: "supabase-analytics",

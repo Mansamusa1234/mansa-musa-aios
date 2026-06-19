@@ -53,6 +53,7 @@ export default function ConnectorsClient({ connectors }: { connectors: Connector
             <div className="grid gap-3 sm:grid-cols-2">
               {items.map((c) => {
                 const result = results[c.key];
+                const stripeTestsDisabled = c.key === "stripe";
                 return (
                   <div key={c.key} className="rounded-2xl border border-white/8 bg-white/3 p-4">
                     <div className="flex items-start justify-between gap-2">
@@ -75,10 +76,10 @@ export default function ConnectorsClient({ connectors }: { connectors: Connector
 
                     <button
                       onClick={() => test(c.key)}
-                      disabled={testing === c.key}
+                      disabled={testing === c.key || stripeTestsDisabled}
                       className="mt-3 rounded-lg border border-white/8 bg-white/4 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/8 disabled:opacity-50 transition-colors"
                     >
-                      {testing === c.key ? "Testing…" : "Test connection"}
+                      {stripeTestsDisabled ? "Testing disabled" : testing === c.key ? "Testing…" : "Test connection"}
                     </button>
 
                     {result && (
