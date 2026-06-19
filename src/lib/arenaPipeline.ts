@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
 import { DEBATER_KEYS, ensureArenaAgentsSeeded } from "@/lib/arenaAgents";
+import { findDictionaryEntriesInText, formatDictionaryEntriesForPrompt, formatDictionarySources } from "@/lib/legalDictionary";
 
 const DEBATER_MODEL = "claude-haiku-4-5-20251001";
 const JUDGE_MODEL = "claude-sonnet-4-6";
@@ -117,6 +118,9 @@ async function scoreAnswers(
 
 export async function runArenaPipeline(sessionId: string, question: string): Promise<void> {
   await ensureArenaAgentsSeeded();
+  const dictionaryEntries = findDictionaryEntriesInText(question, 8);
+  const dictionaryContext = formatDictionaryEntriesForPrompt(dictionaryEntries);
+  const dictionarySources = formatDictionarySources(dictionaryEntries);
 
   const debaters = await db.agent.findMany({ where: { key: { in: DEBATER_KEYS } }, orderBy: { sortOrder: "asc" } });
   const judgeAgent = await db.agent.findUnique({ where: { key: "wisdom-judge" } });
@@ -134,7 +138,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
       debaters.map(async (agent) => {
         const content = await callAgent(
           agent.systemPrompt,
-          `Question: ${question}\n\nGive your own specialist answer. Include source/fact-check notes where possible, flag uncertainty, and never present legal theories as guaranteed law. This is informational support, not advice from a solicitor. 5-9 concise sentences.`,
+          `Question: ${question}\n\nLegal dictionary context for explanation only, not legal authority:\n${dictionaryContext}\n\nGive your own specialist answer. Include source/fact-check notes where possible, flag uncertainty, and never present legal theories as guaranteed law. This is informational support, not advice from a solicitor. 5-9 concise sentences.`,
           DEBATER_MODEL,
           700
         );
@@ -210,7 +214,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
       .join("\n");
     const synthesisContent = await callAgent(
       synthesisAgent.systemPrompt,
-      `Question: ${question}\n\nFinal answers from each agent:\n\n${answersBlock}\n\nArena Judge scores:\n${scoresBlock}\n\nProduce the strongest final answer and select the best-supported conclusion. Include source/fact-check notes where possible, evidence needed, risk limits, plain-English next steps, and commercial templates/workflows. Do not present legal theories as guaranteed law.`,
+      `Question: ${question}\n\nLegal dictionary context for explanation only, not legal authority:\n${dictionaryContext}\n\nFinal answers from each agent:\n\n${answersBlock}\n\nArena Judge scores:\n${scoresBlock}\n\nProduce the strongest final answer and select the best-supported conclusion. Include source/fact-check notes where possible, evidence needed, risk limits, plain-English next steps, and commercial templates/workflows. Do not present legal theories as guaranteed law.${dictionarySources ? `\n\nInclude these source labels in Sources / Fact-check notes:\n${dictionarySources}` : ""}`,
       SYNTHESIS_MODEL,
       3000
     );

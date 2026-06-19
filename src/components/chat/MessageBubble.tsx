@@ -6,6 +6,13 @@ interface Props {
 
 export default function MessageBubble({ message }: Props) {
   const isUser = message.role === "user";
+  const sourcesMarker = "\n\nSources Used\n";
+  const [answer, sourcesBlock] = !isUser && message.content.includes(sourcesMarker)
+    ? message.content.split(sourcesMarker)
+    : [message.content, ""];
+  const sources = sourcesBlock
+    ? sourcesBlock.split("\n").map((line) => line.replace(/^-\s*/, "").trim()).filter(Boolean)
+    : [];
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -16,7 +23,20 @@ export default function MessageBubble({ message }: Props) {
             : "bg-white border border-gray-100 text-gray-900 rounded-bl-sm shadow-sm"
         }`}
       >
-        {message.content}
+        {answer}
+        {sources.length > 0 && (
+          <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+            <p className="mb-2 font-bold text-gray-800">Sources Used</p>
+            <ul className="space-y-1">
+              {sources.map((source) => (
+                <li key={source} className="flex gap-2">
+                  <span className="text-brand-500">•</span>
+                  <span>{source}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

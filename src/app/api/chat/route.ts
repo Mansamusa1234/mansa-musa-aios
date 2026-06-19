@@ -6,6 +6,7 @@ import { PLANS } from "@/lib/stripe";
 import { getActivePlan } from "@/lib/subscription";
 import { AGENTS } from "@/data/agents";
 import { resolveModel, routeMessage } from "@/lib/modelRouter";
+import { findDictionaryEntriesInText, formatDictionaryEntriesForPrompt, formatDictionarySources } from "@/lib/legalDictionary";
 import { sendEmail, usageLimitWarningEmailHtml } from "@/lib/email";
 import { NextResponse } from "next/server";
 import { after } from "next/server";
@@ -77,8 +78,8 @@ export async function POST(req: Request) {
     provider: pref?.provider,
     modelId: pref?.modelId,
   });
-
   let system: string = SYSTEM_PROMPT;
+  const dictionaryEntries = findDictionaryEntriesInText(message);
   if (conversation.agentId) {
     const agent = AGENTS.find((a) => a.id === conversation.agentId);
     if (agent) {
@@ -91,6 +92,10 @@ export async function POST(req: Request) {
       }
     }
   }
+  if (dictionaryEntries.length > 0) {
+    system += `\n\nLegal dictionary context for explanation only (not legal authority):\n${formatDictionaryEntriesForPrompt(dictionaryEntries)}\nIf relevant, include a short "Sources Used" section in your answer using these source labels. Do not treat dictionary definitions as legal authority.`;
+  }
+  const dictionarySources = formatDictionarySources(dictionaryEntries);
 
   const { stream, onComplete } = routeMessage(
     modelDef,
@@ -111,6 +116,11 @@ export async function POST(req: Request) {
         const text = decoder.decode(value, { stream: true });
         assistantContent += text;
         controller.enqueue(encoder.encode(text));
+      }
+      if (dictionarySources) {
+        const sourceBlock = `\n\n${dictionarySources}`;
+        assistantContent += sourceBlock;
+        controller.enqueue(encoder.encode(sourceBlock));
       }
       controller.close();
     },

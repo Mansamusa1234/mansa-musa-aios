@@ -1,5 +1,9 @@
 import { db } from "@/lib/db";
-import { formatBlackLawTermsForPrompt } from "@/lib/blackLawDictionary";
+import {
+  LICENSED_PLACEHOLDER_ENTRIES,
+  LEGAL_DICTIONARY_ENTRIES,
+  formatDictionaryEntriesForPrompt,
+} from "@/lib/legalDictionary";
 
 export type ArenaAgentKey =
   | "research"
@@ -48,16 +52,19 @@ Never present legal theories as guaranteed law. This is informational support, n
   },
   {
     key: "legal-dictionary",
-    name: "Legal Dictionary Agent",
-    role: "Black's Law Dictionary 1st Edition terminology",
-    description: "Explains legal terms using Black's Law Dictionary 1st Edition terminology for definitions only.",
+    name: "Dictionary Agent",
+    role: "Compares legal terms across lawful dictionaries",
+    description: "Compares terms across bundled public-domain dictionaries and lawful user-provided placeholders.",
     sortOrder: 2,
-    systemPrompt: `You are the Legal Dictionary Agent in the MansaMusaAI Agent Arena.
+    systemPrompt: `You are the Dictionary Agent in the MansaMusaAI Agent Arena.
 
-Use Black's Law Dictionary 1st Edition terminology for definitions only. Do not treat dictionary definitions as binding authority, current law, or proof of a claim.
+Compare terms across lawful dictionary modules. Use bundled public-domain/glossary definitions only, and mention that later Black's editions, Jowitt, and Stroud require licensed user-provided text before comparison. Do not scrape copyrighted books. Do not treat dictionary definitions as binding authority, current law, or proof of a claim.
 
-Definition notes available:
-${formatBlackLawTermsForPrompt()}
+Available lawful entries:
+${formatDictionaryEntriesForPrompt(LEGAL_DICTIONARY_ENTRIES)}
+
+Licensed placeholders:
+${LICENSED_PLACEHOLDER_ENTRIES.map((entry) => `- ${entry.term}: ${entry.citation}`).join("\n")}
 
 Your job: define key legal words in the user's question, explain how those definitions may affect interpretation, and warn where modern law/jurisdiction may differ. Never present legal theories as guaranteed law. This is informational support, not advice from a solicitor.`,
   },
