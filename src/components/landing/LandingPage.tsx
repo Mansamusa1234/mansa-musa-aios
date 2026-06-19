@@ -13,44 +13,44 @@ import { fadeUp, scaleIn, stagger, staggerSlow, fadeIn } from "@/lib/motion";
 /* ─── Static data ───────────────────────────────────────────── */
 
 const AGENT_PHRASES = [
-  "CEO Agent",
-  "Finance Agent",
-  "Research Agent",
-  "Legal Agent",
-  "Marketing Agent",
-  "Developer Agent",
-  "All 41 AI Agents",
+  "AI Receptionist",
+  "Sales Agent",
+  "Lead Qualifier",
+  "Booking Agent",
+  "Support Agent",
+  "Follow-up Agent",
+  "All AI Employees",
 ];
 
 const LIVE_METRICS = [
-  { label: "AI agents",         value: 41,     suffix: "",   prefix: "",   color: "text-brand-400"   },
-  { label: "AI providers",      value: 6,      suffix: "",   prefix: "",   color: "text-green-400"   },
-  { label: "Wisdom categories", value: 8,      suffix: "",   prefix: "",   color: "text-blue-400"    },
-  { label: "Free to start",     value: 0,      suffix: "",   prefix: "£",  color: "text-purple-400"  },
-  { label: "Security layers",   value: 12,     suffix: "+",  prefix: "",   color: "text-amber-400"   },
-  { label: "Uptime SLA",        value: 99,     suffix: ".9%",prefix: "",   color: "text-emerald-400" },
+  { label: "Calls answered 24/7",  value: 100, suffix: "%",   prefix: "",  color: "text-brand-400"   },
+  { label: "Leads captured",       value: 3,   suffix: "x",   prefix: "",  color: "text-green-400"   },
+  { label: "Languages supported",  value: 30,  suffix: "+",   prefix: "",  color: "text-blue-400"    },
+  { label: "Starter plan",         value: 49,  suffix: "/mo", prefix: "£", color: "text-purple-400"  },
+  { label: "Setup time (minutes)", value: 2,   suffix: "",    prefix: "",  color: "text-amber-400"   },
+  { label: "Uptime SLA",           value: 99,  suffix: ".9%", prefix: "",  color: "text-emerald-400" },
 ];
 
 const AGENTS = [
-  { icon: "👑", name: "CEO Agent",        role: "Strategy & Leadership"  },
-  { icon: "💰", name: "Finance Agent",    role: "P&L, Forecasting, Tax"  },
-  { icon: "🔬", name: "Research Agent",   role: "Market Intelligence"    },
-  { icon: "⚖️", name: "Legal Agent",      role: "Contracts & Compliance" },
-  { icon: "⚡", name: "Developer Agent",  role: "Code & Architecture"    },
-  { icon: "📣", name: "Marketing Agent",  role: "Campaigns & SEO"        },
-  { icon: "📄", name: "Document Agent",   role: "Reports & Summaries"    },
-  { icon: "🎧", name: "Support Agent",    role: "Customer Success"       },
-  { icon: "💼", name: "Sales Agent",      role: "Pipeline & CRM"         },
-  { icon: "🔒", name: "Security Agent",   role: "Audits & Protection"    },
+  { icon: "📞", name: "AI Receptionist",  role: "Answers calls 24/7"          },
+  { icon: "💼", name: "Sales Agent",      role: "Pipeline & Lead Nurturing"   },
+  { icon: "🎯", name: "Lead Qualifier",   role: "Scores & Routes Hot Leads"   },
+  { icon: "📅", name: "Booking Agent",    role: "Appointments & Scheduling"   },
+  { icon: "🎧", name: "Support Agent",    role: "Customer Success"            },
+  { icon: "📩", name: "Follow-up Agent",  role: "SMS & Email Sequences"       },
+  { icon: "📣", name: "Marketing Agent",  role: "Campaigns & SEO"             },
+  { icon: "🔬", name: "Research Agent",   role: "Market Intelligence"         },
+  { icon: "💰", name: "Finance Agent",    role: "P&L, Forecasting, Tax"       },
+  { icon: "🔒", name: "Security Agent",   role: "Audits & Protection"         },
 ];
 
 const FEATURES = [
-  { icon: "⚡", title: "Streaming responses",  desc: "Watch answers generate in real time — no page refreshes, no waiting." },
-  { icon: "🧠", title: "Three AI tiers",       desc: "Haiku for speed, Sonnet for balance, Opus 4.8 for deep reasoning."    },
-  { icon: "📜", title: "Persistent history",   desc: "Every conversation saved. Pick up exactly where you left off."        },
-  { icon: "💳", title: "Stripe billing",       desc: "Upgrade or cancel anytime. No lock-in, no surprises."                 },
-  { icon: "🛡️", title: "Enterprise security", desc: "Rate limiting, audit logs, role-based access, webhook verification."  },
-  { icon: "📱", title: "Mobile-first",         desc: "Fully responsive on every device — from iPhone SE to ultrawide."      },
+  { icon: "📞", title: "Answers every call",    desc: "Your AI receptionist picks up in under 2 seconds — 24/7, 365, zero hold music."      },
+  { icon: "🎯", title: "Scores every lead",     desc: "Asks qualifying questions, ranks prospects, routes hot leads to your team instantly." },
+  { icon: "📅", title: "Books appointments",    desc: "Syncs with your calendar and confirms bookings without any back-and-forth."           },
+  { icon: "💬", title: "WhatsApp integration",  desc: "AI-powered WhatsApp inbox. Every inbound message gets an instant reply."             },
+  { icon: "🤝", title: "Affiliate programme",   desc: "Earn 20% recurring commission for every business you refer. No cap."                 },
+  { icon: "📧", title: "Email automation",      desc: "Trigger-based sequences fire automatically on lead capture, bookings, and more."      },
 ];
 
 const WISDOM_FEATURES = [
@@ -78,9 +78,9 @@ const WISDOM_FEATURES = [
 ];
 
 const STEPS = [
-  { step: "01", title: "Create your account", desc: "Sign up in 30 seconds. No credit card required." },
-  { step: "02", title: "Deploy an AI agent",  desc: "Pick from 41 agents and put them to work instantly." },
-  { step: "03", title: "Scale your plan",     desc: "Upgrade when you need more power. Cancel anytime." },
+  { step: "01", title: "Sign up free",           desc: "30 seconds. No credit card. Start your 14-day trial instantly." },
+  { step: "02", title: "Configure your AI",      desc: "Name it, give it your business info, set your hours. Under 2 minutes." },
+  { step: "03", title: "Go live",                desc: "Embed on your site or connect your phone number. Your AI is on call." },
 ];
 
 /* ─── Component ─────────────────────────────────────────────── */
@@ -112,11 +112,10 @@ export default function LandingPage({ plans }: Props) {
 
           <div className="hidden md:flex items-center gap-7">
             {[
-              ["Features",     "/features"    ],
-              ["Agents",       "/agents"      ],
-              ["Wisdom Arena", "/wisdom-arena"],
-              ["Pricing",      "/pricing"     ],
-              ["Affiliate",    "/affiliate"   ],
+              ["AI Receptionist", "/ai-receptionist"],
+              ["Agents",          "/agents"         ],
+              ["Pricing",         "/pricing"        ],
+              ["Affiliate",       "/affiliate"      ],
             ].map(([label, href]) => (
               <Link key={label} href={href} className="text-sm text-gray-400 hover:text-white transition-colors">{label}</Link>
             ))}
@@ -142,7 +141,7 @@ export default function LandingPage({ plans }: Props) {
           className="overflow-hidden md:hidden border-t border-white/8"
         >
           <div className="flex flex-col gap-4 px-6 py-5">
-            {[["Features","/features"],["Agents","/agents"],["Wisdom Arena","/wisdom-arena"],["Pricing","/pricing"],["Affiliate","/affiliate"],["Sign in","/login"]].map(([l,h]) => (
+            {[["AI Receptionist","/ai-receptionist"],["Agents","/agents"],["Pricing","/pricing"],["Affiliate","/affiliate"],["Sign in","/login"]].map(([l,h]) => (
               <Link key={l} href={h} className="text-sm text-gray-400" onClick={() => setNavOpen(false)}>{l}</Link>
             ))}
             <Link href="/register" className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white text-center" onClick={() => setNavOpen(false)}>
@@ -640,13 +639,12 @@ export default function LandingPage({ plans }: Props) {
             Mansa<span className="text-brand-400">Musa</span>AI
           </span>
           <div className="flex flex-wrap gap-6 text-sm text-gray-500">
-            <Link href="/features"     className="hover:text-gray-300 transition-colors">Features</Link>
-            <Link href="/agents"       className="hover:text-gray-300 transition-colors">Agents</Link>
-            <Link href="/wisdom-arena" className="hover:text-gray-300 transition-colors">Wisdom Arena</Link>
-            <Link href="/affiliate"    className="hover:text-gray-300 transition-colors">Affiliate</Link>
-            <Link href="/pricing"      className="hover:text-gray-300 transition-colors">Pricing</Link>
-            <Link href="/blog"         className="hover:text-gray-300 transition-colors">Blog</Link>
-            <Link href="/login"        className="hover:text-gray-300 transition-colors">Sign in</Link>
+            <Link href="/ai-receptionist" className="hover:text-gray-300 transition-colors">AI Receptionist</Link>
+            <Link href="/agents"          className="hover:text-gray-300 transition-colors">Agents</Link>
+            <Link href="/affiliate"       className="hover:text-gray-300 transition-colors">Affiliate</Link>
+            <Link href="/pricing"         className="hover:text-gray-300 transition-colors">Pricing</Link>
+            <Link href="/blog"            className="hover:text-gray-300 transition-colors">Blog</Link>
+            <Link href="/login"           className="hover:text-gray-300 transition-colors">Sign in</Link>
           </div>
           <p className="text-xs text-gray-700">© {new Date().getFullYear()} MansaMusaAI. All rights reserved.</p>
         </div>

@@ -25,12 +25,12 @@ const STEPS = [
 ];
 
 const USE_CASES = [
-  { emoji: "🏥", name: "Healthcare clinics", desc: "Book appointments, handle prescription refill queries, triage urgency." },
-  { emoji: "⚖️", name: "Law firms", desc: "Intake new clients, answer general FAQs, schedule consultations." },
-  { emoji: "🏡", name: "Real estate", desc: "Qualify buyers, book viewings, answer property queries 24/7." },
-  { emoji: "🔧", name: "Trades & services", desc: "Quote jobs, book callouts, handle emergency requests." },
-  { emoji: "🛒", name: "E-commerce", desc: "Handle order status, returns, shipping queries, and complaints." },
-  { emoji: "🏋️", name: "Gyms & fitness", desc: "Class bookings, membership queries, trial session scheduling." },
+  { emoji: "🦷", name: "Dentists", desc: "Book appointments, handle cancellations, and answer treatment queries 24/7 — without tying up your receptionist." },
+  { emoji: "🍽️", name: "Restaurants", desc: "Take table reservations, answer menu questions, and handle large-party enquiries automatically." },
+  { emoji: "🏗️", name: "Scaffolding companies", desc: "Capture job enquiries, schedule site surveys, and qualify leads while your crew is on site." },
+  { emoji: "📊", name: "Accountants", desc: "Handle client intake calls, book consultations, and answer deadline FAQs without interrupting your team." },
+  { emoji: "🏡", name: "Estate agents", desc: "Qualify buyers and renters, book viewings, and answer property queries around the clock." },
+  { emoji: "🚗", name: "Car dealerships", desc: "Handle test drive bookings, part-exchange enquiries, and finance questions instantly." },
 ];
 
 export default function ReceptionistContent() {
@@ -74,10 +74,10 @@ export default function ReceptionistContent() {
           <div className="mx-auto max-w-4xl px-6">
             <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500">
               {[
-                { stat: "4.2M+", label: "calls handled" },
-                { stat: "94%", label: "first-call resolution" },
+                { stat: "£49/mo", label: "starts from" },
+                { stat: "24/7", label: "always on" },
                 { stat: "30+", label: "languages supported" },
-                { stat: "< 0.5s", label: "average response time" },
+                { stat: "< 2s", label: "average answer time" },
               ].map((s) => (
                 <div key={s.label} className="text-center">
                   <p className="text-2xl font-extrabold text-gray-900">{s.stat}</p>
@@ -134,8 +134,8 @@ export default function ReceptionistContent() {
         <section className="py-20 bg-white">
           <div className="mx-auto max-w-5xl px-6">
             <div className="text-center mb-14">
-              <h2 className="text-3xl font-bold text-gray-900">Built for every industry</h2>
-              <p className="mt-3 text-gray-500">From solo trades to 200-person professional services teams.</p>
+              <h2 className="text-3xl font-bold text-gray-900">Built for your industry</h2>
+              <p className="mt-3 text-gray-500">From a single-chair dentist to a 20-branch estate agency.</p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {USE_CASES.map((u) => (
@@ -162,7 +162,7 @@ export default function ReceptionistContent() {
               <Link href="/register"
                 className="rounded-xl bg-white px-8 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-50 transition-colors"
               >
-                Start free — 100 calls/month
+                Start free — then from £49/mo
               </Link>
               <Link href="/contact"
                 className="rounded-xl border border-white/40 px-8 py-3 text-sm font-semibold text-white hover:border-white transition-colors"
