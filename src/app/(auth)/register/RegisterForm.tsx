@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type FormEvent, type ReactNode, type Ref } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -105,6 +105,66 @@ function TrustBar() {
   );
 }
 
+function getValidationErrors(values: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirm: string;
+}) {
+  return {
+    firstName: validateRequired(values.firstName, "First name"),
+    lastName: validateRequired(values.lastName, "Last name"),
+    email: validateEmail(values.email),
+    password: validatePassword(values.password),
+    confirm: validateConfirm(values.password, values.confirm),
+  };
+}
+
+function Field({ id, name, label, value, onChange, onBlur, touched: t, error: err, inputRef, type = "text", autoComplete, placeholder, children }: {
+  id: string;
+  name?: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onBlur: () => void;
+  touched: boolean;
+  error: string;
+  inputRef?: Ref<HTMLInputElement>;
+  type?: string;
+  autoComplete?: string;
+  placeholder?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
+        <span>{label}</span>
+        {t && !err && <Check />}
+      </label>
+      <div className="relative">
+        <input
+          ref={inputRef}
+          id={id}
+          name={name}
+          type={type}
+          autoComplete={autoComplete}
+          value={value}
+          placeholder={placeholder}
+          required
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          aria-invalid={t && !!err ? true : undefined}
+          aria-describedby={t && err ? `${id}-err` : undefined}
+          className={fieldCls(err, t)}
+        />
+        {children}
+      </div>
+      {t && err && <p id={`${id}-err`} role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{err}</p>}
+    </div>
+  );
+}
+
 export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, showApple }: Props) {
   const router = useRouter();
   const firstRef = useRef<HTMLInputElement>(null);
@@ -126,6 +186,8 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
   const [fe, setFe] = useState({ firstName: "", lastName: "", email: "", password: "", confirm: "" });
 
   const hasOAuth = showGithub || showGoogle || showMicrosoft || showApple;
+  const currentErrors = getValidationErrors({ firstName, lastName, email, password, confirm });
+  const isFormValid = !Object.values(currentErrors).some(Boolean);
 
   useEffect(() => {
     setRef(new URLSearchParams(window.location.search).get("ref"));
@@ -144,13 +206,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
   function touchField(field: keyof typeof touched) {
     setTouched((t) => ({ ...t, [field]: true }));
-    setFe({
-      firstName: validateRequired(firstName, "First name"),
-      lastName: validateRequired(lastName, "Last name"),
-      email: validateEmail(email),
-      password: validatePassword(password),
-      confirm: validateConfirm(password, confirm),
-    });
+    setFe(getValidationErrors({ firstName, lastName, email, password, confirm }));
   }
 
   async function handleOAuth(provider: string) {
@@ -176,44 +232,50 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setTouched({ firstName: true, lastName: true, email: true, password: true, confirm: true });
-    const errs = {
-      firstName: validateRequired(firstName, "First name"),
-      lastName: validateRequired(lastName, "Last name"),
-      email: validateEmail(email),
-      password: validatePassword(password),
-      confirm: validateConfirm(password, confirm),
-    };
+    const errs = getValidationErrors({ firstName, lastName, email, password, confirm });
     setFe(errs);
     if (Object.values(errs).some(Boolean)) return;
 
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: `${firstName.trim()} ${lastName.trim()}`,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email,
-        password,
-        ...(ref ? { ref } : {}),
-      }),
-    });
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${firstName.trim()} ${lastName.trim()}`,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: normalizedEmail,
+          password,
+          ...(ref ? { ref } : {}),
+        }),
+      });
 
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Something went wrong.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "Could not create your account. Please check your details and try again.");
+        return;
+      }
+
+      const signInResult = await signIn("credentials", { email: normalizedEmail, password, redirect: false });
+      if (signInResult?.error) {
+        setError("Account created, but automatic sign-in failed. Please sign in with your email and password.");
+        router.push("/login");
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch {
+      setError("Could not create your account. Please check your connection and try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    await signIn("credentials", { email, password, redirect: false });
-    router.push("/dashboard");
   }
 
   function oauthCls(provider: string) {
@@ -221,31 +283,6 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
     if (loadingOAuth === provider) return `${b} bg-gray-50 dark:bg-white/5 text-gray-500 cursor-wait`;
     if (loadingOAuth) return `${b} opacity-50 cursor-not-allowed text-gray-400`;
     return `${b} text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98]`;
-  }
-
-  function Field({ id, label, value, onChange, onBlur, touched: t, error: err, type = "text", autoComplete, placeholder, children }: {
-    id: string; label: string; value: string; onChange: (v: string) => void; onBlur: () => void;
-    touched: boolean; error: string; type?: string; autoComplete?: string; placeholder?: string; children?: React.ReactNode;
-  }) {
-    return (
-      <div>
-        <label htmlFor={id} className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
-          <span>{label}</span>
-          {t && !err && <Check />}
-        </label>
-        <div className="relative">
-          <input
-            id={id} type={type} autoComplete={autoComplete} value={value} placeholder={placeholder} required
-            onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
-            aria-invalid={t && !!err ? true : undefined}
-            aria-describedby={t && err ? `${id}-err` : undefined}
-            className={fieldCls(err, t)}
-          />
-          {children}
-        </div>
-        {t && err && <p id={`${id}-err`} role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{err}</p>}
-      </div>
-    );
   }
 
   const EyeOff = () => (
@@ -268,7 +305,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#070712] px-4 transition-colors">
-      <div className="absolute top-4 left-4">
+      <div className="absolute top-4 left-4 z-20">
         <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors" aria-label="Back to home">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -276,9 +313,9 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
           Home
         </Link>
       </div>
-      <div className="absolute top-4 right-4"><ThemeToggle size="sm" /></div>
+      <div className="absolute top-4 right-4 z-20"><ThemeToggle size="sm" /></div>
 
-      <div className="w-full max-w-md py-16 sm:py-8">
+      <div className="relative z-10 w-full max-w-md py-16 sm:py-8">
         <div className="mb-8 text-center">
           <Link href="/" className="text-2xl font-bold text-brand-600 dark:text-brand-400" aria-label="MansaMusaAI home">MansaMusaAI</Link>
           <h1 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">Create your account</h1>
@@ -317,7 +354,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
             <>
               <div className="space-y-3">
                 {showGoogle && (
-                  <button onClick={() => handleOAuth("google")} disabled={!!loadingOAuth} aria-label="Sign up with Google" className={oauthCls("google")}>
+                  <button type="button" onClick={() => handleOAuth("google")} disabled={!!loadingOAuth} aria-label="Sign up with Google" className={oauthCls("google")}>
                     {loadingOAuth === "google" ? <Spinner /> : (
                       <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -330,7 +367,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
                   </button>
                 )}
                 {showApple && (
-                  <button onClick={() => handleOAuth("apple")} disabled={!!loadingOAuth} aria-label="Sign up with Apple" className={oauthCls("apple")}>
+                  <button type="button" onClick={() => handleOAuth("apple")} disabled={!!loadingOAuth} aria-label="Sign up with Apple" className={oauthCls("apple")}>
                     {loadingOAuth === "apple" ? <Spinner /> : (
                       <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.633 0 2.937.06 4.486 2.3-.115.08-2.43 1.46-2.43 4.21 0 3.21 2.797 4.31 2.89 4.34z" />
@@ -340,7 +377,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
                   </button>
                 )}
                 {showMicrosoft && (
-                  <button onClick={() => handleOAuth("microsoft-entra-id")} disabled={!!loadingOAuth} aria-label="Sign up with Microsoft" className={oauthCls("microsoft-entra-id")}>
+                  <button type="button" onClick={() => handleOAuth("microsoft-entra-id")} disabled={!!loadingOAuth} aria-label="Sign up with Microsoft" className={oauthCls("microsoft-entra-id")}>
                     {loadingOAuth === "microsoft-entra-id" ? <Spinner /> : (
                       <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
                         <path fill="#F25022" d="M1 1h10v10H1z" /><path fill="#7FBA00" d="M13 1h10v10H13z" />
@@ -351,7 +388,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
                   </button>
                 )}
                 {showGithub && (
-                  <button onClick={() => handleOAuth("github")} disabled={!!loadingOAuth} aria-label="Sign up with GitHub" className={oauthCls("github")}>
+                  <button type="button" onClick={() => handleOAuth("github")} disabled={!!loadingOAuth} aria-label="Sign up with GitHub" className={oauthCls("github")}>
                     {loadingOAuth === "github" ? <Spinner /> : (
                       <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
@@ -382,12 +419,12 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
             {/* First + Last name — side by side on sm+ */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field
-                id="register-first" label="First name" value={firstName} autoComplete="given-name" placeholder="Jane"
+                id="register-first" name="firstName" label="First name" value={firstName} autoComplete="given-name" placeholder="Jane" inputRef={firstRef}
                 onChange={(v) => { setFirstName(v); if (touched.firstName) revalidate({ firstName: validateRequired(v, "First name") }); }}
                 onBlur={() => touchField("firstName")} touched={touched.firstName} error={fe.firstName}
-              ><input ref={firstRef} className="sr-only" tabIndex={-1} aria-hidden="true" /></Field>
+              />
               <Field
-                id="register-last" label="Last name" value={lastName} autoComplete="family-name" placeholder="Smith"
+                id="register-last" name="lastName" label="Last name" value={lastName} autoComplete="family-name" placeholder="Smith"
                 onChange={(v) => { setLastName(v); if (touched.lastName) revalidate({ lastName: validateRequired(v, "Last name") }); }}
                 onBlur={() => touchField("lastName")} touched={touched.lastName} error={fe.lastName}
               />
@@ -395,7 +432,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
             {/* Email */}
             <Field
-              id="register-email" label="Email address" value={email} type="email" autoComplete="email" placeholder="you@example.com"
+              id="register-email" name="email" label="Email address" value={email} type="email" autoComplete="email" placeholder="you@example.com"
               onChange={(v) => { setEmail(v); if (touched.email) revalidate({ email: validateEmail(v) }); }}
               onBlur={() => touchField("email")} touched={touched.email} error={fe.email}
             />
@@ -410,7 +447,16 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
                 <input
                   id="register-password" type={showPw ? "text" : "password"} name="new-password" required minLength={8}
                   autoComplete="new-password" value={password} placeholder="Min 8 characters"
-                  onChange={(e) => { setPassword(e.target.value); if (touched.password) revalidate({ password: validatePassword(e.target.value) }); }}
+                  onChange={(e) => {
+                    const nextPassword = e.target.value;
+                    setPassword(nextPassword);
+                    if (touched.password || touched.confirm) {
+                      revalidate({
+                        ...(touched.password ? { password: validatePassword(nextPassword) } : {}),
+                        ...(touched.confirm ? { confirm: validateConfirm(nextPassword, confirm) } : {}),
+                      });
+                    }
+                  }}
                   onBlur={() => touchField("password")}
                   aria-invalid={touched.password && !!fe.password ? true : undefined}
                   aria-describedby="pw-reqs"
@@ -451,8 +497,8 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
               <Link href="/privacy" className="underline hover:text-gray-600 dark:hover:text-gray-300">Privacy Policy</Link>.
             </p>
 
-            <button type="submit" disabled={loading}
-              className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 active:scale-[0.98] disabled:opacity-50 transition-all">
+            <button type="submit" disabled={loading || !isFormValid}
+              className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 transition-all">
               {loading ? <span className="flex items-center justify-center gap-2"><Spinner />Creating account…</span> : "Create free account"}
             </button>
           </form>

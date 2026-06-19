@@ -22,7 +22,10 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, email, password, ref } = schema.parse(body);
+    const parsed = schema.parse(body);
+    const name = parsed.name.trim();
+    const email = parsed.email.trim().toLowerCase();
+    const { password, ref } = parsed;
 
     const existing = await db.user.findUnique({ where: { email } });
     if (existing) {
