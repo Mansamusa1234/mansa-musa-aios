@@ -30,17 +30,46 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
+  compress: true,
+  poweredByHeader: false,
+  experimental: {
+    // Tree-shake these large packages — only import what's used
+    optimizePackageImports: ["framer-motion", "@anthropic-ai/sdk", "lucide-react"],
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "avatars.githubusercontent.com" },
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],
+    formats: ["image/avif", "image/webp"],
   },
   async headers() {
     return [
+      // Security headers on all routes
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      // Cache public marketing pages for 60 seconds at CDN, revalidate in background
+      {
+        source: "/(pricing|ai-receptionist|contact|about|blog)(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" },
+        ],
+      },
+      // Cache static assets aggressively
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      // Cache root landing page briefly
+      {
+        source: "/",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=120" },
+        ],
       },
     ];
   },

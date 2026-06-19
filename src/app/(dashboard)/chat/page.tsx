@@ -3,7 +3,6 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { AGENTS } from "@/data/agents";
-import { getActivePlan, hasFeature, planDisplayName } from "@/lib/subscription";
 import ChatInterface from "@/components/chat/ChatInterface";
 
 export const metadata: Metadata = {
@@ -40,13 +39,12 @@ export default async function ChatPage({ searchParams }: Props) {
     agentId = conv.agentId;
   }
 
-  const [messages, plan] = await Promise.all([
-    db.message.findMany({
-      where: { conversationId },
-      orderBy: { createdAt: "asc" },
-    }),
-    getActivePlan(userId),
-  ]);
+  // Limit initial message load to last 50 — chat interface can lazy-load older ones
+  const messages = await db.message.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "asc" },
+    take: 50,
+  });
 
   return (
     <div className="flex h-full flex-col">
@@ -59,9 +57,6 @@ export default async function ChatPage({ searchParams }: Props) {
           createdAt: m.createdAt,
         }))}
         initialAgentId={agentId}
-        canUseArena={hasFeature(plan, "agent_arena")}
-        canExportLetters={hasFeature(plan, "export_letter_pack")}
-        planName={planDisplayName(plan)}
       />
     </div>
   );

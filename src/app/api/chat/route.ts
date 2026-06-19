@@ -3,16 +3,14 @@ import { SYSTEM_PROMPT, buildAgentSystemPrompt } from "@/lib/anthropic";
 import { db } from "@/lib/db";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { PLANS } from "@/lib/stripe";
-import { getActivePlan } from "@/lib/subscription";
 import { AGENTS } from "@/data/agents";
 import { resolveModel, routeMessage } from "@/lib/modelRouter";
-import { findDictionaryEntriesInText, formatDictionaryEntriesForPrompt, formatDictionarySources } from "@/lib/legalDictionary";
-import { formatEvidenceForPrompt, formatEvidenceSourcesPanel, searchEvidenceChunks } from "@/lib/evidenceVault";
 import { sendEmail, usageLimitWarningEmailHtml } from "@/lib/email";
 import { NextResponse } from "next/server";
 import { after } from "next/server";
 
 export async function POST(req: Request) {
+  const t0 = Date.now();
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,52 +24,79 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const conversation = await db.conversation.findFirst({
-    where: { id: conversationId, userId: session.user.id },
-  });
+  const userId = session.user.id;
+
+  // Parallelise independent DB reads
+  const [conversation, subscription, pref] = await Promise.all([
+    db.conversation.findFirst({ where: { id: conversationId, userId } }),
+    db.subscription.findUnique({ where: { userId } }),
+    db.userModelPreference.findUnique({ where: { userId } }),
+  ]);
+
   if (!conversation) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await db.message.create({
-    data: { conversationId, role: "user", content: message },
-  });
-
+  // Write user message and (maybe) update title in parallel
+  const writes: Promise<unknown>[] = [
+    db.message.create({ data: { conversationId, role: "user", content: message } }),
+  ];
   if (conversation.title === "New Conversation") {
-    await db.conversation.update({
+    writes.push(db.conversation.update({
       where: { id: conversationId },
       data: { title: message.slice(0, 60) },
-    });
+    }));
+  }
+  await Promise.all(writes);
+
+  // Fetch history + optional agent memory in parallel
+  let system: string = SYSTEM_PROMPT;
+  const agent = conversation.agentId ? AGENTS.find((a) => a.id === conversation.agentId) : null;
+
+  const [history, agentMemory] = await Promise.all([
+    db.message.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "asc" },
+      take: 20,
+    }),
+    agent
+      ? db.agentMemory.findUnique({
+          where: { userId_agentId: { userId, agentId: agent.id } },
+        })
+      : Promise.resolve(null),
+  ]);
+
+  if (agent) {
+    system = buildAgentSystemPrompt(agent);
+    if (agentMemory?.content) {
+      system += `\n\nNotes the user has saved from previous sessions with you:\n${agentMemory.content}`;
+    }
   }
 
-  const history = await db.message.findMany({
-    where: { conversationId },
-    orderBy: { createdAt: "asc" },
-    take: 20,
-  });
-
-  const plan = await getActivePlan(session.user.id);
+  let plan = "free";
+  if (subscription?.status === "ACTIVE" && subscription.stripePriceId) {
+    const priceId = subscription.stripePriceId;
+    if (priceId === process.env.STRIPE_PRICE_ENTERPRISE) plan = "enterprise";
+    else if (priceId === process.env.STRIPE_PRICE_PRO || priceId === process.env.STRIPE_PRICE_PROFESSIONAL) plan = "professional";
+    else if (priceId === process.env.STRIPE_PRICE_BASIC || priceId === process.env.STRIPE_PRICE_STARTER) plan = "starter";
+  }
 
   const planDef = PLANS.find((p) => p.id === plan) ?? PLANS[0];
-  if (planDef.messagesPerDay) {
+  if (planDef.messagesPerMonth !== Infinity) {
     const now = new Date();
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const msgCount = await db.usageRecord.count({
-      where: { userId: session.user.id, createdAt: { gte: dayStart } },
+      where: { userId, createdAt: { gte: monthStart } },
     });
-    if (msgCount >= planDef.messagesPerDay) {
+    if (msgCount >= planDef.messagesPerMonth) {
       return NextResponse.json({
         error: "MESSAGE_LIMIT_REACHED",
-        limit: planDef.messagesPerDay,
+        limit: planDef.messagesPerMonth,
         plan: planDef.name,
         upgradeUrl: "/billing",
       }, { status: 402 });
     }
   }
-
-  const pref = await db.userModelPreference.findUnique({
-    where: { userId: session.user.id },
-  });
 
   const modelDef = resolveModel({
     plan,
@@ -79,32 +104,8 @@ export async function POST(req: Request) {
     provider: pref?.provider,
     modelId: pref?.modelId,
   });
-  let system: string = SYSTEM_PROMPT;
-  const dictionaryEntries = findDictionaryEntriesInText(message);
-  if (conversation.agentId) {
-    const agent = AGENTS.find((a) => a.id === conversation.agentId);
-    if (agent) {
-      system = buildAgentSystemPrompt(agent);
-      const memory = await db.agentMemory.findUnique({
-        where: { userId_agentId: { userId: session.user.id, agentId: agent.id } },
-      });
-      if (memory?.content) {
-        system += `\n\nNotes the user has saved from previous sessions with you:\n${memory.content}`;
-      }
-    }
-  }
-  if (dictionaryEntries.length > 0) {
-    system += `\n\nLegal dictionary context for explanation only (not legal authority):\n${formatDictionaryEntriesForPrompt(dictionaryEntries)}\nIf relevant, include a short "Sources Used" section in your answer using these source labels. Do not treat dictionary definitions as legal authority.`;
-  }
-  const evidenceSources = await searchEvidenceChunks(session.user.id, message, 5);
-  if (evidenceSources.length > 0) {
-    system += `\n\nEvidence Vault context. Cite exact source labels like [E1] when using this material. Do not cite evidence that is not listed here:\n${formatEvidenceForPrompt(evidenceSources)}`;
-  }
-  const sourceLines = [
-    ...formatDictionarySources(dictionaryEntries).split("\n").filter((line) => line && line !== "Sources Used"),
-    ...formatEvidenceSourcesPanel(evidenceSources).split("\n").filter((line) => line && line !== "Evidence Used"),
-  ];
-  const sourcesPanel = sourceLines.length > 0 ? `Sources Used\n${sourceLines.join("\n")}` : "";
+
+  console.log(`[chat] pre-stream setup: ${Date.now() - t0}ms`);
 
   const { stream, onComplete } = routeMessage(
     modelDef,
@@ -113,6 +114,7 @@ export async function POST(req: Request) {
   );
 
   let assistantContent = "";
+  const chunks: string[] = [];
   const encoder = new TextEncoder();
 
   const readableStream = new ReadableStream<Uint8Array>({
@@ -123,62 +125,61 @@ export async function POST(req: Request) {
         const { done, value } = await reader.read();
         if (done) break;
         const text = decoder.decode(value, { stream: true });
-        assistantContent += text;
+        chunks.push(text);
         controller.enqueue(encoder.encode(text));
       }
-      if (sourcesPanel) {
-        const sourceBlock = `\n\n${sourcesPanel}`;
-        assistantContent += sourceBlock;
-        controller.enqueue(encoder.encode(sourceBlock));
-      }
+      assistantContent = chunks.join("");
       controller.close();
     },
   });
 
   after(async () => {
     const usage = await onComplete;
-    await db.message.create({
-      data: {
-        conversationId,
-        role: "assistant",
-        content: assistantContent,
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-      },
-    });
-    await db.usageRecord.create({
-      data: {
-        userId: session.user.id,
-        model: usage.model,
-        provider: usage.provider,
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        costUsdMicro: usage.costUsdMicro,
-      },
-    });
+    await Promise.all([
+      db.message.create({
+        data: {
+          conversationId,
+          role: "assistant",
+          content: assistantContent,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+        },
+      }),
+      db.usageRecord.create({
+        data: {
+          userId,
+          model: usage.model,
+          provider: usage.provider,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          costUsdMicro: usage.costUsdMicro,
+        },
+      }),
+    ]);
 
     // 80% usage limit warning — fires exactly once when the threshold is crossed
-    if (planDef.messagesPerDay) {
+    if (planDef.messagesPerMonth !== Infinity) {
       try {
-        const dayStart = new Date();
-        dayStart.setHours(0, 0, 0, 0);
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
         const totalCount = await db.usageRecord.count({
-          where: { userId: session.user.id, createdAt: { gte: dayStart } },
+          where: { userId, createdAt: { gte: monthStart } },
         });
-        const threshold = Math.round(planDef.messagesPerDay * 0.8);
+        const threshold = Math.round(planDef.messagesPerMonth * 0.8);
         if (totalCount === threshold) {
           const user = await db.user.findUnique({
-            where: { id: session.user.id },
+            where: { id: userId },
             select: { email: true, name: true },
           });
           if (user) {
             await sendEmail(
               user.email,
-              `You've used ${totalCount} of ${planDef.messagesPerDay} free chats today`,
+              `You've used ${totalCount} of ${planDef.messagesPerMonth} messages this month`,
               usageLimitWarningEmailHtml({
                 name: user.name ?? "there",
                 used: totalCount,
-                limit: planDef.messagesPerDay,
+                limit: planDef.messagesPerMonth,
                 plan: planDef.name,
               })
             );

@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Analytics from "@/components/analytics/Analytics";
+import dynamic from "next/dynamic";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-import CookieBanner from "@/components/ui/CookieBanner";
-import PWAInstallButton from "@/components/ui/PWAInstallButton";
+
+// Defer non-critical UI — loaded after main content paints
+const Analytics = dynamic(() => import("@/components/analytics/Analytics"), { ssr: false });
+const CookieBanner = dynamic(() => import("@/components/ui/CookieBanner"), { ssr: false });
+const PWAInstallButton = dynamic(() => import("@/components/ui/PWAInstallButton"), { ssr: false });
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
