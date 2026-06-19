@@ -415,7 +415,7 @@ function routeOpenRouter(model: ModelDef, messages: ChatMessage[], system: strin
     apiKey: process.env.OPENROUTER_API_KEY!,
     baseURL: "https://openrouter.ai/api/v1",
     defaultHeaders: {
-      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://mansamusaai.vercel.app",
+      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com",
       "X-Title": "MansaMusaAI",
     },
   });

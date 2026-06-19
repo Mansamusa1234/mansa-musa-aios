@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { AGENTS } from "@/data/agents";
 import ChatInterface from "@/components/chat/ChatInterface";
+
+export const metadata: Metadata = {
+  title: "Chat | MansaMusaAI",
+  description: "Chat with your AI agents — automate tasks, get insights, and grow your business.",
+  robots: { index: false },
+};
 
 interface Props {
   searchParams: Promise<{ id?: string; agent?: string }>;

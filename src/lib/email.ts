@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = process.env.EMAIL_FROM ?? "MansaMusaAI <onboarding@resend.dev>";
-const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://mansamusaai.vercel.app";
+const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
 export interface SendResult {
   sent: boolean;

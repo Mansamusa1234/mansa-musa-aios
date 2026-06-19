@@ -66,7 +66,7 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
   }
 
   const embedCode = rec
-    ? `<script src="https://mansamusaai.vercel.app/receptionist-widget.js" data-id="${rec.id}" data-color="${rec.widgetColor}" defer></script>`
+    ? `<script src="https://www.mansamusainitiative.com/receptionist-widget.js" data-id="${rec.id}" data-color="${rec.widgetColor}" defer></script>`
     : "Save your configuration first to generate the embed code.";
 
   return (

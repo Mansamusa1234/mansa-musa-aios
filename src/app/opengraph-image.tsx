@@ -95,7 +95,7 @@ export default function Image() {
 
         {/* Bottom URL */}
         <p style={{ position: "absolute", bottom: 32, fontSize: 16, color: "#4b5563" }}>
-          mansamusaai.vercel.app
+          www.mansamusainitiative.com
         </p>
       </div>
     ),

@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PLANS, getLivePrices } from "@/lib/stripe";
 import BillingClient from "./BillingClient";
+
+export const metadata: Metadata = {
+  title: "Billing | MansaMusaAI",
+  description: "Manage your MansaMusaAI subscription and billing details.",
+  robots: { index: false },
+};
 
 export default async function BillingPage() {
   const session = await auth();

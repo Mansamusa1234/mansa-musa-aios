@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
 
   const inputBase =
     "w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 " +
-    "px-4 py-3 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 " +
+    "px-4 py-3 text-base sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 " +
     "outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20";
 
   return (

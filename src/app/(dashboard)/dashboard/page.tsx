@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PLANS } from "@/lib/stripe";
 import DashboardClient from "@/components/dashboard/DashboardClient";
+
+export const metadata: Metadata = {
+  title: "Dashboard | MansaMusaAI",
+  description: "Your MansaMusaAI command centre — analytics, agents, and AI-powered insights.",
+  robots: { index: false },
+};
 
 export const dynamic = "force-dynamic";
 

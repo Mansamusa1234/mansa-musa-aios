@@ -12,7 +12,7 @@ import {
 } from "@/lib/email";
 import type Stripe from "stripe";
 
-const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://mansamusaai.vercel.app";
+const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
 function formatDate(ts: number) {
   return new Date(ts * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });

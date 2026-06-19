@@ -36,7 +36,7 @@ function validateConfirm(pw: string, confirm: string) {
 }
 
 const base =
-  "w-full rounded-xl border bg-white dark:bg-white/5 px-4 py-3 text-sm " +
+  "w-full rounded-xl border bg-white dark:bg-white/5 px-4 py-3 text-base sm:text-sm " +
   "text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 " +
   "outline-none transition-colors focus:ring-2 disabled:opacity-50";
 
