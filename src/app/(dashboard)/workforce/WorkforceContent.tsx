@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { stagger, fadeUp, scaleIn } from "@/lib/motion";
+import AnimatedWorkforceDashboard from "./AnimatedWorkforceDashboard";
 
 interface Props {
   leadsCount: number;
@@ -182,6 +183,8 @@ export default function WorkforceContent({ leadsCount, openTickets, upcomingBook
           </motion.div>
         ))}
       </motion.div>
+
+      <AnimatedWorkforceDashboard />
 
       {/* Live modules grid */}
       <motion.div variants={fadeUp}>
