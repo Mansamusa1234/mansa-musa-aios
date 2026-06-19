@@ -188,6 +188,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
   const hasOAuth = showGithub || showGoogle || showMicrosoft || showApple;
   const currentErrors = getValidationErrors({ firstName, lastName, email, password, confirm });
   const isFormValid = !Object.values(currentErrors).some(Boolean);
+  const submitButtonText = loading ? "Creating account..." : isFormValid ? "Create free account" : "Complete required fields";
 
   useEffect(() => {
     setRef(new URLSearchParams(window.location.search).get("ref"));
@@ -237,7 +238,10 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
     setTouched({ firstName: true, lastName: true, email: true, password: true, confirm: true });
     const errs = getValidationErrors({ firstName, lastName, email, password, confirm });
     setFe(errs);
-    if (Object.values(errs).some(Boolean)) return;
+    if (Object.values(errs).some(Boolean)) {
+      setError("Please fix the highlighted fields before creating your account.");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -265,8 +269,8 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
       const signInResult = await signIn("credentials", { email: normalizedEmail, password, redirect: false });
       if (signInResult?.error) {
-        setError("Account created, but automatic sign-in failed. Please sign in with your email and password.");
-        router.push("/login");
+        setError("Account created, but automatic sign-in failed. Redirecting you to sign in.");
+        router.push(`/login?email=${encodeURIComponent(normalizedEmail)}`);
         return;
       }
 
@@ -298,7 +302,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
   );
   const toggleBtn = (show: boolean, onToggle: () => void, label: string) => (
     <button type="button" onClick={onToggle} aria-label={label}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-400 transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 dark:hover:text-gray-300">
       {show ? <EyeOff /> : <EyeOn />}
     </button>
   );
@@ -497,9 +501,11 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
               <Link href="/privacy" className="underline hover:text-gray-600 dark:hover:text-gray-300">Privacy Policy</Link>.
             </p>
 
-            <button type="submit" disabled={loading || !isFormValid}
-              className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 transition-all">
-              {loading ? <span className="flex items-center justify-center gap-2"><Spinner />Creating account…</span> : "Create free account"}
+            <button type="submit" disabled={loading}
+              className={`w-full rounded-xl py-3 text-sm font-semibold text-white active:scale-[0.98] disabled:cursor-wait disabled:opacity-60 transition-all ${
+                isFormValid ? "bg-brand-500 hover:bg-brand-600" : "bg-brand-500/70 hover:bg-brand-500"
+              }`}>
+              {loading ? <span className="flex items-center justify-center gap-2"><Spinner />Creating account...</span> : submitButtonText}
             </button>
           </form>
         </div>
