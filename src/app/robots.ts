@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/dashboard", "/chat", "/billing", "/admin", "/api"],
       },
     ],
-    sitemap: "https://mansamusaai.vercel.app/sitemap.xml",
+    sitemap: "https://www.mansamusainitiative.com/sitemap.xml",
   };
 }

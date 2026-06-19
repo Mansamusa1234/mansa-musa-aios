@@ -3,10 +3,12 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Analytics from "@/components/analytics/Analytics";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import CookieBanner from "@/components/ui/CookieBanner";
+import PWAInstallButton from "@/components/ui/PWAInstallButton";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-const BASE = "https://mansamusainitiative.com";
+const BASE = "https://www.mansamusainitiative.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),
@@ -152,6 +154,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </ThemeProvider>
         <Analytics />
+        <CookieBanner />
+        <PWAInstallButton />
       </body>
     </html>
   );

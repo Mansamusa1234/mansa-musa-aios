@@ -45,6 +45,8 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
   const [loading, setLoading] = useState(false);
   const [loadingOAuth, setLoadingOAuth] = useState<string | null>(null);
   const [failedAttempts, setFailedAttempts] = useState(0);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [loadingPasskey, setLoadingPasskey] = useState(false);
 
   const hasOAuth = showGithub || showGoogle || showMicrosoft || showApple;
 
@@ -52,6 +54,31 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     if (phase === "credentials") emailRef.current?.focus();
     if (phase === "totp") totpRef.current?.focus();
   }, [phase]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.PublicKeyCredential) {
+      window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+        .then(setPasskeySupported)
+        .catch(() => {});
+    }
+  }, []);
+
+  async function handlePasskey() {
+    setLoadingPasskey(true);
+    setError("");
+    try {
+      const challenge = new Uint8Array(32);
+      crypto.getRandomValues(challenge);
+      await navigator.credentials.get({
+        publicKey: { challenge, userVerification: "required", rpId: window.location.hostname },
+      });
+      router.push("/dashboard");
+    } catch {
+      setError("Passkey sign-in failed. Please use your email and password.");
+    } finally {
+      setLoadingPasskey(false);
+    }
+  }
 
   async function handleOAuth(provider: string) {
     setLoadingOAuth(provider);
@@ -300,6 +327,31 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
         </div>
 
         <div className="rounded-2xl bg-white dark:bg-[#09091a] p-8 shadow-card dark:shadow-none border border-gray-100 dark:border-white/8">
+          {passkeySupported && (
+            <>
+              <button
+                type="button"
+                onClick={handlePasskey}
+                disabled={loadingPasskey}
+                className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-white/8 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98] disabled:opacity-50 transition-all mb-3"
+              >
+                {loadingPasskey ? (
+                  <OAuthSpinner />
+                ) : (
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                  </svg>
+                )}
+                {loadingPasskey ? "Authenticating…" : "Sign in with Passkey / Face ID / Touch ID"}
+              </button>
+              <div className="mb-4 flex items-center gap-4">
+                <div className="flex-1 border-t border-gray-200 dark:border-white/8" />
+                <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
+                <div className="flex-1 border-t border-gray-200 dark:border-white/8" />
+              </div>
+            </>
+          )}
+
           {hasOAuth && (
             <>
               <div className="space-y-3">
