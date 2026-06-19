@@ -1,6 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
 import { db } from "@/lib/db";
-import { getStripe } from "@/lib/stripe";
 import { anthropic } from "@/lib/anthropic";
 
 export interface ConnectorResult {
@@ -94,6 +93,7 @@ export const CONNECTORS: Connector[] = [
     isConfigured: () => !!process.env.STRIPE_SECRET_KEY?.trim(),
     notConfiguredReason: "Needs STRIPE_SECRET_KEY — not set.",
     fetchSample: async () => {
+      const { getStripe } = await import("@/lib/stripe");
       const stripe = getStripe();
       if (!stripe) {
         return { ok: false, summary: "Needs STRIPE_SECRET_KEY — not set." };
