@@ -9,6 +9,7 @@ const protectedPaths = [
   "/referrals", "/revenue", "/team", "/settings", "/crm", "/receptionist",
   "/workforce", "/support", "/calendar", "/model-hub",
   "/compete", "/wisdom", "/wisdom-leaderboard",
+  "/onboarding", "/whatsapp", "/email-automation",
 ];
 
 export async function middleware(req: NextRequest) {

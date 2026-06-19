@@ -32,19 +32,19 @@ export default async function DashboardPage() {
   ]);
 
   let planId = "free";
-  if (subscription?.status === "ACTIVE" && subscription.stripePriceId) {
+  if ((subscription?.status === "ACTIVE" || subscription?.status === "TRIALING") && subscription.stripePriceId) {
     if (subscription.stripePriceId === process.env.STRIPE_PRICE_ENTERPRISE) planId = "enterprise";
-    else if (subscription.stripePriceId === process.env.STRIPE_PRICE_PRO) planId = "pro";
-    else if (subscription.stripePriceId === process.env.STRIPE_PRICE_BASIC) planId = "basic";
+    else if (subscription.stripePriceId === (process.env.STRIPE_PRICE_PROFESSIONAL ?? process.env.STRIPE_PRICE_PRO)) planId = "professional";
+    else if (subscription.stripePriceId === (process.env.STRIPE_PRICE_STARTER ?? process.env.STRIPE_PRICE_BASIC)) planId = "starter";
   }
   const planDef = PLANS.find((p) => p.id === planId) ?? PLANS[0];
 
   const onboardingItems = [
-    { id: "chat", label: "Start your first AI conversation", description: "Chat with Claude — your AI assistant", href: "/chat", cta: "Chat now", done: conversations.length > 0 },
-    { id: "marketplace", label: "Explore the agent marketplace", description: "Browse 41 specialised AI agents", href: "/marketplace", cta: "Explore", done: false },
+    { id: "receptionist", label: "Set up your AI receptionist", description: "Configure name, greeting, and persona", href: "/receptionist", cta: "Set up", done: false },
+    { id: "calendar", label: "Set your availability", description: "Let AI book appointments for you", href: "/calendar", cta: "Set hours", done: false },
     { id: "verify", label: "Verify your email", description: "Confirm your email address for security", href: "/settings", cta: "Settings", done: !!user?.emailVerified },
     { id: "2fa", label: "Enable two-factor authentication", description: "Secure your account with 2FA", href: "/settings", cta: "Enable", done: !!user?.twoFactorEnabled },
-    { id: "upgrade", label: "Upgrade your plan", description: "Unlock unlimited messages and more", href: "/billing", cta: "View plans", done: planId !== "free" },
+    { id: "upgrade", label: "Upgrade your plan", description: "Starter £49 · Professional £149 · Enterprise £499", href: "/billing", cta: "View plans", done: planId !== "free" },
   ];
   const completedOnboardingItems = onboardingItems.filter((item) => item.done).length;
   const onboardingProgress = onboardingItems.length > 0 ? completedOnboardingItems / onboardingItems.length : 1;
