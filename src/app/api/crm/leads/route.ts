@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { triggerWorkflows } from "@/lib/email-automation";
 
 const createSchema = z.object({
   name: z.string().min(1).max(200),
@@ -33,5 +34,11 @@ export async function POST(req: Request) {
   const lead = await db.lead.create({
     data: { ...parsed.data, userId: session.user.id, email: parsed.data.email || null },
   });
+
+  // Fire email automation workflows — best-effort
+  if (lead.email) {
+    void triggerWorkflows(session.user.id, "LEAD_CREATED", { email: lead.email, name: lead.name });
+  }
+
   return NextResponse.json({ lead }, { status: 201 });
 }
