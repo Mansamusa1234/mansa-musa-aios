@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getActivePlan, planDisplayName, type Plan } from "@/lib/subscription";
 
-const PLAN_ORDER: Record<Plan, number> = { free: 0, basic: 1, pro: 2, enterprise: 3 };
+const PLAN_ORDER: Record<Plan, number> = { free: 0, starter: 1, pro: 2, enterprise: 3 };
 
 const schema = z.object({ agentId: z.string(), action: z.enum(["deploy", "undeploy"]) });
 

@@ -28,9 +28,18 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const isTrialing = subscription?.status === "TRIALING";
   const trialEndsAt = subscription?.trialEndsAt ?? null;
   const trialUsed = subscription?.trialUsed ?? false;
+  const cancelAtPeriodEnd = subscription?.cancelAtPeriodEnd ?? false;
+  const currentPeriodEnd = subscription?.currentPeriodEnd ?? null;
 
   const trialDaysLeft = trialEndsAt
     ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
+    : null;
+
+  const currentPlan = plans.find((p) => p.priceId === subscription?.stripePriceId);
+  const currentPrice = currentPlan?.price ?? 0;
+
+  const endsAtFormatted = currentPeriodEnd
+    ? new Date(currentPeriodEnd).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
     : null;
 
   return (
@@ -47,6 +56,13 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
       {canceled === "true" && (
         <div className="mt-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-5 py-4">
           <p className="text-sm font-semibold text-yellow-300">Checkout cancelled — no charge was made.</p>
+        </div>
+      )}
+
+      {cancelAtPeriodEnd && endsAtFormatted && (
+        <div className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4">
+          <p className="text-sm font-semibold text-amber-300">⚠️ Your subscription is scheduled to cancel on {endsAtFormatted}.</p>
+          <p className="mt-1 text-xs text-gray-400">You keep full access until then. Click "Reactivate plan" on your current plan card to undo.</p>
         </div>
       )}
 
@@ -84,7 +100,11 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
             key={plan.id}
             plan={plan}
             currentPriceId={subscription?.stripePriceId ?? null}
+            currentPrice={currentPrice}
             index={i}
+            cancelAtPeriodEnd={cancelAtPeriodEnd}
+            currentPeriodEnd={currentPeriodEnd}
+            subscriptionId={subscription?.stripeSubscriptionId ?? null}
           />
         ))}
       </div>

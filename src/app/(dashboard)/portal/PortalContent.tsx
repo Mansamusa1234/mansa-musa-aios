@@ -13,6 +13,7 @@ interface PortalSubscription {
   currentPeriodEnd: Date | null;
   stripePriceId: string | null;
   stripeCustomerId: string | null;
+  cancelAtPeriodEnd: boolean;
 }
 
 interface Props {
@@ -37,8 +38,17 @@ function formatDate(d: Date | null): string {
 
 export default function PortalContent({ user, subscription, plan, totalMessages, totalConversations, messagesThisMonth }: Props) {
   const [portalLoading, setPortalLoading] = useState(false);
+  const [reactivating, setReactivating] = useState(false);
   const isActive  = subscription?.status === "ACTIVE";
   const isFree    = !subscription || plan.price === 0;
+  const willCancel = subscription?.cancelAtPeriodEnd ?? false;
+
+  async function handleReactivate() {
+    setReactivating(true);
+    const res = await fetch("/api/stripe/reactivate", { method: "POST" });
+    if (res.ok) window.location.reload();
+    else setReactivating(false);
+  }
 
   async function openBillingPortal() {
     setPortalLoading(true);
@@ -134,10 +144,26 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
               ))}
             </ul>
 
+            {/* Cancellation warning */}
+            {willCancel && renewDate && (
+              <div className="mb-4 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 flex items-start justify-between gap-3">
+                <p className="text-xs text-amber-400">
+                  Cancels on {formatDate(renewDate)}. You keep full access until then.
+                </p>
+                <button
+                  onClick={handleReactivate}
+                  disabled={reactivating}
+                  className="flex-shrink-0 rounded-lg border border-amber-500/30 px-2 py-1 text-[10px] font-semibold text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 transition-colors"
+                >
+                  {reactivating ? "…" : "Reactivate"}
+                </button>
+              </div>
+            )}
+
             {/* Renewal / billing */}
             <div className="rounded-xl border border-white/6 bg-white/2 p-3 space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-400">Billing period end</span>
+                <span className="text-gray-400">{willCancel ? "Access until" : "Billing period end"}</span>
                 <span className="text-white font-medium">{formatDate(renewDate ?? null)}</span>
               </div>
               {subscription?.stripeCustomerId && (

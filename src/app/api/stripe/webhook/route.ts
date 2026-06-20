@@ -157,6 +157,25 @@ export async function POST(req: Request) {
       break;
     }
 
+    case "invoice.payment_succeeded": {
+      const invoice = event.data.object as Stripe.Invoice;
+      if (invoice.billing_reason === "subscription_cycle" || invoice.billing_reason === "subscription_update") {
+        const stripeSubId = invoice.subscription as string | null;
+        if (stripeSubId) {
+          const stripeSub = await stripe.subscriptions.retrieve(stripeSubId);
+          await db.subscription.updateMany({
+            where: { stripeSubscriptionId: stripeSubId },
+            data: {
+              status: "ACTIVE",
+              currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
+              currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+            },
+          });
+        }
+      }
+      break;
+    }
+
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice;
       after(async () => {
