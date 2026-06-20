@@ -76,6 +76,12 @@ model User {
   exportedDocuments        ExportedDocument[]
   whatsAppMessages         WhatsAppMessage[]
   emailWorkflows           EmailWorkflow[]
+  teamMemberships          TeamMember[]
+  ownedTeams               Team[]           @relation("TeamOwner")
+  apiKeys                  ApiKey[]
+  agentListings            AgentListing[]   @relation("AgentListingSeller")
+  agentPurchases           AgentPurchase[]  @relation("AgentPurchaseBuyer")
+  workforceChats           WorkforceChat[]
 }
 
 model Account {
@@ -742,8 +748,11 @@ model Receptionist {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  twilioNumber   String?
+
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   chats          ReceptionistChat[]
+  voiceCalls     VoiceCall[]
 }
 
 model ReceptionistChat {
@@ -883,6 +892,7 @@ model MarketplaceAgent {
   entries     CompetitionEntry[]
   ratings     AgentRating[]
   assets      WisdomAsset[]
+  listing     AgentListing?
 }
 
 model AgentMarketStats {
@@ -985,4 +995,133 @@ model AgentRating {
   user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([agentId, userId])
+}
+
+/* ── Team / Enterprise ────────────────────────────────────── */
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String
+  plan      String   @default("starter")
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner   User         @relation("TeamOwner", fields: [ownerId], references: [id])
+  members TeamMember[]
+  invites TeamInvite[]
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  userId   String
+  role     TeamRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+model TeamInvite {
+  id         String    @id @default(cuid())
+  teamId     String
+  email      String
+  role       TeamRole  @default(MEMBER)
+  token      String    @unique @default(cuid())
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, email])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  keyHash    String    @unique
+  prefix     String
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/* ── Agent Marketplace ────────────────────────────────────── */
+
+model AgentListing {
+  id          String   @id @default(cuid())
+  agentId     String   @unique
+  sellerId    String
+  priceCents  Int
+  description String?  @db.Text
+  downloads   Int      @default(0)
+  revenue     Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  agent     MarketplaceAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  seller    User             @relation("AgentListingSeller", fields: [sellerId], references: [id])
+  purchases AgentPurchase[]
+}
+
+model AgentPurchase {
+  id         String   @id @default(cuid())
+  listingId  String
+  buyerId    String
+  priceCents Int
+  createdAt  DateTime @default(now())
+
+  listing AgentListing @relation(fields: [listingId], references: [id])
+  buyer   User         @relation("AgentPurchaseBuyer", fields: [buyerId], references: [id])
+
+  @@unique([listingId, buyerId])
+}
+
+/* ── Workforce C-Suite Chat ───────────────────────────────── */
+
+model WorkforceChat {
+  id        String   @id @default(cuid())
+  userId    String
+  agentRole String
+  messages  String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, agentRole])
+}
+
+/* ── Voice Calls ──────────────────────────────────────────── */
+
+model VoiceCall {
+  id             String    @id @default(cuid())
+  receptionistId String
+  callSid        String    @unique
+  from           String
+  to             String
+  status         String    @default("initiated")
+  duration       Int?
+  transcript     String?   @db.Text
+  recordingUrl   String?
+  createdAt      DateTime  @default(now())
+  endedAt        DateTime?
+
+  receptionist Receptionist @relation(fields: [receptionistId], references: [id], onDelete: Cascade)
 }
