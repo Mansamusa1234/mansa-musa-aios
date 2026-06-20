@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { stagger, fadeUp, scaleIn } from "@/lib/motion";
 import CountUp from "@/components/ui/CountUp";
 
@@ -48,10 +49,48 @@ function timeAgo(date: Date): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-export default function TeamContent({ members, currentUserId, currentRole }: Props) {
+export default function TeamContent({ members: initial, currentUserId, currentRole }: Props) {
+  const [members, setMembers] = useState(initial);
+  const [managing, setManaging] = useState<Member | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const admins = members.filter((m) => m.role === "ADMIN");
   const users  = members.filter((m) => m.role !== "ADMIN");
   const totalConversations = members.reduce((s, m) => s + m._count.conversations, 0);
+
+  async function changeRole(id: string, role: string) {
+    setBusy(true);
+    setError(null);
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+    if (res.ok) {
+      setMembers((prev) => prev.map((m) => m.id === id ? { ...m, role } : m));
+      setManaging((prev) => prev?.id === id ? { ...prev, role } : prev);
+    } else {
+      const d = await res.json();
+      setError(d.error ?? "Failed to update role");
+    }
+    setBusy(false);
+  }
+
+  async function deleteUser(id: string) {
+    if (!confirm("Permanently delete this user and all their data?")) return;
+    setBusy(true);
+    setError(null);
+    const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+      setManaging(null);
+    } else {
+      const d = await res.json();
+      setError(d.error ?? "Failed to delete user");
+    }
+    setBusy(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -68,10 +107,10 @@ export default function TeamContent({ members, currentUserId, currentRole }: Pro
         {/* Stats */}
         <motion.div variants={stagger} className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: "Total members",      value: members.length,          color: "text-brand-400"  },
-            { label: "Admins",             value: admins.length,           color: "text-purple-400" },
-            { label: "Active users",       value: users.length,            color: "text-blue-400"   },
-            { label: "Total conversations",value: totalConversations,      color: "text-green-400"  },
+            { label: "Total members",       value: members.length,       color: "text-brand-400"  },
+            { label: "Admins",              value: admins.length,        color: "text-purple-400" },
+            { label: "Active users",        value: users.length,         color: "text-blue-400"   },
+            { label: "Total conversations", value: totalConversations,   color: "text-green-400"  },
           ].map((s) => (
             <motion.div key={s.label} variants={scaleIn} className="rounded-2xl border border-white/8 bg-white/3 p-4">
               <p className={`text-2xl font-extrabold ${s.color}`}><CountUp value={s.value} duration={1000} /></p>
@@ -85,7 +124,6 @@ export default function TeamContent({ members, currentUserId, currentRole }: Pro
       <div>
         <h2 className="text-sm font-bold text-white mb-3">All Members</h2>
         <div className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
-          {/* Table header */}
           <div className="grid grid-cols-12 border-b border-white/6 px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-600">
             <span className="col-span-5">Member</span>
             <span className="col-span-2 hidden sm:block">Role</span>
@@ -96,7 +134,6 @@ export default function TeamContent({ members, currentUserId, currentRole }: Pro
 
           {members.map((member, i) => {
             const isMe = member.id === currentUserId;
-            const isAdmin = member.role === "ADMIN";
 
             return (
               <motion.div
@@ -106,48 +143,38 @@ export default function TeamContent({ members, currentUserId, currentRole }: Pro
                 transition={{ delay: i * 0.04 }}
                 className={`grid grid-cols-12 items-center border-b border-white/4 px-5 py-3 last:border-0 hover:bg-white/2 transition-colors ${isMe ? "bg-brand-500/5" : ""}`}
               >
-                {/* Avatar + name */}
                 <div className="col-span-5 flex items-center gap-3 min-w-0">
                   <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${avatarColor(member.id)} text-sm font-bold text-white`}>
                     {initials(member.name, member.email)}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-white truncate">
-                        {member.name ?? "Unknown"}
-                      </p>
-                      {isMe && (
-                        <span className="flex-shrink-0 rounded-full bg-brand-500/20 px-1.5 py-0.5 text-[9px] font-bold text-brand-400">You</span>
-                      )}
+                      <p className="text-sm font-semibold text-white truncate">{member.name ?? "Unknown"}</p>
+                      {isMe && <span className="flex-shrink-0 rounded-full bg-brand-500/20 px-1.5 py-0.5 text-[9px] font-bold text-brand-400">You</span>}
                     </div>
                     <p className="text-[11px] text-gray-600 truncate">{member.email}</p>
                   </div>
                 </div>
 
-                {/* Role */}
                 <div className="col-span-2 hidden sm:flex">
                   <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${ROLE_STYLES[member.role] ?? ROLE_STYLES.USER}`}>
                     {member.role}
                   </span>
                 </div>
 
-                {/* Conversations */}
                 <div className="col-span-2 hidden md:block">
                   <p className="text-sm text-gray-400">{member._count.conversations}</p>
                 </div>
 
-                {/* Joined */}
                 <div className="col-span-2 hidden lg:block">
                   <p className="text-xs text-gray-600">{timeAgo(member.createdAt)}</p>
                 </div>
 
-                {/* Actions */}
                 <div className="col-span-7 sm:col-span-1 flex justify-end">
                   {currentRole === "ADMIN" && !isMe && (
                     <button
-                      disabled
-                      title="Role management coming soon"
-                      className="rounded-lg border border-white/8 bg-white/3 px-2 py-1 text-[10px] text-gray-600 cursor-not-allowed"
+                      onClick={() => { setManaging(member); setError(null); }}
+                      className="rounded-lg border border-white/8 bg-white/3 px-2 py-1 text-[10px] text-gray-400 hover:text-white hover:border-white/20 transition-colors"
                     >
                       Manage
                     </button>
@@ -158,32 +185,66 @@ export default function TeamContent({ members, currentUserId, currentRole }: Pro
           })}
 
           {members.length === 0 && (
-            <div className="px-5 py-12 text-center text-sm text-gray-600">
-              No team members found
-            </div>
+            <div className="px-5 py-12 text-center text-sm text-gray-600">No team members found</div>
           )}
         </div>
       </div>
 
-      {/* Invite section */}
+      {/* Manage user modal */}
+      <AnimatePresence>
+        {managing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={(e) => { if (e.target === e.currentTarget) setManaging(null); }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-sm rounded-2xl border border-white/8 bg-[#0e0e1a] p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${avatarColor(managing.id)} text-sm font-bold text-white`}>
+                  {initials(managing.name, managing.email)}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">{managing.name ?? "Unknown"}</p>
+                  <p className="text-xs text-gray-400">{managing.email}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold text-gray-400 mb-2">Role</p>
+                <div className="flex gap-2">
+                  {["USER", "ADMIN"].map((r) => (
+                    <button
+                      key={r}
+                      disabled={busy || managing.role === r}
+                      onClick={() => changeRole(managing.id, r)}
+                      className={`flex-1 rounded-xl border py-2 text-xs font-bold transition-colors ${managing.role === r ? "border-brand-500/40 bg-brand-500/10 text-brand-300" : "border-white/8 text-gray-400 hover:text-white hover:border-white/20"} disabled:opacity-40`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {error && <p className="text-xs text-red-400">{error}</p>}
+
+              <button
+                disabled={busy}
+                onClick={() => deleteUser(managing.id)}
+                className="w-full rounded-xl border border-red-500/20 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
+              >
+                {busy ? "Working…" : "Delete user"}
+              </button>
+
+              <button onClick={() => setManaging(null)} className="w-full text-xs text-gray-500 hover:text-gray-300">Cancel</button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Invite placeholder */}
       <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
         <div className="mb-3 text-3xl">👥</div>
         <h3 className="text-sm font-bold text-white mb-1">Invite team members</h3>
-        <p className="text-xs text-gray-600 mb-4">
-          Share your workspace to collaborate with colleagues
-        </p>
+        <p className="text-xs text-gray-600 mb-4">Share your workspace to collaborate with colleagues</p>
         <div className="flex gap-2 max-w-sm mx-auto">
-          <input
-            disabled
-            placeholder="colleague@company.com"
-            className="flex-1 rounded-xl border border-white/8 bg-white/4 px-3 py-2 text-sm text-gray-500 placeholder-gray-700 cursor-not-allowed"
-          />
-          <button
-            disabled
-            className="rounded-xl bg-brand-500/30 px-4 py-2 text-sm font-semibold text-brand-400 cursor-not-allowed"
-          >
-            Invite
-          </button>
+          <input disabled placeholder="colleague@company.com" className="flex-1 rounded-xl border border-white/8 bg-white/4 px-3 py-2 text-sm text-gray-500 placeholder-gray-700 cursor-not-allowed" />
+          <button disabled className="rounded-xl bg-brand-500/30 px-4 py-2 text-sm font-semibold text-brand-400 cursor-not-allowed">Invite</button>
         </div>
         <p className="mt-2 text-[10px] text-gray-700">Invites coming in a future release</p>
       </div>
