@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { validateTwilioSignature, sendWhatsApp } from "@/lib/twilio";
-import Anthropic from "@anthropic-ai/sdk";
-
-const anthropic = new Anthropic();
+import { anthropic } from "@/lib/anthropic";
 
 export async function POST(req: Request) {
   const headersList = await headers();

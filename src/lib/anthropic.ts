@@ -1,8 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+// Lazy singleton — defers SDK construction until first property access so that
+// importing this module at build time (no ANTHROPIC_API_KEY) never throws.
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!_client) _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+  return _client;
+}
+
+export const anthropic = {
+  get messages() { return getClient().messages; },
+} as Pick<Anthropic, "messages">;
 
 export const SYSTEM_PROMPT = `You are MansaMusaAI, a highly capable and knowledgeable AI assistant.
 Named after Mansa Musa — the legendary 14th-century emperor renowned for his vast wisdom and generosity —

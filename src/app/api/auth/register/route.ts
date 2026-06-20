@@ -59,7 +59,15 @@ export async function POST(req: Request) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
     }
-    console.error("[register]", (err as Error)?.message);
-    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
+    // Prisma unique-constraint violation — race between two concurrent registrations
+    if ((err as { code?: string })?.code === "P2002") {
+      return NextResponse.json({ error: "Email already in use." }, { status: 409 });
+    }
+    console.error("[register] unexpected error:", {
+      message: (err as Error)?.message,
+      code: (err as { code?: string })?.code,
+      ip: getIP(req),
+    });
+    return NextResponse.json({ error: "Could not create your account. Please try again." }, { status: 500 });
   }
 }

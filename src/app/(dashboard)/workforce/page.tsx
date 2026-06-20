@@ -1,13 +1,7 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import nextDynamic from "next/dynamic";
-import Loading from "./loading";
-
-const WorkforceContent = nextDynamic(() => import("./WorkforceContent"), {
-  loading: () => <Loading />,
-  ssr: false,
-});
+import WorkforceContent from "./WorkforceContent";
 
 export const metadata: Metadata = {
   title: "Workforce OS | MansaMusaAI",

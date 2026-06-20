@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     // Tree-shake these large packages — only import what's used
-    optimizePackageImports: ["framer-motion", "@anthropic-ai/sdk", "lucide-react"],
+    optimizePackageImports: ["framer-motion", "lucide-react"],
   },
   images: {
     remotePatterns: [

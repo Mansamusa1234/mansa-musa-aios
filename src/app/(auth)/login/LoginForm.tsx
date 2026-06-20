@@ -49,6 +49,13 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
   const [loadingPasskey, setLoadingPasskey] = useState(false);
 
   const hasOAuth = showGithub || showGoogle || showMicrosoft || showApple;
+  const [registered, setRegistered] = useState(false);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("registered") === "1") {
+      setRegistered(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (phase === "credentials") emailRef.current?.focus();
@@ -432,6 +439,14 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
           )}
 
           <form onSubmit={handleCredentials} className="space-y-4" noValidate>
+            {registered && !error && (
+              <div role="status" className="flex items-start gap-2.5 rounded-xl border border-green-200 dark:border-green-500/20 bg-green-50 dark:bg-green-500/10 px-4 py-3">
+                <svg className="h-4 w-4 text-green-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                <span className="text-sm text-green-700 dark:text-green-400">Account created! Please sign in below.</span>
+              </div>
+            )}
             {error && (
               <div role="alert" id="login-error" className="flex items-start gap-2.5 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 px-4 py-3">
                 <svg className="h-4 w-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
