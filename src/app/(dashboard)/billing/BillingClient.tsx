@@ -13,6 +13,7 @@ interface Props {
 
 export default function BillingClient({ plan, currentPriceId, index }: Props) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isCurrent = plan.priceId ? currentPriceId === plan.priceId : !currentPriceId;
 
   async function handleSubscribe() {
@@ -21,15 +22,26 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
       return;
     }
     if (!plan.priceId) return;
+    setError(null);
     setLoading(true);
-    const res = await fetch("/api/stripe/create-checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId: plan.priceId }),
-    });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else setLoading(false);
+    try {
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId: plan.priceId }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error ?? "Could not start checkout. Please try again.");
+        setLoading(false);
+      }
+    } catch {
+      setError("Connection error. Please try again.");
+      setLoading(false);
+    }
   }
 
   const price =
@@ -95,6 +107,10 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
           </li>
         ))}
       </ul>
+
+      {error && (
+        <p className="mt-3 text-xs text-red-500">{error}</p>
+      )}
 
       <button
         onClick={handleSubscribe}

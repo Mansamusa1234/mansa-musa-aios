@@ -50,19 +50,34 @@ interface Props { plans: PricingPlan[] }
 export default function PricingContent({ plans }: Props) {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   async function handleCheckout(priceId: string, planId: string) {
-    if (!priceId) { window.location.href = "/register"; return; }
+    setCheckoutError(null);
+    if (!priceId) {
+      // Free plan — logged-in users go to dashboard, others to register
+      const res = await fetch("/api/auth/session");
+      const s = await res.json().catch(() => null);
+      window.location.href = s?.user ? "/dashboard" : "/register";
+      return;
+    }
     setCheckoutLoading(planId);
     try {
       const res = await fetch("/api/stripe/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceId }),
+        signal: AbortSignal.timeout(15000),
       });
-      if (res.status === 401) { window.location.href = "/register"; return; }
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      if (res.status === 401) { window.location.href = "/login?redirect=/pricing"; return; }
+      const data = await res.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setCheckoutError(data.error ?? "Could not start checkout. Please try again.");
+      }
+    } catch {
+      setCheckoutError("Could not connect. Please check your connection and try again.");
     } finally {
       setCheckoutLoading(null);
     }
@@ -100,6 +115,11 @@ export default function PricingContent({ plans }: Props) {
       {/* Plans */}
       <section className="px-6 py-20 bg-gray-950">
         <div className="mx-auto max-w-6xl">
+          {checkoutError && (
+            <div className="mb-8 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-3 text-sm text-red-400 text-center">
+              {checkoutError}
+            </div>
+          )}
           <motion.div
             variants={staggerSlow}
             initial="hidden"
