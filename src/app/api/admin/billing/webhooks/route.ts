@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 
 const BILLING_EVENT_TYPES = [
@@ -22,6 +22,8 @@ export async function GET(req: Request) {
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 100);
 
   try {
+    const stripe = getStripe();
+    if (!stripe) return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
     const events = await stripe.events.list({
       limit,
       types: BILLING_EVENT_TYPES,
