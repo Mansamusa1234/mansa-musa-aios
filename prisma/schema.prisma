@@ -253,33 +253,102 @@ model Referral {
   ledgerEntry CommissionLedger?
 }
 
-model Affiliate {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  code           String   @unique
-  status         String   @default("APPROVED")
-  commissionRate Int      @default(20)
-  clicks         Int      @default(0)
-  couponCode     String?
-  socialHandle   String?
-  createdAt      DateTime @default(now())
-
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversions AffiliateConversion[]
+enum AffiliateTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
 }
 
-model AffiliateConversion {
-  id              String    @id @default(cuid())
-  affiliateId     String
-  referredUserId  String    @unique
-  status          String    @default("SIGNED_UP")
-  commissionCents Int       @default(0)
-  createdAt       DateTime  @default(now())
-  convertedAt     DateTime?
+enum PayoutRequestStatus {
+  PENDING
+  APPROVED
+  PAID
+  REJECTED
+}
+
+model Affiliate {
+  id               String        @id @default(cuid())
+  userId           String        @unique
+  code             String        @unique
+  status           String        @default("APPROVED")
+  tier             AffiliateTier @default(BRONZE)
+  commissionRate   Int           @default(20)
+  recurringRate    Int           @default(20)
+  clicks           Int           @default(0)
+  couponCode       String?       @unique
+  stripeCouponId   String?
+  socialHandle     String?
+  paypalEmail      String?
+  bankDetails      String?       @db.Text
+  parentAffiliateId String?
+  tier2Rate        Int           @default(5)
+  createdAt        DateTime      @default(now())
+
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversions     AffiliateConversion[]
+  clickLogs       AffiliateClick[]
+  payoutRequests  AffiliatePayoutRequest[]
+  childAffiliates Affiliate[]           @relation("AffiliateHierarchy")
+  parentAffiliate Affiliate?            @relation("AffiliateHierarchy", fields: [parentAffiliateId], references: [id])
+}
+
+model AffiliateClick {
+  id          String   @id @default(cuid())
+  affiliateId String
+  ip          String?
+  userAgent   String?
+  referrer    String?
+  country     String?
+  converted   Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
 
+  @@index([affiliateId, createdAt])
+}
+
+model AffiliateConversion {
+  id                  String    @id @default(cuid())
+  affiliateId         String
+  referredUserId      String    @unique
+  status              String    @default("SIGNED_UP")
+  commissionCents     Int       @default(0)
+  recurringTotal      Int       @default(0)
+  stripeSubscriptionId String?
+  stripePriceId       String?
+  createdAt           DateTime  @default(now())
+  convertedAt         DateTime?
+  lastRenewalAt       DateTime?
+
+  affiliate   Affiliate              @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
   ledgerEntry CommissionLedger?
+  renewals    AffiliateRenewal[]
+}
+
+model AffiliateRenewal {
+  id              String   @id @default(cuid())
+  conversionId    String
+  amountCents     Int
+  commissionCents Int
+  invoiceId       String?  @unique
+  paidAt          DateTime @default(now())
+
+  conversion AffiliateConversion @relation(fields: [conversionId], references: [id], onDelete: Cascade)
+}
+
+model AffiliatePayoutRequest {
+  id            String              @id @default(cuid())
+  affiliateId   String
+  amountCents   Int
+  status        PayoutRequestStatus @default(PENDING)
+  method        String              @default("bank")
+  notes         String?             @db.Text
+  adminNote     String?
+  processedAt   DateTime?
+  createdAt     DateTime            @default(now())
+
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
 }
 
 /* ── Commission ledger (admin-approval, manual payout) ──────── */
