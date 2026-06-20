@@ -120,6 +120,19 @@ export default function NewsContent() {
   const idRef = useRef(SEED_ARTICLES.length + 1);
   const extraRef = useRef(0);
 
+  // Fetch real articles from RSS on mount; fall back to seeds silently
+  useEffect(() => {
+    fetch("/api/news")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.articles?.length) {
+          setArticles(data.articles);
+          idRef.current = data.articles.length + 1;
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     const t = setInterval(() => {
       const next = EXTRA_ARTICLES[extraRef.current % EXTRA_ARTICLES.length];
