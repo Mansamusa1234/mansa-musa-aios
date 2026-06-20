@@ -24,13 +24,16 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
     if (!plan.priceId) return;
     setError(null);
     setLoading(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch("/api/stripe/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceId: plan.priceId }),
-        signal: AbortSignal.timeout(15000),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
       const data = await res.json().catch(() => ({}));
       if (data.url) {
         window.location.href = data.url;
@@ -38,8 +41,10 @@ export default function BillingClient({ plan, currentPriceId, index }: Props) {
         setError(data.error ?? "Could not start checkout. Please try again.");
         setLoading(false);
       }
-    } catch {
-      setError("Connection error. Please try again.");
+    } catch (err) {
+      clearTimeout(timer);
+      const isAbort = err instanceof DOMException && (err.name === "AbortError" || err.name === "TimeoutError");
+      setError(isAbort ? "Request timed out. Please try again." : "Connection error. Please try again.");
       setLoading(false);
     }
   }

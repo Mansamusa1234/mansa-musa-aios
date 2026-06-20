@@ -62,13 +62,16 @@ export default function PricingContent({ plans }: Props) {
       return;
     }
     setCheckoutLoading(planId);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch("/api/stripe/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceId }),
-        signal: AbortSignal.timeout(15000),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
       if (res.status === 401) { window.location.href = "/login?redirect=/pricing"; return; }
       const data = await res.json().catch(() => ({}));
       if (data.url) {
@@ -76,8 +79,10 @@ export default function PricingContent({ plans }: Props) {
       } else {
         setCheckoutError(data.error ?? "Could not start checkout. Please try again.");
       }
-    } catch {
-      setCheckoutError("Could not connect. Please check your connection and try again.");
+    } catch (err) {
+      clearTimeout(timer);
+      const isAbort = err instanceof DOMException && (err.name === "AbortError" || err.name === "TimeoutError");
+      setCheckoutError(isAbort ? "Request timed out. Please try again." : "Could not connect. Please try again.");
     } finally {
       setCheckoutLoading(null);
     }

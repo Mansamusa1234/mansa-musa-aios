@@ -192,6 +192,9 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
     setLoading(true);
     setError("");
 
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -204,8 +207,9 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
           password,
           ...(ref ? { ref } : {}),
         }),
-        signal: AbortSignal.timeout(20000),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -235,11 +239,12 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
       }
       router.push("/dashboard");
     } catch (err) {
-      if (err instanceof DOMException && err.name === "TimeoutError") {
-        setError("Request timed out. Please check your connection and try again.");
-      } else {
-        setError("Could not connect. Please check your connection and try again.");
-      }
+      clearTimeout(timer);
+      const isAbort = err instanceof DOMException && (err.name === "AbortError" || err.name === "TimeoutError");
+      setError(isAbort
+        ? "Request timed out. Please check your connection and try again."
+        : "Could not connect to the server. Please check your connection and try again."
+      );
       setLoading(false);
     }
   }
