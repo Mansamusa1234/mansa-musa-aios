@@ -9,77 +9,35 @@ interface Props {
   conversationId: string;
   initialMessages: ChatMessage[];
   initialAgentId?: string | null;
-  canUseArena?: boolean;
-  canExportLetters?: boolean;
-  planName?: string;
 }
 
-export default function ChatInterface({ conversationId, initialMessages, initialAgentId = null, canUseArena = false, planName = "Free" }: Props) {
+export default function ChatInterface({ conversationId, initialMessages, initialAgentId = null }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
-  const [mode, setMode] = useState<"chat" | "arena">("chat");
   const [agentSaving, setAgentSaving] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [memory, setMemory] = useState("");
   const [memoryLoaded, setMemoryLoaded] = useState(false);
   const [memorySaving, setMemorySaving] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  function stopGeneration() {
+    abortRef.current?.abort();
+  }
+
+  function copyMessage(id: string, content: string) {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  }
 
   const agent = agentId ? AGENTS.find((a) => a.id === agentId) ?? null : null;
-
-  async function pollArenaResult(sessionId: string, assistantMessageId: string) {
-    for (let attempt = 0; attempt < 80; attempt++) {
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      const res = await fetch(`/api/arena/${sessionId}`);
-      if (!res.ok) continue;
-
-      const data = await res.json();
-      if (data.status === "FAILED") {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMessageId
-              ? { ...m, content: `Agent Competition Results failed: ${data.error ?? "Unknown error"}` }
-              : m
-          )
-        );
-        return;
-      }
-
-      if (data.status === "DONE") {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMessageId
-              ? {
-                  ...m,
-                  content: [
-                    "Agent Competition Results",
-                    "",
-                    "Best Answer",
-                    data.synthesis ?? "The best answer could not be loaded.",
-                    "",
-                    `View full results: /arena?session=${sessionId}`,
-                    "",
-                    "Disclaimer: This is informational support, not advice from a solicitor.",
-                  ].join("\n"),
-                }
-              : m
-          )
-        );
-        return;
-      }
-
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMessageId
-            ? { ...m, content: `Agent Arena is running (${data.status}). Eight agents are competing...\n\nView live results: /arena?session=${sessionId}` }
-            : m
-        )
-      );
-    }
-  }
 
   async function handleAgentChange(newAgentId: string) {
     const value = newAgentId || null;
@@ -150,43 +108,21 @@ export default function ChatInterface({ conversationId, initialMessages, initial
     };
     setMessages((prev) => [...prev, assistantMsg]);
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
-      if (mode === "arena") {
-        if (!canUseArena) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsg.id
-                ? { ...m, content: `Agent Arena requires the Professional plan or higher. You are currently on ${planName}. Upgrade in Billing to unlock agent-vs-agent results, Deep Research, and legal/commercial scoring.` }
-                : m
-            )
-          );
-          return;
-        }
-
-        const res = await fetch("/api/arena/start", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question: content }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Could not start Agent Arena.");
-
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsg.id
-              ? { ...m, content: `Agent Arena started. Eight agents are competing...\n\nView live results: /arena?session=${data.sessionId}` }
-              : m
-          )
-        );
-        await pollArenaResult(data.sessionId, assistantMsg.id);
-        return;
-      }
-
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId, message: content }),
+        signal: controller.signal,
       });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `Server error ${res.status}`);
+      }
 
       if (!res.body) throw new Error("No response body");
 
@@ -204,14 +140,17 @@ export default function ChatInterface({ conversationId, initialMessages, initial
         );
       }
     } catch (err) {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMsg.id
-            ? { ...m, content: err instanceof Error ? err.message : "Sorry, something went wrong. Please try again." }
-            : m
-        )
-      );
+      const aborted = err instanceof Error && err.name === "AbortError";
+      if (!aborted) {
+        const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsg.id ? { ...m, content: msg } : m
+          )
+        );
+      }
     } finally {
+      abortRef.current = null;
       setStreaming(false);
     }
   }
@@ -226,26 +165,8 @@ export default function ChatInterface({ conversationId, initialMessages, initial
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-8rem)]">
       {/* Agent bar */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-xl border border-gray-200 bg-white p-1 text-xs font-semibold text-gray-600">
-          <button
-            type="button"
-            onClick={() => setMode("chat")}
-            className={`rounded-lg px-3 py-1 transition-colors ${mode === "chat" ? "bg-brand-500 text-white" : "hover:bg-gray-50"}`}
-          >
-            Chat
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("arena")}
-            className={`rounded-lg px-3 py-1 transition-colors ${mode === "arena" ? "bg-brand-500 text-white" : "hover:bg-gray-50"}`}
-            title={canUseArena ? "Run eight specialist agents against each other" : "Agent Arena requires Professional"}
-          >
-            Agent Arena
-          </button>
-        </div>
-
-        {mode === "chat" && messages.length === 0 ? (
+      <div className="mb-3 flex items-center gap-2">
+        {messages.length === 0 ? (
           <select
             value={agentId ?? ""}
             disabled={agentSaving}
@@ -259,19 +180,13 @@ export default function ChatInterface({ conversationId, initialMessages, initial
               </option>
             ))}
           </select>
-        ) : mode === "chat" && agent ? (
+        ) : agent ? (
           <span className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700">
             {agent.icon} {agent.name}
           </span>
         ) : null}
 
-        {mode === "arena" && (
-          <span className={`rounded-xl border px-3 py-1.5 text-xs font-medium ${canUseArena ? "border-brand-200 bg-brand-50 text-brand-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
-            {canUseArena ? "Professional Agent Arena enabled" : `Locked on ${planName}`}
-          </span>
-        )}
-
-        {mode === "chat" && agent && (
+        {agent && (
           <button
             onClick={toggleMemory}
             className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-brand-600 transition-colors"
@@ -314,7 +229,17 @@ export default function ChatInterface({ conversationId, initialMessages, initial
           </div>
         )}
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+          <div key={msg.id} className="group relative">
+            <MessageBubble message={msg} />
+            {msg.role === "assistant" && msg.content && (
+              <button
+                onClick={() => copyMessage(msg.id, msg.content)}
+                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg border border-white/8 bg-white/5 px-2 py-1 text-[10px] text-gray-400 hover:text-white"
+              >
+                {copiedId === msg.id ? "✓" : "Copy"}
+              </button>
+            )}
+          </div>
         ))}
         {streaming && messages[messages.length - 1]?.content === "" && (
           <div className="flex gap-1 pl-4">
@@ -338,13 +263,21 @@ export default function ChatInterface({ conversationId, initialMessages, initial
           className="w-full resize-none text-sm outline-none placeholder:text-gray-400"
           style={{ maxHeight: 160 }}
         />
-        <div className="mt-2 flex justify-end">
+        <div className="mt-2 flex justify-end gap-2">
+          {streaming && (
+            <button
+              onClick={stopGeneration}
+              className="rounded-xl border border-red-500/20 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              Stop
+            </button>
+          )}
           <button
             onClick={handleSend}
             disabled={!input.trim() || streaming}
             className="rounded-xl bg-brand-500 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-40 transition-colors"
           >
-            {streaming ? (mode === "arena" ? "Competing…" : "Thinking…") : mode === "arena" ? "Start Arena" : "Send"}
+            {streaming ? "Thinking…" : "Send"}
           </button>
         </div>
       </div>
