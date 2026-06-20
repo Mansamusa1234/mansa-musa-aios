@@ -1,6 +1,7 @@
 import { anthropic } from "@/lib/anthropic";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { sendEmail, newLeadEmailHtml } from "@/lib/email";
 
 export async function POST(req: Request) {
   const { receptionistId, messages, visitorName, visitorEmail } = await req.json();
@@ -29,6 +30,22 @@ export async function POST(req: Request) {
       messages: JSON.stringify(messages),
     },
   }).catch(() => {});
+
+  // When visitor provides contact info, create a CRM lead (once) and notify the owner
+  if (visitorName && visitorEmail) {
+    (async () => {
+      try {
+        const existing = await db.lead.findFirst({ where: { userId: rec.userId, email: visitorEmail } });
+        if (!existing) {
+          await db.lead.create({ data: { userId: rec.userId, name: visitorName, email: visitorEmail, source: "receptionist-widget", stage: "NEW" } });
+          const owner = await db.user.findUnique({ where: { id: rec.userId }, select: { email: true } });
+          if (owner) {
+            void sendEmail(owner.email, `New lead via receptionist: ${visitorName}`, newLeadEmailHtml({ name: visitorName, email: visitorEmail, source: "AI receptionist widget" }));
+          }
+        }
+      } catch {}
+    })();
+  }
 
   return NextResponse.json({ reply });
 }

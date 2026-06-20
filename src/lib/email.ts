@@ -210,6 +210,65 @@ export function affiliateConversionEmailHtml(opts: {
 
 // ── Agent & usage alerts ──────────────────────────────────────────────────────
 
+// ── Lead & booking notifications ─────────────────────────────────────────────
+
+export function newLeadEmailHtml(opts: {
+  name: string; email?: string; phone?: string; company?: string; message?: string; source: string;
+}): string {
+  const rows = [
+    opts.email   && `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280;width:80px">Email</td><td style="padding:4px 0;font-size:13px;color:#1a1a2e">${esc(opts.email)}</td></tr>`,
+    opts.phone   && `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280">Phone</td><td style="padding:4px 0;font-size:13px;color:#1a1a2e">${esc(opts.phone)}</td></tr>`,
+    opts.company && `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280">Company</td><td style="padding:4px 0;font-size:13px;color:#1a1a2e">${esc(opts.company)}</td></tr>`,
+    opts.message && `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280;vertical-align:top">Message</td><td style="padding:4px 0;font-size:13px;color:#1a1a2e">${esc(opts.message)}</td></tr>`,
+  ].filter(Boolean).join("");
+
+  return wrapper(
+    `New lead: ${esc(opts.name)}`,
+    `<p style="color:#4b5563;font-size:14px;line-height:1.6">A new lead just came in via your <strong>${esc(opts.source)}</strong>.</p>
+     <table style="width:100%;border-collapse:collapse;margin:12px 0;background:#f9fafb;border-radius:8px;padding:12px">
+       <tr><td style="padding:4px 0;font-size:13px;color:#6b7280;width:80px">Name</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">${esc(opts.name)}</td></tr>
+       ${rows}
+     </table>
+     ${btn(`${APP}/crm`, "View in CRM")}`,
+    SUPPORT_FOOTER
+  );
+}
+
+export function bookingConfirmedGuestEmailHtml(opts: {
+  guestName: string; startAt: string; endAt: string; title: string; notes?: string;
+}): string {
+  return wrapper(
+    "Your appointment is confirmed",
+    `<p style="color:#4b5563;font-size:14px;line-height:1.6">Hi ${esc(opts.guestName)}, your booking is confirmed. Here are the details:</p>
+     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:16px 0">
+       <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#1a1a2e">${esc(opts.title)}</p>
+       <p style="margin:0 0 4px;font-size:13px;color:#4b5563">📅 ${esc(opts.startAt)}</p>
+       <p style="margin:0;font-size:13px;color:#4b5563">🕐 Until ${esc(opts.endAt)}</p>
+       ${opts.notes ? `<p style="margin:8px 0 0;font-size:12px;color:#6b7280;border-top:1px solid #d1fae5;padding-top:8px">${esc(opts.notes)}</p>` : ""}
+     </div>
+     <p style="color:#4b5563;font-size:14px;line-height:1.6">We look forward to seeing you. If you need to reschedule, please get in touch.</p>`,
+    SUPPORT_FOOTER
+  );
+}
+
+export function newBookingOwnerEmailHtml(opts: {
+  guestName: string; guestEmail: string; guestPhone?: string; startAt: string; title: string; notes?: string;
+}): string {
+  return wrapper(
+    `New booking: ${esc(opts.guestName)}`,
+    `<p style="color:#4b5563;font-size:14px;line-height:1.6">You have a new appointment in your calendar.</p>
+     <table style="width:100%;border-collapse:collapse;margin:12px 0;background:#f9fafb;border-radius:8px;padding:12px">
+       <tr><td style="padding:4px 0;font-size:13px;color:#6b7280;width:80px">Name</td><td style="padding:4px 0;font-size:13px;font-weight:600;color:#1a1a2e">${esc(opts.guestName)}</td></tr>
+       <tr><td style="padding:4px 0;font-size:13px;color:#6b7280">Email</td><td style="padding:4px 0;font-size:13px;color:#1a1a2e">${esc(opts.guestEmail)}</td></tr>
+       ${opts.guestPhone ? `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280">Phone</td><td style="padding:4px 0;font-size:13px;color:#1a1a2e">${esc(opts.guestPhone)}</td></tr>` : ""}
+       <tr><td style="padding:4px 0;font-size:13px;color:#6b7280">Time</td><td style="padding:4px 0;font-size:13px;color:#1a1a2e">${esc(opts.startAt)}</td></tr>
+       ${opts.notes ? `<tr><td style="padding:4px 0;font-size:13px;color:#6b7280;vertical-align:top">Notes</td><td style="padding:4px 0;font-size:13px;color:#1a1a2e">${esc(opts.notes)}</td></tr>` : ""}
+     </table>
+     ${btn(`${APP}/calendar`, "View calendar")}`,
+    SUPPORT_FOOTER
+  );
+}
+
 export function usageLimitWarningEmailHtml(opts: {
   name: string;
   used: number;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { sendEmail, newLeadEmailHtml } from "@/lib/email";
 
 const schema = z.object({
   userId: z.string().min(1),
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
 
   const { userId, name, email, phone, company, message } = parsed.data;
 
-  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true } });
+  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, email: true } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await db.lead.create({
@@ -33,6 +34,13 @@ export async function POST(req: Request) {
       stage: "NEW",
     },
   });
+
+  // Notify business owner — fire and forget
+  void sendEmail(
+    user.email,
+    `New lead: ${name}`,
+    newLeadEmailHtml({ name, email, phone, company, message, source: "lead capture page" })
+  ).catch(() => {});
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }

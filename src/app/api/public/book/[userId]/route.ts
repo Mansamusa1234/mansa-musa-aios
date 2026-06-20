@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { NextResponse } from "next/server";
+import { sendEmail, bookingConfirmedGuestEmailHtml, newBookingOwnerEmailHtml } from "@/lib/email";
 
 const schema = z.object({
   guestName: z.string().min(1).max(100),
@@ -35,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ userId:
 export async function POST(req: Request, { params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
 
-  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true } });
+  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, email: true } });
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const parsed = schema.safeParse(await req.json());
@@ -60,6 +61,35 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
   const booking = await db.calendarBooking.create({
     data: { userId, ...rest, startAt: start, endAt: end },
   });
+
+  const fmtDt = (d: Date) => d.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  // Fire-and-forget confirmation emails
+  void Promise.all([
+    sendEmail(
+      rest.guestEmail,
+      `Booking confirmed: ${rest.title}`,
+      bookingConfirmedGuestEmailHtml({
+        guestName: rest.guestName,
+        startAt: fmtDt(start),
+        endAt: fmtDt(end),
+        title: rest.title,
+        notes: rest.notes,
+      })
+    ),
+    sendEmail(
+      user.email,
+      `New booking: ${rest.guestName}`,
+      newBookingOwnerEmailHtml({
+        guestName: rest.guestName,
+        guestEmail: rest.guestEmail,
+        guestPhone: rest.guestPhone,
+        startAt: fmtDt(start),
+        title: rest.title,
+        notes: rest.notes,
+      })
+    ),
+  ]).catch(() => {});
 
   return NextResponse.json({ booking }, { status: 201 });
 }
