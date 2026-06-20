@@ -23,16 +23,8 @@ interface Props {
   arpu: number;
   newThisMonth: number;
   planBreakdown: PlanBreakdown[];
+  mrrHistory: { month: string; mrr: number }[];
 }
-
-const HISTORY = [
-  { month: "Jul", mrr: 1820 },
-  { month: "Aug", mrr: 2340 },
-  { month: "Sep", mrr: 2910 },
-  { month: "Oct", mrr: 3580 },
-  { month: "Nov", mrr: 4210 },
-  { month: "Dec", mrr: 4960 },
-];
 
 function Bar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
@@ -54,9 +46,9 @@ function Bar({ label, value, max, color }: { label: string; value: number; max: 
 
 export default function RevenueContent({
   mrr, arr, totalUsers, paidUsers, freeUsers, cancelledSubs,
-  growthRate, churnRate, arpu, newThisMonth, planBreakdown,
+  growthRate, churnRate, arpu, newThisMonth, planBreakdown, mrrHistory,
 }: Props) {
-  const maxMrr = Math.max(...HISTORY.map((h) => h.mrr), mrr);
+  const maxMrr = Math.max(...mrrHistory.map((h) => h.mrr), mrr, 1);
   const conversionRate = totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(1) : "0.0";
 
   const TOP_METRICS = [
@@ -97,8 +89,8 @@ export default function RevenueContent({
         <div className="lg:col-span-2">
           <h2 className="text-sm font-bold text-white mb-3">MRR History</h2>
           <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
-            <div className="grid grid-cols-7 gap-2 items-end h-36">
-              {HISTORY.map((h) => (
+            <div className="grid gap-2 items-end h-36" style={{ gridTemplateColumns: `repeat(${mrrHistory.length + 1}, minmax(0, 1fr))` }}>
+              {mrrHistory.map((h) => (
                 <Bar key={h.month} label={h.month} value={h.mrr} max={maxMrr} color="bg-brand-500/60" />
               ))}
               <Bar label="Now" value={mrr} max={maxMrr} color="bg-brand-400" />

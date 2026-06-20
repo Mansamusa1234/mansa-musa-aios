@@ -1,3 +1,9 @@
 {
-  "buildCommand": "prisma db push --skip-generate && next build"
+  "buildCommand": "prisma db push --skip-generate && next build",
+  "crons": [
+    {
+      "path": "/api/cron/email-workflows",
+      "schedule": "*/15 * * * *"
+    }
+  ]
 }

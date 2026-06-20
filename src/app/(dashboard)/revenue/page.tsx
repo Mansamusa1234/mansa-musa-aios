@@ -21,6 +21,12 @@ export default async function RevenuePage() {
   const startOfLastMon = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const endOfLastMon   = new Date(now.getFullYear(), now.getMonth(), 0);
 
+  // Build 6-month windows for MRR history
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    return { start: d, end: new Date(d.getFullYear(), d.getMonth() + 1, 1), label: d.toLocaleString("en-GB", { month: "short" }) };
+  });
+
   const [
     totalUsers,
     activeSubs,
@@ -28,6 +34,7 @@ export default async function RevenuePage() {
     newThisMonth,
     newLastMonth,
     activeSubs_raw,
+    ...monthlySubsArrays
   ] = await Promise.all([
     db.user.count(),
     db.subscription.count({ where: { status: "ACTIVE" } }),
@@ -35,12 +42,26 @@ export default async function RevenuePage() {
     db.user.count({ where: { createdAt: { gte: startOfMonth } } }),
     db.user.count({ where: { createdAt: { gte: startOfLastMon, lte: endOfLastMon } } }),
     db.subscription.findMany({ where: { status: "ACTIVE" }, select: { stripePriceId: true } }),
+    ...months.map((m) =>
+      db.subscription.findMany({
+        where: { createdAt: { gte: m.start, lt: m.end }, status: { not: "CANCELED" } },
+        select: { stripePriceId: true },
+      })
+    ),
   ]);
 
   const mrr = activeSubs_raw.reduce((sum, sub) => {
     const plan = PLANS.find((p) => p.priceId === sub.stripePriceId);
     return sum + (plan?.price ?? 0);
   }, 0);
+
+  const mrrHistory = months.map((m, i) => ({
+    month: m.label,
+    mrr: (monthlySubsArrays[i] as { stripePriceId: string | null }[]).reduce((sum, sub) => {
+      const plan = PLANS.find((p) => p.priceId === sub.stripePriceId);
+      return sum + (plan?.price ?? 0);
+    }, 0),
+  }));
 
   const planBreakdown = PLANS.filter((p) => p.price > 0).map((p) => ({
     name: p.name,
@@ -72,6 +93,7 @@ export default async function RevenuePage() {
       arpu={Number(arpu)}
       newThisMonth={newThisMonth}
       planBreakdown={planBreakdown}
+      mrrHistory={mrrHistory}
     />
   );
 }

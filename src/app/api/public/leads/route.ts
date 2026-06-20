@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { sendEmail, newLeadEmailHtml } from "@/lib/email";
+import { triggerWorkflows } from "@/lib/email-automation";
 
 const schema = z.object({
   userId: z.string().min(1),
@@ -34,6 +35,9 @@ export async function POST(req: Request) {
       stage: "NEW",
     },
   });
+
+  // Trigger email automation workflows for the business owner
+  if (email) void triggerWorkflows(userId, "LEAD_CREATED", { email, name }).catch(() => {});
 
   // Notify business owner — fire and forget
   void sendEmail(

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { sendEmail, bookingConfirmedGuestEmailHtml, newBookingOwnerEmailHtml } from "@/lib/email";
+import { triggerWorkflows } from "@/lib/email-automation";
 
 const schema = z.object({
   guestName: z.string().min(1).max(100),
@@ -63,6 +64,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
   });
 
   const fmtDt = (d: Date) => d.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  // Trigger booking_confirmed workflow for the business owner
+  void triggerWorkflows(userId, "BOOKING_CONFIRMED", { email: rest.guestEmail, name: rest.guestName }).catch(() => {});
 
   // Fire-and-forget confirmation emails
   void Promise.all([

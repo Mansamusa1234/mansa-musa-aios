@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getOrCreateStripeCustomer } from "@/lib/stripe";
 import { sendEmail } from "@/lib/email";
+import { triggerWorkflows } from "@/lib/email-automation";
 
 const TRIAL_DAYS = 14;
 
@@ -56,6 +57,9 @@ export async function POST() {
   } catch {
     // non-fatal
   }
+
+  // Trigger TRIAL_STARTED automation workflows — fire and forget
+  void triggerWorkflows(userId, "TRIAL_STARTED", { email, name: session.user.name ?? "" }).catch(() => {});
 
   return NextResponse.json({ trialEndsAt }, { status: 201 });
 }

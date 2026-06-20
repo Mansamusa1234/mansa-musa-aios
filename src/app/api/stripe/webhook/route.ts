@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/stripe";
 import { PLANS } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { recordConversion } from "@/lib/referrals";
+import { triggerWorkflows } from "@/lib/email-automation";
 import {
   sendEmail,
   subscriptionStartedEmailHtml,
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
         console.error("[webhook] referral/affiliate conversion tracking failed:", err);
       }
 
-      // Subscription started email
+      // Subscription started email + trigger automation workflows
       after(async () => {
         try {
           const user = await db.user.findUnique({
@@ -94,6 +95,7 @@ export async function POST(req: Request) {
                 nextBillDate: formatDate(sub.current_period_end),
               })
             );
+            void triggerWorkflows(session.metadata!.userId, "SUBSCRIPTION_ACTIVATED", { email: user.email, name: user.name ?? "" });
           }
         } catch (err) {
           console.error("[webhook] subscription started email failed:", err);
@@ -131,7 +133,7 @@ export async function POST(req: Request) {
         },
       });
 
-      // Cancellation email only on hard delete (not updates like renewals)
+      // Cancellation email + trigger automation workflows
       if (event.type === "customer.subscription.deleted" && existingSub?.user) {
         after(async () => {
           try {
@@ -145,6 +147,7 @@ export async function POST(req: Request) {
                 endsAt: formatDate(sub.current_period_end),
               })
             );
+            void triggerWorkflows(existingSub.userId, "SUBSCRIPTION_CANCELLED", { email: existingSub.user.email, name: existingSub.user.name ?? "" });
           } catch (err) {
             console.error("[webhook] subscription cancelled email failed:", err);
           }
