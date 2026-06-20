@@ -13,17 +13,8 @@ interface Props {
   messagesThisMonth: number;
   totalUsers: number;
   isAdmin: boolean;
+  weeklyData?: { day: string; msgs: number }[];
 }
-
-const MOCK_WEEKLY = [
-  { day: "Mon", msgs: 142 },
-  { day: "Tue", msgs: 218 },
-  { day: "Wed", msgs: 197 },
-  { day: "Thu", msgs: 284 },
-  { day: "Fri", msgs: 310 },
-  { day: "Sat", msgs: 98  },
-  { day: "Sun", msgs: 74  },
-];
 
 const MODEL_SPLIT = [
   { model: "Claude Opus",   pct: 8,  color: "bg-brand-500" },
@@ -37,6 +28,11 @@ function formatTokens(n: number): string {
   return n.toLocaleString();
 }
 
+const FALLBACK_WEEKLY = [
+  { day: "Mon", msgs: 0 }, { day: "Tue", msgs: 0 }, { day: "Wed", msgs: 0 },
+  { day: "Thu", msgs: 0 }, { day: "Fri", msgs: 0 }, { day: "Sat", msgs: 0 }, { day: "Sun", msgs: 0 },
+];
+
 export default function AnalyticsContent({
   totalConversations,
   totalMessages,
@@ -46,8 +42,10 @@ export default function AnalyticsContent({
   messagesThisMonth,
   totalUsers,
   isAdmin,
+  weeklyData,
 }: Props) {
-  const maxMsgs  = Math.max(...MOCK_WEEKLY.map((d) => d.msgs));
+  const weekly = weeklyData ?? FALLBACK_WEEKLY;
+  const maxMsgs  = Math.max(...weekly.map((d) => d.msgs), 1);
   const avgPerDay = totalMessages > 0 ? Math.round(totalMessages / 30) : 0;
 
   const TOP_STATS = [
@@ -94,10 +92,10 @@ export default function AnalyticsContent({
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Weekly messages chart */}
         <div className="lg:col-span-2">
-          <h2 className="text-sm font-bold text-white mb-3">Messages — Last 7 Days (simulated)</h2>
+          <h2 className="text-sm font-bold text-white mb-3">Messages — Last 7 Days</h2>
           <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
             <div className="flex items-end justify-between gap-2 h-32">
-              {MOCK_WEEKLY.map((d) => {
+              {weekly.map((d) => {
                 const h = maxMsgs > 0 ? (d.msgs / maxMsgs) * 100 : 0;
                 return (
                   <div key={d.day} className="flex flex-1 flex-col items-center gap-1">

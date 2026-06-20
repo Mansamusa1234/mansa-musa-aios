@@ -25,6 +25,7 @@ export default async function CalendarPage() {
     <CalendarContent
       bookings={bookings.map((b) => ({ id: b.id, guestName: b.guestName, guestEmail: b.guestEmail, guestPhone: b.guestPhone, title: b.title, notes: b.notes, startAt: b.startAt, endAt: b.endAt, status: b.status }))}
       availability={availability ?? { timezone: "Europe/London", slotMins: 30, bufferMins: 15, monday: "09:00-17:00", tuesday: "09:00-17:00", wednesday: "09:00-17:00", thursday: "09:00-17:00", friday: "09:00-17:00", saturday: null, sunday: null }}
+      userId={userId}
     />
   );
 }

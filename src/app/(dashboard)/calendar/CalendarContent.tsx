@@ -7,19 +7,22 @@ import { stagger, fadeUp, scaleIn } from "@/lib/motion";
 interface Booking { id: string; guestName: string; guestEmail: string; guestPhone: string | null; title: string; notes: string | null; startAt: Date; endAt: Date; status: string }
 interface Availability { timezone: string; slotMins: number; bufferMins: number; monday: string | null; tuesday: string | null; wednesday: string | null; thursday: string | null; friday: string | null; saturday: string | null; sunday: string | null }
 
-interface Props { bookings: Booking[]; availability: Availability }
+interface Props { bookings: Booking[]; availability: Availability; userId: string }
 
 const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
 type Day = typeof DAYS[number];
 
 function fmt(d: Date) { return new Date(d).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
 
-export default function CalendarContent({ bookings: initialBookings, availability: initialAvail }: Props) {
+export default function CalendarContent({ bookings: initialBookings, availability: initialAvail, userId }: Props) {
   const [bookings, setBookings] = useState(initialBookings);
   const [avail, setAvail] = useState(initialAvail);
   const [tab, setTab] = useState<"bookings" | "availability" | "new">("bookings");
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ guestName: "", guestEmail: "", guestPhone: "", title: "Meeting", notes: "", startAt: "", endAt: "" });
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const bookingLink = typeof window !== "undefined" ? `${window.location.origin}/book/${userId}` : "";
 
   async function saveAvailability() {
     setSaving(true);
@@ -49,6 +52,20 @@ export default function CalendarContent({ bookings: initialBookings, availabilit
         <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· Calendar ·</p>
         <h1 className="text-2xl font-extrabold text-white sm:text-3xl">Bookings & Availability</h1>
         <p className="mt-1 text-sm text-gray-500">Manage your schedule and let guests book time with you.</p>
+      </motion.div>
+
+      {/* Public booking link */}
+      <motion.div variants={fadeUp} className="rounded-2xl border border-brand-500/20 bg-brand-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold text-brand-300 mb-0.5">Your public booking link</p>
+          <p className="text-xs text-gray-400 font-mono break-all">{bookingLink || "/book/…"}</p>
+        </div>
+        <button
+          onClick={() => { if (bookingLink) { navigator.clipboard.writeText(bookingLink); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2000); } }}
+          className={`flex-shrink-0 rounded-lg border px-4 py-2 text-xs font-semibold transition-colors ${copiedLink ? "border-green-500/40 text-green-400" : "border-white/8 text-gray-300 hover:text-white"}`}
+        >
+          {copiedLink ? "✓ Copied!" : "Copy link"}
+        </button>
       </motion.div>
 
       <motion.div variants={fadeUp} className="flex gap-1 rounded-xl border border-white/8 bg-white/3 p-1 w-fit">

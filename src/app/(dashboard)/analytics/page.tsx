@@ -18,6 +18,14 @@ export default async function AnalyticsPage() {
   const where = isAdmin ? {} : { userId };
   const messageWhere = isAdmin ? {} : { conversation: { userId } };
 
+  // Build date boundaries for the last 7 days
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
   const [
     totalConversations,
     totalMessages,
@@ -26,6 +34,7 @@ export default async function AnalyticsPage() {
     newUsersThisMonth,
     messagesThisMonth,
     totalUsers,
+    ...dailyCounts
   ] = await Promise.all([
     db.conversation.count({ where }),
     db.message.count({ where: messageWhere }),
@@ -34,9 +43,20 @@ export default async function AnalyticsPage() {
     isAdmin ? db.user.count({ where: { createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } }) : Promise.resolve(0),
     db.message.count({ where: { ...messageWhere, createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } } }),
     isAdmin ? db.user.count() : Promise.resolve(1),
+    ...days.map((d) => {
+      const next = new Date(d);
+      next.setDate(next.getDate() + 1);
+      return db.message.count({ where: { ...messageWhere, createdAt: { gte: d, lt: next } } });
+    }),
   ]);
 
   const totalTokens = (tokenStats._sum.inputTokens ?? 0) + (tokenStats._sum.outputTokens ?? 0);
+
+  const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weeklyData = days.map((d, i) => ({
+    day: DAY_NAMES[d.getDay()],
+    msgs: dailyCounts[i] as number,
+  }));
 
   return (
     <AnalyticsContent
@@ -48,6 +68,7 @@ export default async function AnalyticsPage() {
       messagesThisMonth={messagesThisMonth}
       totalUsers={totalUsers}
       isAdmin={isAdmin}
+      weeklyData={weeklyData}
     />
   );
 }
