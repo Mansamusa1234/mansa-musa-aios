@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { stagger, fadeUp, scaleIn } from "@/lib/motion";
 
 type Stage = "NEW" | "CONTACTED" | "QUALIFIED" | "PROPOSAL" | "WON" | "LOST";
+type ActivityType = "NOTE" | "EMAIL" | "CALL" | "MEETING" | "TASK";
 
 interface LeadRow {
   id: string;
@@ -16,6 +17,13 @@ interface LeadRow {
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+interface Activity {
+  id: string;
+  type: string;
+  note: string | null;
+  createdAt: string;
 }
 
 interface PipelineCol { stage: Stage; leads: LeadRow[] }
@@ -38,6 +46,19 @@ const STAGE_META: Record<Stage, { label: string; color: string; dot: string }> =
   LOST:      { label: "Lost",      color: "border-red-500/30 bg-red-500/5",     dot: "bg-red-400"   },
 };
 
+const ACTIVITY_ICONS: Record<ActivityType, string> = {
+  NOTE: "📝", EMAIL: "📧", CALL: "📞", MEETING: "🤝", TASK: "✅",
+};
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount, pipelineValue, userId }: Props) {
   const [cols, setCols] = useState(pipeline);
   const [showAdd, setShowAdd] = useState(false);
@@ -45,6 +66,13 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
   const [form, setForm] = useState({ name: "", email: "", company: "", phone: "", value: "0", source: "", notes: "", stage: "NEW" as Stage });
   const [dragId, setDragId] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
+
+  // Detail panel
+  const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [actNote, setActNote] = useState("");
+  const [actType, setActType] = useState<ActivityType>("NOTE");
+  const [savingAct, setSavingAct] = useState(false);
 
   const captureUrl = typeof window !== "undefined"
     ? `${window.location.origin}/lead-capture/${userId}`
@@ -57,6 +85,32 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
   }
 
   const fmtGBP = (p: number) => `£${(p / 100).toLocaleString("en-GB", { minimumFractionDigits: 0 })}`;
+
+  const loadActivities = useCallback(async (leadId: string) => {
+    const res = await fetch(`/api/crm/leads/${leadId}/activities`);
+    if (res.ok) setActivities((await res.json()).activities);
+  }, []);
+
+  useEffect(() => {
+    if (selectedLead) loadActivities(selectedLead.id);
+  }, [selectedLead, loadActivities]);
+
+  async function addActivity(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedLead || !actNote.trim()) return;
+    setSavingAct(true);
+    const res = await fetch(`/api/crm/leads/${selectedLead.id}/activities`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: actType, note: actNote.trim() }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setActivities((prev) => [data.activity, ...prev]);
+      setActNote("");
+    }
+    setSavingAct(false);
+  }
 
   async function addLead(e: React.FormEvent) {
     e.preventDefault();
@@ -84,14 +138,16 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
           const leads = col.leads.filter((l) => { if (l.id === leadId) { moved = l; return false; } return true; });
           return { ...col, leads };
         });
-        return next.map((col) => col.stage === toStage && moved ? { ...col, leads: [moved, ...col.leads] } : col);
+        return next.map((col) => col.stage === toStage && moved ? { ...col, leads: [{ ...moved }, ...col.leads] } : col);
       });
+      if (selectedLead?.id === leadId) setSelectedLead((prev) => prev ? { ...prev } : null);
     }
   }
 
   async function deleteLead(id: string) {
     await fetch(`/api/crm/leads/${id}`, { method: "DELETE" });
     setCols((prev) => prev.map((col) => ({ ...col, leads: col.leads.filter((l) => l.id !== id) })));
+    if (selectedLead?.id === id) setSelectedLead(null);
   }
 
   return (
@@ -159,17 +215,13 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
                       key={lead.id}
                       draggable
                       onDragStart={() => setDragId(lead.id)}
-                      className="rounded-xl border border-white/8 bg-[#0a0a18] p-3 cursor-grab active:cursor-grabbing group"
+                      onClick={() => { setSelectedLead(lead); setActivities([]); }}
+                      className="rounded-xl border border-white/8 bg-[#0a0a18] p-3 cursor-pointer hover:border-brand-500/30 hover:bg-brand-500/5 transition-colors group"
                     >
                       <p className="text-xs font-semibold text-white truncate">{lead.name}</p>
                       {lead.company && <p className="text-[10px] text-gray-500 truncate">{lead.company}</p>}
                       {lead.value > 0 && <p className="text-[10px] text-green-400 font-bold mt-1">{fmtGBP(lead.value)}</p>}
-                      <button
-                        onClick={() => deleteLead(lead.id)}
-                        className="mt-1.5 text-[9px] text-red-500/40 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        Remove
-                      </button>
+                      <p className="mt-1 text-[9px] text-brand-400/60 opacity-0 group-hover:opacity-100 transition-opacity">View details →</p>
                     </div>
                   ))}
                 </div>
@@ -178,6 +230,153 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
           })}
         </div>
       </div>
+
+      {/* Lead Detail Slide-out */}
+      <AnimatePresence>
+        {selectedLead && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/50"
+              onClick={() => setSelectedLead(null)}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="fixed right-0 top-0 h-full z-50 w-full max-w-md bg-[#0e0e1a] border-l border-white/8 flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white truncate">{selectedLead.name}</p>
+                  {selectedLead.company && <p className="text-xs text-gray-400 truncate">{selectedLead.company}</p>}
+                </div>
+                <button onClick={() => setSelectedLead(null)} className="ml-4 text-gray-400 hover:text-white text-lg leading-none">✕</button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+                {/* Lead info */}
+                <div className="rounded-xl border border-white/8 bg-white/3 p-4 space-y-2">
+                  {selectedLead.email && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400">Email</span>
+                      <a href={`mailto:${selectedLead.email}`} className="text-brand-400 hover:underline truncate max-w-[200px]">{selectedLead.email}</a>
+                    </div>
+                  )}
+                  {selectedLead.source && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-400">Source</span>
+                      <span className="text-white">{selectedLead.source}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Value</span>
+                    <span className="text-green-400 font-bold">{fmtGBP(selectedLead.value)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Added</span>
+                    <span className="text-white">{new Date(selectedLead.createdAt).toLocaleDateString("en-GB")}</span>
+                  </div>
+                </div>
+
+                {/* Move stage */}
+                <div>
+                  <p className="text-xs font-bold text-gray-400 mb-2">Move to stage</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(Object.keys(STAGE_META) as Stage[]).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => moveLead(selectedLead.id, s)}
+                        className={`rounded-full px-3 py-1 text-[10px] font-bold border transition-colors ${
+                          STAGE_META[s].color
+                        } border-current hover:opacity-90`}
+                      >
+                        {STAGE_META[s].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {selectedLead.notes && (
+                  <div>
+                    <p className="text-xs font-bold text-gray-400 mb-1.5">Notes</p>
+                    <p className="text-xs text-gray-300 rounded-xl border border-white/6 bg-white/2 p-3 whitespace-pre-wrap">{selectedLead.notes}</p>
+                  </div>
+                )}
+
+                {/* Add activity */}
+                <div>
+                  <p className="text-xs font-bold text-gray-400 mb-2">Log activity</p>
+                  <form onSubmit={addActivity} className="space-y-2">
+                    <div className="flex gap-1.5 flex-wrap">
+                      {(["NOTE","EMAIL","CALL","MEETING","TASK"] as ActivityType[]).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setActType(t)}
+                          className={`rounded-full px-3 py-1 text-[10px] font-bold border transition-colors ${actType === t ? "border-brand-500 bg-brand-500/20 text-brand-300" : "border-white/8 text-gray-400 hover:text-white"}`}
+                        >
+                          {ACTIVITY_ICONS[t]} {t}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        value={actNote}
+                        onChange={(e) => setActNote(e.target.value)}
+                        placeholder="Add a note, call log, or task..."
+                        className="flex-1 rounded-xl border border-white/8 bg-white/4 px-3 py-2 text-xs text-white outline-none focus:border-brand-500/50"
+                      />
+                      <button
+                        type="submit"
+                        disabled={savingAct || !actNote.trim()}
+                        className="rounded-xl bg-brand-500 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-40"
+                      >
+                        Log
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Activity feed */}
+                <div>
+                  <p className="text-xs font-bold text-gray-400 mb-2">Activity</p>
+                  {activities.length === 0 ? (
+                    <p className="text-xs text-gray-500 text-center py-4">No activity yet — log your first interaction above.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {activities.map((a) => (
+                        <div key={a.id} className="flex gap-3 rounded-xl border border-white/6 bg-white/2 p-3">
+                          <span className="text-sm mt-0.5">{ACTIVITY_ICONS[a.type as ActivityType] ?? "📝"}</span>
+                          <div className="min-w-0">
+                            <p className="text-xs text-white whitespace-pre-wrap break-words">{a.note}</p>
+                            <p className="text-[10px] text-gray-500 mt-1">{a.type} · {timeAgo(a.createdAt)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-5 py-4 border-t border-white/8">
+                <button
+                  onClick={() => { deleteLead(selectedLead.id); setSelectedLead(null); }}
+                  className="w-full rounded-xl border border-red-500/20 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  Delete lead
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Add Lead Modal */}
       {showAdd && (

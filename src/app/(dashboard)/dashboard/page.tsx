@@ -19,7 +19,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [conversations, subscription, user, msgThisMonth] = await Promise.all([
+  const [conversations, subscription, user, msgThisMonth, receptionist, calendarAvail] = await Promise.all([
     db.conversation.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
@@ -29,6 +29,8 @@ export default async function DashboardPage() {
     db.subscription.findUnique({ where: { userId } }),
     db.user.findUnique({ where: { id: userId }, select: { name: true, createdAt: true, emailVerified: true, twoFactorEnabled: true, onboardingComplete: true } }),
     db.usageRecord.count({ where: { userId, createdAt: { gte: monthStart } } }),
+    db.receptionist.findUnique({ where: { userId }, select: { id: true } }),
+    db.calendarAvailability.findUnique({ where: { userId }, select: { id: true } }),
   ]);
 
   let planId = "free";
@@ -40,8 +42,8 @@ export default async function DashboardPage() {
   const planDef = PLANS.find((p) => p.id === planId) ?? PLANS[0];
 
   const onboardingItems = [
-    { id: "receptionist", label: "Set up your AI receptionist", description: "Configure name, greeting, and persona", href: "/receptionist", cta: "Set up", done: false },
-    { id: "calendar", label: "Set your availability", description: "Let AI book appointments for you", href: "/calendar", cta: "Set hours", done: false },
+    { id: "receptionist", label: "Set up your AI receptionist", description: "Configure name, greeting, and persona", href: "/receptionist", cta: "Set up", done: !!receptionist },
+    { id: "calendar", label: "Set your availability", description: "Let AI book appointments for you", href: "/calendar", cta: "Set hours", done: !!calendarAvail },
     { id: "verify", label: "Verify your email", description: "Confirm your email address for security", href: "/settings", cta: "Settings", done: !!user?.emailVerified },
     { id: "2fa", label: "Enable two-factor authentication", description: "Secure your account with 2FA", href: "/settings", cta: "Enable", done: !!user?.twoFactorEnabled },
     { id: "upgrade", label: "Upgrade your plan", description: "Starter £49 · Professional £149 · Enterprise £499", href: "/billing", cta: "View plans", done: planId !== "free" },
