@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { stripe } from "@/lib/stripe";
+import { requireStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
@@ -23,6 +23,7 @@ export async function POST() {
   }
 
   try {
+    const stripe = requireStripe();
     const updated = await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
       cancel_at_period_end: true,
     });

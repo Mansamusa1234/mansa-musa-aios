@@ -5,34 +5,39 @@ import { db } from "@/lib/db";
 import TeamContent from "./TeamContent";
 
 export const metadata: Metadata = {
-  title: "Team | MansaMusaAI",
-  description: "Manage your team members, roles, and access permissions.",
+  title: "Teams | MansaMusaAI",
+  description: "Manage your teams, invite members, and control access permissions.",
 };
 
 export const dynamic = "force-dynamic";
 
 export default async function TeamPage() {
   const session = await auth();
-  if (session!.user.role !== "ADMIN") redirect("/dashboard");
+  if (!session?.user?.id) redirect("/login");
 
-  const members = await db.user.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      createdAt: true,
-      role: true,
-      _count: { select: { conversations: true } },
+  const memberships = await db.teamMember.findMany({
+    where: { userId: session.user.id },
+    include: {
+      team: {
+        include: {
+          members: {
+            include: { user: { select: { id: true, name: true, email: true } } },
+          },
+          invites: {
+            where: { acceptedAt: null, expiresAt: { gt: new Date() } },
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      },
     },
   });
 
+  const teams = memberships.map((m) => m.team);
+
   return (
     <TeamContent
-      members={members}
-      currentUserId={session!.user.id}
-      currentRole={session!.user.role ?? "USER"}
+      teams={teams}
+      currentUserId={session.user.id}
     />
   );
 }

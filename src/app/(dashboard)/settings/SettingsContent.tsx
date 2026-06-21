@@ -32,6 +32,101 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
+function ApiKeysCard() {
+  const [keys, setKeys] = useState<{ id: string; name: string; prefix: string; createdAt: string; lastUsedAt: string | null }[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function load() {
+    const res = await fetch("/api/settings/api-keys");
+    const data = await res.json() as { keys: typeof keys };
+    setKeys(data.keys ?? []);
+    setLoaded(true);
+  }
+
+  async function createKey() {
+    if (!newKeyName.trim()) return;
+    setCreating(true);
+    setErr(null);
+    const res = await fetch("/api/settings/api-keys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newKeyName.trim() }),
+    });
+    const data = await res.json() as { key?: string; prefix?: string; name?: string; error?: string };
+    if (!res.ok) { setErr(data.error ?? "Failed"); setCreating(false); return; }
+    setCreatedKey(data.key!);
+    setNewKeyName("");
+    load();
+    setCreating(false);
+  }
+
+  async function revokeKey(id: string) {
+    await fetch("/api/settings/api-keys", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    setKeys((prev) => prev.filter((k) => k.id !== id));
+  }
+
+  return (
+    <motion.div variants={fadeUp} className="rounded-2xl border border-white/8 bg-white/3 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-bold text-white">API Keys</h2>
+        {!loaded && <button onClick={load} className="text-xs text-indigo-400 hover:text-indigo-300">Load keys</button>}
+      </div>
+      {loaded && (
+        <div className="space-y-3">
+          {createdKey && (
+            <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-3 space-y-1">
+              <p className="text-xs font-bold text-green-400">Key created — copy it now, it won't be shown again:</p>
+              <code className="text-xs font-mono text-green-300 break-all">{createdKey}</code>
+              <button onClick={() => { void navigator.clipboard.writeText(createdKey); }} className="text-[10px] text-green-500 hover:text-green-300">Copy</button>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <input
+              value={newKeyName}
+              onChange={(e) => setNewKeyName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && createKey()}
+              placeholder="Key name (e.g. Production)"
+              className="flex-1 rounded-xl border border-white/8 bg-white/4 px-3 py-2 text-sm text-white placeholder-gray-600 outline-none focus:border-indigo-500/50"
+            />
+            <button onClick={createKey} disabled={creating || !newKeyName.trim()}
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 px-4 py-2 text-sm font-semibold text-white transition-colors">
+              {creating ? "…" : "Create"}
+            </button>
+          </div>
+          {err && <p className="text-xs text-red-400">{err}</p>}
+          {keys.length === 0 ? (
+            <p className="text-xs text-gray-600 py-2">No API keys yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {keys.map((k) => (
+                <div key={k.id} className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/2 px-3 py-2.5">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white">{k.name}</p>
+                    <p className="text-[11px] text-gray-500 font-mono">{k.prefix}••••••••••••••••</p>
+                  </div>
+                  <p className="text-[10px] text-gray-600 hidden sm:block">
+                    {k.lastUsedAt ? `Used ${new Date(k.lastUsedAt).toLocaleDateString()}` : "Never used"}
+                  </p>
+                  <button onClick={() => revokeKey(k.id)}
+                    className="text-xs text-gray-600 hover:text-red-400 transition-colors">Revoke</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 function Banner({ message, isError }: { message: string; isError: boolean }) {
   return (
     <p className={`mt-3 text-xs font-medium ${isError ? "text-red-400" : "text-green-400"}`}>{message}</p>
@@ -349,6 +444,8 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
           </div>
         )}
       </Card>
+
+      <ApiKeysCard />
 
       <Card title="Active sessions">
         {sessions.filter((s) => !s.isCurrent).length > 0 && (

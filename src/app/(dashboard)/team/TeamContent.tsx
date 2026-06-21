@@ -2,252 +2,406 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { stagger, fadeUp, scaleIn } from "@/lib/motion";
-import CountUp from "@/components/ui/CountUp";
 
-interface Member {
+type TeamRole = "OWNER" | "ADMIN" | "MEMBER" | "VIEWER";
+
+interface TeamUser {
   id: string;
   name: string | null;
   email: string | null;
+}
+
+interface Member {
+  id: string;
+  userId: string;
+  role: TeamRole;
+  joinedAt: Date;
+  user: TeamUser;
+}
+
+interface Invite {
+  id: string;
+  email: string;
+  role: TeamRole;
   createdAt: Date;
-  role: string;
-  _count: { conversations: number };
+}
+
+interface Team {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  members: Member[];
+  invites: Invite[];
 }
 
 interface Props {
-  members: Member[];
+  teams: Team[];
   currentUserId: string;
-  currentRole: string;
 }
 
-const ROLE_STYLES: Record<string, string> = {
-  ADMIN: "bg-brand-500/20 text-brand-300 border-brand-500/30",
-  USER:  "bg-gray-500/10 text-gray-400 border-gray-500/20",
+const ROLE_COLORS: Record<TeamRole, string> = {
+  OWNER:  "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  ADMIN:  "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+  MEMBER: "bg-gray-500/15 text-gray-400 border-gray-500/20",
+  VIEWER: "bg-gray-500/10 text-gray-500 border-gray-500/15",
 };
 
-function initials(name: string | null, email: string | null): string {
-  if (name) return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  if (email) return email[0].toUpperCase();
+function initials(u: TeamUser) {
+  if (u.name) return u.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  if (u.email) return u.email[0].toUpperCase();
   return "?";
 }
 
-function avatarColor(id: string): string {
-  const colors = [
-    "bg-brand-500/30", "bg-blue-500/30", "bg-green-500/30",
-    "bg-purple-500/30", "bg-amber-500/30", "bg-teal-500/30",
-  ];
+function avatarBg(id: string) {
+  const colors = ["bg-indigo-500/30", "bg-blue-500/30", "bg-green-500/30", "bg-purple-500/30", "bg-amber-500/30", "bg-teal-500/30"];
   return colors[id.charCodeAt(0) % colors.length];
 }
 
-function timeAgo(date: Date): string {
-  const d = new Date(date);
-  const diff = Date.now() - d.getTime();
-  const days = Math.floor(diff / 86400000);
-  if (days < 1) return "today";
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  return `${Math.floor(days / 30)}mo ago`;
-}
-
-export default function TeamContent({ members: initial, currentUserId, currentRole }: Props) {
-  const [members, setMembers] = useState(initial);
-  const [managing, setManaging] = useState<Member | null>(null);
+export default function TeamContent({ teams: initial, currentUserId }: Props) {
+  const [teams, setTeams] = useState<Team[]>(initial);
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(initial[0]?.id ?? null);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<TeamRole>("MEMBER");
+  const [inviting, setInviting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const admins = members.filter((m) => m.role === "ADMIN");
-  const users  = members.filter((m) => m.role !== "ADMIN");
-  const totalConversations = members.reduce((s, m) => s + m._count.conversations, 0);
+  const activeTeam = teams.find((t) => t.id === activeTeamId) ?? null;
+  const currentMembership = activeTeam?.members.find((m) => m.userId === currentUserId);
+  const canManage = currentMembership?.role === "OWNER" || currentMembership?.role === "ADMIN";
+  const isOwner = currentMembership?.role === "OWNER";
 
-  async function changeRole(id: string, role: string) {
-    setBusy(true);
-    setError(null);
-    const res = await fetch(`/api/admin/users/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role }),
-    });
-    if (res.ok) {
-      setMembers((prev) => prev.map((m) => m.id === id ? { ...m, role } : m));
-      setManaging((prev) => prev?.id === id ? { ...prev, role } : prev);
-    } else {
-      const d = await res.json();
-      setError(d.error ?? "Failed to update role");
-    }
-    setBusy(false);
+  function flash(msg: string) {
+    setSuccess(msg);
+    setTimeout(() => setSuccess(null), 3000);
   }
 
-  async function deleteUser(id: string) {
-    if (!confirm("Permanently delete this user and all their data?")) return;
+  async function createTeam() {
+    if (!newName.trim()) return;
     setBusy(true);
     setError(null);
-    const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+    try {
+      const res = await fetch("/api/team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+      const data = await res.json() as { team?: Team; error?: string };
+      if (!res.ok) { setError(data.error ?? "Failed to create team"); return; }
+      setTeams((prev) => [...prev, data.team!]);
+      setActiveTeamId(data.team!.id);
+      setNewName("");
+      setCreating(false);
+      flash("Team created!");
+    } finally { setBusy(false); }
+  }
+
+  async function sendInvite() {
+    if (!inviteEmail.trim() || !activeTeam) return;
+    setInviting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/team/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId: activeTeam.id, email: inviteEmail.trim(), role: inviteRole }),
+      });
+      const data = await res.json() as { invite?: Invite; error?: string };
+      if (!res.ok) { setError(data.error ?? "Failed to send invite"); return; }
+      setTeams((prev) => prev.map((t) =>
+        t.id === activeTeam.id ? { ...t, invites: [...t.invites, data.invite!] } : t
+      ));
+      setInviteEmail("");
+      flash("Invite sent!");
+    } finally { setInviting(false); }
+  }
+
+  async function removeInvite(inviteId: string) {
+    if (!activeTeam) return;
+    const res = await fetch("/api/team/invite", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ inviteId, teamId: activeTeam.id }),
+    });
     if (res.ok) {
-      setMembers((prev) => prev.filter((m) => m.id !== id));
-      setManaging(null);
-    } else {
-      const d = await res.json();
-      setError(d.error ?? "Failed to delete user");
+      setTeams((prev) => prev.map((t) =>
+        t.id === activeTeam.id ? { ...t, invites: t.invites.filter((i) => i.id !== inviteId) } : t
+      ));
     }
-    setBusy(false);
+  }
+
+  async function removeMember(memberId: string) {
+    if (!activeTeam) return;
+    const res = await fetch("/api/team/member", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId, teamId: activeTeam.id }),
+    });
+    if (res.ok) {
+      setTeams((prev) => prev.map((t) =>
+        t.id === activeTeam.id ? { ...t, members: t.members.filter((m) => m.id !== memberId) } : t
+      ));
+    }
+  }
+
+  async function changeRole(memberId: string, role: TeamRole) {
+    if (!activeTeam) return;
+    const res = await fetch("/api/team/member", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId, teamId: activeTeam.id, role }),
+    });
+    if (res.ok) {
+      setTeams((prev) => prev.map((t) =>
+        t.id === activeTeam.id ? { ...t, members: t.members.map((m) => m.id === memberId ? { ...m, role } : m) } : t
+      ));
+    }
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <motion.div variants={stagger} initial="hidden" animate="visible">
-        <motion.div variants={fadeUp}>
-          <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· Workspace ·</p>
-          <h1 className="text-2xl font-extrabold text-white">Team Members</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {members.length} members across your workspace
-          </p>
-        </motion.div>
-
-        {/* Stats */}
-        <motion.div variants={stagger} className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { label: "Total members",       value: members.length,       color: "text-brand-400"  },
-            { label: "Admins",              value: admins.length,        color: "text-purple-400" },
-            { label: "Active users",        value: users.length,         color: "text-blue-400"   },
-            { label: "Total conversations", value: totalConversations,   color: "text-green-400"  },
-          ].map((s) => (
-            <motion.div key={s.label} variants={scaleIn} className="rounded-2xl border border-white/8 bg-white/3 p-4">
-              <p className={`text-2xl font-extrabold ${s.color}`}><CountUp value={s.value} duration={1000} /></p>
-              <p className="mt-1 text-xs text-gray-600">{s.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </motion.div>
-
-      {/* Members table */}
-      <div>
-        <h2 className="text-sm font-bold text-white mb-3">All Members</h2>
-        <div className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
-          <div className="grid grid-cols-12 border-b border-white/6 px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-600">
-            <span className="col-span-5">Member</span>
-            <span className="col-span-2 hidden sm:block">Role</span>
-            <span className="col-span-2 hidden md:block">Conversations</span>
-            <span className="col-span-2 hidden lg:block">Joined</span>
-            <span className="col-span-3 sm:col-span-1"></span>
-          </div>
-
-          {members.map((member, i) => {
-            const isMe = member.id === currentUserId;
-
-            return (
-              <motion.div
-                key={member.id}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className={`grid grid-cols-12 items-center border-b border-white/4 px-5 py-3 last:border-0 hover:bg-white/2 transition-colors ${isMe ? "bg-brand-500/5" : ""}`}
-              >
-                <div className="col-span-5 flex items-center gap-3 min-w-0">
-                  <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${avatarColor(member.id)} text-sm font-bold text-white`}>
-                    {initials(member.name, member.email)}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-white truncate">{member.name ?? "Unknown"}</p>
-                      {isMe && <span className="flex-shrink-0 rounded-full bg-brand-500/20 px-1.5 py-0.5 text-[9px] font-bold text-brand-400">You</span>}
-                    </div>
-                    <p className="text-[11px] text-gray-600 truncate">{member.email}</p>
-                  </div>
-                </div>
-
-                <div className="col-span-2 hidden sm:flex">
-                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${ROLE_STYLES[member.role] ?? ROLE_STYLES.USER}`}>
-                    {member.role}
-                  </span>
-                </div>
-
-                <div className="col-span-2 hidden md:block">
-                  <p className="text-sm text-gray-400">{member._count.conversations}</p>
-                </div>
-
-                <div className="col-span-2 hidden lg:block">
-                  <p className="text-xs text-gray-600">{timeAgo(member.createdAt)}</p>
-                </div>
-
-                <div className="col-span-7 sm:col-span-1 flex justify-end">
-                  {currentRole === "ADMIN" && !isMe && (
-                    <button
-                      onClick={() => { setManaging(member); setError(null); }}
-                      className="rounded-lg border border-white/8 bg-white/3 px-2 py-1 text-[10px] text-gray-400 hover:text-white hover:border-white/20 transition-colors"
-                    >
-                      Manage
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
-
-          {members.length === 0 && (
-            <div className="px-5 py-12 text-center text-sm text-gray-600">No team members found</div>
-          )}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-1">· Enterprise ·</p>
+          <h1 className="text-2xl font-extrabold text-white">Teams</h1>
+          <p className="mt-1 text-sm text-gray-500">Create teams, invite members, and manage roles.</p>
         </div>
+        <button
+          onClick={() => { setCreating(true); setError(null); }}
+          className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition-colors"
+        >
+          + New Team
+        </button>
       </div>
 
-      {/* Manage user modal */}
+      {/* Notifications */}
       <AnimatePresence>
-        {managing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={(e) => { if (e.target === e.currentTarget) setManaging(null); }}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-sm rounded-2xl border border-white/8 bg-[#0e0e1a] p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${avatarColor(managing.id)} text-sm font-bold text-white`}>
-                  {initials(managing.name, managing.email)}
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white">{managing.name ?? "Unknown"}</p>
-                  <p className="text-xs text-gray-400">{managing.email}</p>
-                </div>
+        {success && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-400">
+            ✓ {success}
+          </motion.div>
+        )}
+        {error && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create team modal */}
+      <AnimatePresence>
+        {creating && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+            onClick={(e) => { if (e.target === e.currentTarget) setCreating(false); }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm rounded-2xl border border-white/8 bg-[#0e0e1a] p-6 space-y-4">
+              <h2 className="text-lg font-bold text-white">Create a team</h2>
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && createTeam()}
+                placeholder="Team name"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setCreating(false)} className="flex-1 rounded-xl border border-white/8 py-2.5 text-sm text-gray-400 hover:text-white transition-colors">
+                  Cancel
+                </button>
+                <button onClick={createTeam} disabled={busy || !newName.trim()}
+                  className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 py-2.5 text-sm font-semibold text-white transition-colors">
+                  {busy ? "Creating…" : "Create"}
+                </button>
               </div>
-
-              <div>
-                <p className="text-xs font-bold text-gray-400 mb-2">Role</p>
-                <div className="flex gap-2">
-                  {["USER", "ADMIN"].map((r) => (
-                    <button
-                      key={r}
-                      disabled={busy || managing.role === r}
-                      onClick={() => changeRole(managing.id, r)}
-                      className={`flex-1 rounded-xl border py-2 text-xs font-bold transition-colors ${managing.role === r ? "border-brand-500/40 bg-brand-500/10 text-brand-300" : "border-white/8 text-gray-400 hover:text-white hover:border-white/20"} disabled:opacity-40`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {error && <p className="text-xs text-red-400">{error}</p>}
-
-              <button
-                disabled={busy}
-                onClick={() => deleteUser(managing.id)}
-                className="w-full rounded-xl border border-red-500/20 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
-              >
-                {busy ? "Working…" : "Delete user"}
-              </button>
-
-              <button onClick={() => setManaging(null)} className="w-full text-xs text-gray-500 hover:text-gray-300">Cancel</button>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* Invite placeholder */}
-      <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
-        <div className="mb-3 text-3xl">👥</div>
-        <h3 className="text-sm font-bold text-white mb-1">Invite team members</h3>
-        <p className="text-xs text-gray-600 mb-4">Share your workspace to collaborate with colleagues</p>
-        <div className="flex gap-2 max-w-sm mx-auto">
-          <input disabled placeholder="colleague@company.com" className="flex-1 rounded-xl border border-white/8 bg-white/4 px-3 py-2 text-sm text-gray-500 placeholder-gray-700 cursor-not-allowed" />
-          <button disabled className="rounded-xl bg-brand-500/30 px-4 py-2 text-sm font-semibold text-brand-400 cursor-not-allowed">Invite</button>
+      {teams.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
+          <div className="text-5xl mb-4">🏢</div>
+          <h3 className="text-lg font-bold text-white mb-2">No teams yet</h3>
+          <p className="text-sm text-gray-500 mb-6">Create a team to collaborate with colleagues and manage shared resources.</p>
+          <button onClick={() => setCreating(true)}
+            className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white transition-colors">
+            Create your first team
+          </button>
         </div>
-        <p className="mt-2 text-[10px] text-gray-700">Invites coming in a future release</p>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Team list sidebar */}
+          <div className="space-y-2">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 px-1">Your Teams</h2>
+            {teams.map((team) => {
+              const myRole = team.members.find((m) => m.userId === currentUserId)?.role;
+              return (
+                <button key={team.id} onClick={() => setActiveTeamId(team.id)}
+                  className={`w-full rounded-xl border p-3 text-left transition-all ${
+                    activeTeamId === team.id
+                      ? "border-indigo-500/50 bg-indigo-500/10"
+                      : "border-white/8 bg-white/2 hover:bg-white/4"
+                  }`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/20 text-lg font-bold text-indigo-300">
+                      {team.name[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-white truncate">{team.name}</div>
+                      <div className="text-[10px] text-gray-500">{team.members.length} member{team.members.length !== 1 ? "s" : ""}</div>
+                    </div>
+                    {myRole && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-semibold ${ROLE_COLORS[myRole]}`}>
+                        {myRole}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active team detail */}
+          {activeTeam && (
+            <div className="lg:col-span-2 space-y-4">
+              {/* Team header */}
+              <div className="rounded-xl border border-white/8 bg-white/2 p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/20 text-2xl font-bold text-indigo-300">
+                    {activeTeam.name[0].toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-bold text-white">{activeTeam.name}</h2>
+                    <p className="text-xs text-gray-500">slug: {activeTeam.slug} · {activeTeam.plan} plan</p>
+                  </div>
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-semibold capitalize">
+                    {activeTeam.plan}
+                  </span>
+                </div>
+              </div>
+
+              {/* Members */}
+              <div className="rounded-xl border border-white/8 bg-white/2 overflow-hidden">
+                <div className="px-4 py-3 border-b border-white/8">
+                  <h3 className="text-sm font-bold text-white">Members ({activeTeam.members.length})</h3>
+                </div>
+                <div className="divide-y divide-white/4">
+                  {activeTeam.members.map((member) => {
+                    const isMe = member.userId === currentUserId;
+                    return (
+                      <div key={member.id} className="flex items-center gap-3 px-4 py-3">
+                        <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${avatarBg(member.userId)}`}>
+                          {initials(member.user)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-white truncate">{member.user.name ?? "Unknown"}</span>
+                            {isMe && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 font-bold">You</span>}
+                          </div>
+                          <p className="text-[11px] text-gray-500 truncate">{member.user.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {canManage && !isMe && member.role !== "OWNER" ? (
+                            <select
+                              value={member.role}
+                              onChange={(e) => changeRole(member.id, e.target.value as TeamRole)}
+                              className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-gray-300 focus:outline-none"
+                            >
+                              {(["ADMIN", "MEMBER", "VIEWER"] as TeamRole[]).map((r) => (
+                                <option key={r} value={r}>{r}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${ROLE_COLORS[member.role]}`}>
+                              {member.role}
+                            </span>
+                          )}
+                          {(canManage && !isMe && member.role !== "OWNER") || (isMe && member.role !== "OWNER") ? (
+                            <button onClick={() => removeMember(member.id)}
+                              className="text-gray-600 hover:text-red-400 transition-colors text-xs">
+                              {isMe ? "Leave" : "×"}
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Pending invites */}
+              {activeTeam.invites.length > 0 && (
+                <div className="rounded-xl border border-white/8 bg-white/2 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/8">
+                    <h3 className="text-sm font-bold text-white">Pending Invites ({activeTeam.invites.length})</h3>
+                  </div>
+                  <div className="divide-y divide-white/4">
+                    {activeTeam.invites.map((invite) => (
+                      <div key={invite.id} className="flex items-center gap-3 px-4 py-3">
+                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-500/20 text-xs font-bold text-gray-400">
+                          {invite.email[0].toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-300 truncate">{invite.email}</p>
+                          <p className="text-[11px] text-gray-600">Invited as {invite.role}</p>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500">
+                          Pending
+                        </span>
+                        {canManage && (
+                          <button onClick={() => removeInvite(invite.id)}
+                            className="text-gray-600 hover:text-red-400 transition-colors text-xs ml-1">
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Invite form */}
+              {canManage && (
+                <div className="rounded-xl border border-white/8 bg-white/2 p-4 space-y-3">
+                  <h3 className="text-sm font-bold text-white">Invite Member</h3>
+                  <div className="flex gap-2">
+                    <input
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && sendInvite()}
+                      placeholder="colleague@company.com"
+                      className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-indigo-500/50"
+                    />
+                    <select
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value as TeamRole)}
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-300 focus:outline-none"
+                    >
+                      {(isOwner ? ["ADMIN", "MEMBER", "VIEWER"] : ["MEMBER", "VIEWER"]).map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={sendInvite}
+                      disabled={inviting || !inviteEmail.trim()}
+                      className="rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 px-4 py-2 text-sm font-semibold text-white transition-colors"
+                    >
+                      {inviting ? "…" : "Invite"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

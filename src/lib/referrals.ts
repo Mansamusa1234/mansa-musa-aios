@@ -65,7 +65,12 @@ export async function recordAffiliateSignup(affCode: string | undefined | null, 
  * approves it via /admin/commissions, and is only ever marked PAID by an explicit admin action.
  * Never throws.
  */
-export async function recordConversion(userId: string, priceId: string | null | undefined): Promise<void> {
+export async function recordConversion(
+  userId: string,
+  priceId: string | null | undefined,
+  stripeSubscriptionId?: string | null,
+  affiliateCode?: string | null,
+): Promise<void> {
   try {
     const planPrice = PLANS.find((p) => p.priceId === priceId)?.price ?? 0;
     if (planPrice <= 0) return;
@@ -107,6 +112,19 @@ export async function recordConversion(userId: string, priceId: string | null | 
       }
     }
 
+    // Also check for affiliate attribution via checkout cookie code
+    if (affiliateCode) {
+      const aff = await db.affiliate.findUnique({ where: { code: affiliateCode }, select: { id: true, userId: true } });
+      if (aff && aff.userId !== userId) {
+        const existingConv = await db.affiliateConversion.findUnique({ where: { referredUserId: userId } });
+        if (!existingConv) {
+          await db.affiliateConversion.create({
+            data: { affiliateId: aff.id, referredUserId: userId },
+          }).catch(() => {});
+        }
+      }
+    }
+
     const conversion = await db.affiliateConversion.findUnique({
       where: { referredUserId: userId },
       include: { affiliate: { select: { id: true, userId: true, commissionRate: true } } },
@@ -115,7 +133,13 @@ export async function recordConversion(userId: string, priceId: string | null | 
       const commissionCents = Math.round((priceCents * conversion.affiliate.commissionRate) / 100);
       await db.affiliateConversion.update({
         where: { id: conversion.id },
-        data: { status: "CONVERTED", convertedAt: new Date(), commissionCents },
+        data: {
+          status: "CONVERTED",
+          convertedAt: new Date(),
+          commissionCents,
+          stripeSubscriptionId: stripeSubscriptionId ?? null,
+          stripePriceId: priceId ?? null,
+        },
       });
       await db.commissionLedger.create({
         data: {

@@ -29,7 +29,7 @@ export function requireStripe(): Stripe {
   return stripe;
 }
 
-export const stripe = requireStripe();
+export const stripe = getStripe();
 
 export const PLANS: PricingPlan[] = [
   {

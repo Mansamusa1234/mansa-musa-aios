@@ -71,7 +71,12 @@ export async function POST(req: Request) {
 
       // Referral/affiliate conversion — best-effort, must never affect webhook processing.
       try {
-        await recordConversion(session.metadata!.userId, sub.items.data[0].price.id);
+        await recordConversion(
+          session.metadata!.userId,
+          sub.items.data[0].price.id,
+          sub.id,
+          session.metadata?.affiliateCode ?? null,
+        );
       } catch (err) {
         console.error("[webhook] referral/affiliate conversion tracking failed:", err);
       }
@@ -159,17 +164,54 @@ export async function POST(req: Request) {
 
     case "invoice.payment_succeeded": {
       const invoice = event.data.object as Stripe.Invoice;
-      if (invoice.billing_reason === "subscription_cycle" || invoice.billing_reason === "subscription_update") {
-        const stripeSubId = invoice.subscription as string | null;
-        if (stripeSubId) {
-          const stripeSub = await stripe.subscriptions.retrieve(stripeSubId);
-          await db.subscription.updateMany({
-            where: { stripeSubscriptionId: stripeSubId },
-            data: {
-              status: "ACTIVE",
-              currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
-              currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
-            },
+      const stripeSubId = invoice.subscription as string | null;
+
+      if (stripeSubId) {
+        const stripeSub = await stripe.subscriptions.retrieve(stripeSubId);
+        await db.subscription.updateMany({
+          where: { stripeSubscriptionId: stripeSubId },
+          data: {
+            status: "ACTIVE",
+            currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
+            currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+          },
+        });
+
+        // Record recurring affiliate commission for subscription renewals
+        if (invoice.billing_reason === "subscription_cycle" && invoice.id) {
+          after(async () => {
+            try {
+              const conversion = await db.affiliateConversion.findFirst({
+                where: { stripeSubscriptionId: stripeSubId, status: "CONVERTED" },
+                include: { affiliate: { select: { recurringRate: true, parentAffiliateId: true, tier2Rate: true } } },
+              });
+              if (!conversion) return;
+
+              const alreadyRecorded = await db.affiliateRenewal.findUnique({ where: { invoiceId: invoice.id! } });
+              if (alreadyRecorded) return;
+
+              const amountCents     = invoice.amount_paid;
+              const commissionCents = Math.round((amountCents * conversion.affiliate.recurringRate) / 100);
+
+              await db.$transaction(async (tx) => {
+                await tx.affiliateRenewal.create({
+                  data: { conversionId: conversion.id, amountCents, commissionCents, invoiceId: invoice.id! },
+                });
+                await tx.affiliateConversion.update({
+                  where: { id: conversion.id },
+                  data: { recurringTotal: { increment: commissionCents }, lastRenewalAt: new Date() },
+                });
+
+                if (conversion.affiliate.parentAffiliateId && conversion.affiliate.tier2Rate > 0) {
+                  const tier2 = Math.round((amountCents * conversion.affiliate.tier2Rate) / 100);
+                  await tx.commissionLedger.create({
+                    data: { userId: conversion.affiliate.parentAffiliateId, sourceType: "AFFILIATE", amountCents: tier2 },
+                  });
+                }
+              });
+            } catch (err) {
+              console.error("[webhook] recurring affiliate commission failed:", err);
+            }
           });
         }
       }

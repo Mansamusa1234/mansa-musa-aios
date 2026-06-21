@@ -1,16 +1,17 @@
 import { db } from "@/lib/db";
-import { PLANS, stripe } from "@/lib/stripe";
+import { PLANS, getStripe } from "@/lib/stripe";
 import BillingDiagnosticsClient from "./BillingDiagnosticsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminBillingPage() {
+  const stripeClient = getStripe();
   const [subscriptions, recentEvents] = await Promise.all([
     db.subscription.findMany({
       orderBy: { updatedAt: "desc" },
       include: { user: { select: { id: true, name: true, email: true } } },
     }),
-    stripe.events.list({
+    stripeClient ? stripeClient.events.list({
       limit: 30,
       types: [
         "checkout.session.completed",
@@ -21,7 +22,7 @@ export default async function AdminBillingPage() {
         "invoice.payment_failed",
         "customer.subscription.trial_will_end",
       ],
-    }).catch(() => ({ data: [], has_more: false })),
+    }).catch(() => ({ data: [], has_more: false })) : Promise.resolve({ data: [], has_more: false }),
   ]);
 
   const planMap = Object.fromEntries(PLANS.map((p) => [p.priceId, p]));

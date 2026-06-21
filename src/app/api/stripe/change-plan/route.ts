@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { stripe, PLANS } from "@/lib/stripe";
+import { requireStripe, PLANS } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    const stripe = requireStripe();
     const stripeSub = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
     const itemId = stripeSub.items.data[0].id;
 
