@@ -43,7 +43,7 @@ function wrapper(title: string, bodyHtml: string, footer = "If you didn't reques
   </div>`;
 }
 
-const SUPPORT_FOOTER = `Questions? Email <a href="mailto:hello@mansamusaai.com" style="color:#6366f1;text-decoration:none">hello@mansamusaai.com</a>`;
+const SUPPORT_FOOTER = `Questions? Email <a href="mailto:ai@mansamusainitiative.com" style="color:#6366f1;text-decoration:none">ai@mansamusainitiative.com</a>`;
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
