@@ -5,9 +5,9 @@ import { triggerWorkflows } from "@/lib/email-automation";
 // Runs daily. Finds trials expiring within 72 hours that haven't been notified,
 // fires TRIAL_ENDING workflows, and marks them so we don't double-fire.
 export async function GET(req: Request) {
-  const secret = req.headers.get("x-cron-secret");
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const secret = req.headers.get("authorization");
+  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const now = new Date();
