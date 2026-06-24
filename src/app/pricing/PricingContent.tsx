@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useState } from "react";
 import MarketingNav from "@/components/marketing/MarketingNav";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
+import AnnualToggle from "@/components/marketing/AnnualToggle";
+import PromoBanner from "@/components/marketing/PromoBanner";
+import ExitIntent from "@/components/marketing/ExitIntent";
 import { fadeUp, stagger, staggerSlow, scaleIn } from "@/lib/motion";
 import type { PricingPlan } from "@/types";
 
@@ -51,6 +54,7 @@ export default function PricingContent({ plans }: Props) {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [annual, setAnnual] = useState(false);
 
   async function handleCheckout(priceId: string, planId: string) {
     setCheckoutError(null);
@@ -90,9 +94,13 @@ export default function PricingContent({ plans }: Props) {
 
   const planNames = plans.map((p) => p.name);
 
+  const annualMultiplier = annual ? 0.8 : 1;
+
   return (
     <div className="min-h-screen bg-white">
+      <PromoBanner />
       <MarketingNav />
+      <ExitIntent />
 
       {/* Hero */}
       <section className="px-6 py-20 text-center bg-gradient-to-b from-gray-950 to-gray-900">
@@ -111,7 +119,10 @@ export default function PricingContent({ plans }: Props) {
               </span>
             ))}
           </motion.div>
-          <motion.p variants={fadeUp} className="mt-6 text-sm text-gray-500">
+          <motion.div variants={fadeUp} className="mt-8">
+            <AnnualToggle annual={annual} onChange={setAnnual} />
+          </motion.div>
+          <motion.p variants={fadeUp} className="mt-4 text-sm text-gray-500">
             14-day free trial · No credit card required · Cancel anytime
           </motion.p>
         </motion.div>
@@ -133,10 +144,11 @@ export default function PricingContent({ plans }: Props) {
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
           >
             {plans.map((plan) => {
+              const displayPrice = Math.round(plan.price * annualMultiplier);
               const price =
                 plan.price === 0
                   ? "Free"
-                  : new Intl.NumberFormat("en-GB", { style: "currency", currency: plan.currency.toUpperCase(), minimumFractionDigits: 0 }).format(plan.price);
+                  : new Intl.NumberFormat("en-GB", { style: "currency", currency: plan.currency.toUpperCase(), minimumFractionDigits: 0 }).format(displayPrice);
 
               const isLoading = checkoutLoading === plan.id;
 
@@ -161,6 +173,11 @@ export default function PricingContent({ plans }: Props) {
                     <span className="text-4xl font-extrabold">{price}</span>
                     {plan.price > 0 && <span className={`mb-1 text-sm ${plan.highlighted ? "text-brand-100" : "text-gray-400"}`}>/mo</span>}
                   </div>
+                  {annual && plan.price > 0 && (
+                    <p className="mt-1 text-xs text-green-400 font-semibold">
+                      Billed annually · Save £{Math.round(plan.price * 0.2 * 12)}/yr
+                    </p>
+                  )}
                   <p className={`mt-2 text-sm ${plan.highlighted ? "text-brand-100" : "text-gray-400"}`}>{plan.description}</p>
                   <ul className="mt-5 flex-1 space-y-2">
                     {plan.features.map((f) => (

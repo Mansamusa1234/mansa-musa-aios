@@ -8,6 +8,9 @@ import CountUp from "@/components/ui/CountUp";
 import ParticleCanvas from "@/components/ui/ParticleCanvas";
 import TypeWriter from "@/components/ui/TypeWriter";
 import AgentFeed from "@/components/ui/AgentFeed";
+import SocialProof from "@/components/marketing/SocialProof";
+import PromoBanner from "@/components/marketing/PromoBanner";
+import ExitIntent from "@/components/marketing/ExitIntent";
 import { fadeUp, scaleIn, stagger, staggerSlow, fadeIn } from "@/lib/motion";
 
 /* ─── Static data ───────────────────────────────────────────── */
@@ -97,6 +100,8 @@ export default function LandingPage({ plans }: Props) {
 
   return (
     <div className="min-h-screen bg-[#030308] font-sans">
+      <PromoBanner />
+      <ExitIntent />
 
       {/* ══ NAV ══════════════════════════════════════════════════ */}
       <motion.nav
@@ -479,6 +484,9 @@ export default function LandingPage({ plans }: Props) {
           </motion.div>
         </div>
       </section>
+
+      {/* ══ SOCIAL PROOF ═════════════════════════════════════════ */}
+      <SocialProof />
 
       {/* ══ HOW IT WORKS ══════════════════════════════════════════ */}
       <section className="bg-[#030308] px-6 py-24">

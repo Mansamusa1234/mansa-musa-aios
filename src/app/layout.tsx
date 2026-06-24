@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import Analytics from "@/components/analytics/Analytics";
 import CookieBanner from "@/components/ui/CookieBanner";
 import PWAInstallButton from "@/components/ui/PWAInstallButton";
+import { Suspense } from "react";
+import UTMCapture from "@/components/marketing/UTMCapture";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -153,6 +155,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           {children}
         </ThemeProvider>
+        <Suspense><UTMCapture /></Suspense>
         <Analytics />
         <CookieBanner />
         <PWAInstallButton />
