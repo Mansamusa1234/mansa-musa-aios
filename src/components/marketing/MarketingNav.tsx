@@ -6,14 +6,13 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const links = [
-  { href: "/features",     label: "Features"     },
-  { href: "/agents",       label: "Agents"       },
-  { href: "/ai-receptionist", label: "Receptionist" },
-  { href: "/wisdom-arena", label: "Wisdom Arena" },
-  { href: "/pricing",      label: "Pricing"      },
-  { href: "/enterprise",   label: "Enterprise"   },
-  { href: "/security",     label: "Security"     },
-  { href: "/affiliate",    label: "Affiliate"    },
+  { href: "/features",        label: "Features",     badge: false },
+  { href: "/agents",          label: "Agents",       badge: false },
+  { href: "/ai-receptionist", label: "Receptionist", badge: false },
+  { href: "/pricing",         label: "Pricing",      badge: false },
+  { href: "/affiliate",       label: "Affiliate",    badge: false },
+  { href: "/blog",            label: "Blog",         badge: false },
+  { href: "/free-audit",      label: "Free Audit",   badge: true  },
 ];
 
 export default function MarketingNav() {
@@ -38,7 +37,7 @@ export default function MarketingNav() {
               <Link
                 key={l.href}
                 href={l.href}
-                className={`relative rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`relative flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   active ? "text-brand-600" : "text-gray-600 hover:text-gray-900"
                 }`}
               >
@@ -50,6 +49,11 @@ export default function MarketingNav() {
                   />
                 )}
                 <span className="relative z-10">{l.label}</span>
+                {l.badge && (
+                  <span className="relative z-10 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700">
+                    FREE
+                  </span>
+                )}
               </Link>
             );
           })}
