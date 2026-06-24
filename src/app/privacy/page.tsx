@@ -11,12 +11,12 @@ const sections = [
   { title: "Information we collect", body: "We collect information you provide directly, such as your name, email address, and payment details when you register or subscribe. We also collect usage data, conversation metadata (not content), and technical identifiers to provide and improve our services." },
   { title: "How we use your information", body: "We use your information to provide AI services, process payments via Stripe, send transactional emails, improve platform performance, comply with legal obligations, and prevent fraud and abuse. We never sell your personal data." },
   { title: "AI conversations", body: "Your conversations with AI agents are processed by Anthropic's Claude API. Conversation content is stored securely in our database to enable history and agent memory features. You can delete your conversation history at any time from your portal." },
-  { title: "Data retention", body: "We retain your account data while your account is active. Usage records are retained for billing and analytics purposes. You may request deletion of your account and associated data by contacting hello@mansamusaai.com." },
+  { title: "Data retention", body: "We retain your account data while your account is active. Usage records are retained for billing and analytics purposes. You may request deletion of your account and associated data by contacting support@mansamusainitiative.com." },
   { title: "Cookies and tracking", body: "We use essential session cookies for authentication. We do not use third-party advertising trackers or share your browsing data with advertisers." },
   { title: "Security", body: "We use industry-standard encryption (TLS), bcrypt password hashing, rate limiting, two-factor authentication, and audit logging. Payment data is handled exclusively by Stripe and never stored on our servers." },
-  { title: "Your rights (UK GDPR)", body: "You have the right to access, correct, or delete your personal data; restrict or object to processing; data portability; and to withdraw consent. Contact hello@mansamusaai.com to exercise your rights." },
+  { title: "Your rights (UK GDPR)", body: "You have the right to access, correct, or delete your personal data; restrict or object to processing; data portability; and to withdraw consent. Contact support@mansamusainitiative.com to exercise your rights." },
   { title: "Third-party services", body: "We use Stripe for payments, Anthropic for AI processing, Supabase for database hosting, and Vercel for infrastructure. Each provider has their own privacy policy and data processing agreements with us." },
-  { title: "Contact", body: "For privacy queries, contact our Data Controller at hello@mansamusaai.com or write to MansaMusaAI, United Kingdom." },
+  { title: "Contact", body: "For privacy queries, contact our Data Controller at support@mansamusainitiative.com or write to MansaMusaAI, United Kingdom." },
 ];
 
 export default function PrivacyPage() {

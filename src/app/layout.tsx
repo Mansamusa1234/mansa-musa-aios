@@ -87,7 +87,7 @@ const jsonLd = {
       contactPoint: {
         "@type": "ContactPoint",
         contactType: "customer support",
-        email: "hello@mansamusaai.com",
+        email: "ai@mansamusainitiative.com",
         availableLanguage: "English",
       },
     },

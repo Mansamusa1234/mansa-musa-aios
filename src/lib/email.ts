@@ -3,7 +3,8 @@ import { Resend } from "resend";
 import { db } from "@/lib/db";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM = process.env.EMAIL_FROM ?? "MansaMusaAI <onboarding@resend.dev>";
+const FROM         = process.env.EMAIL_FROM          ?? "MansaMusaAI <ai@mansamusainitiative.com>";
+const FROM_WELCOME = process.env.EMAIL_FROM_WELCOME  ?? "MansaMusaAI <greetings@mansamusainitiative.com>";
 const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
 export interface SendResult {
@@ -12,18 +13,23 @@ export interface SendResult {
 }
 
 /** Best-effort transactional email. Never throws — logs and returns unsent if no provider is configured. */
-export async function sendEmail(to: string, subject: string, html: string): Promise<SendResult> {
+export async function sendEmail(to: string, subject: string, html: string, from = FROM): Promise<SendResult> {
   if (!resend) {
     console.log(`[email] Not configured (RESEND_API_KEY missing) — would have sent "${subject}" to ${to}`);
     return { sent: false, reason: "Email provider not configured." };
   }
   try {
-    await resend.emails.send({ from: FROM, to, subject, html });
+    await resend.emails.send({ from, to, subject, html });
     return { sent: true };
   } catch (err) {
     console.error("[email] send failed:", err);
     return { sent: false, reason: "Email send failed." };
   }
+}
+
+/** Sends the welcome email from greetings@mansamusainitiative.com */
+export async function sendWelcomeEmail(to: string, name: string): Promise<SendResult> {
+  return sendEmail(to, "Welcome to MansaMusaAI", welcomeEmailHtml(name), FROM_WELCOME);
 }
 
 function esc(s: string) {
@@ -43,7 +49,7 @@ function wrapper(title: string, bodyHtml: string, footer = "If you didn't reques
   </div>`;
 }
 
-const SUPPORT_FOOTER = `Questions? Email <a href="mailto:hello@mansamusaai.com" style="color:#6366f1;text-decoration:none">hello@mansamusaai.com</a>`;
+const SUPPORT_FOOTER = `Questions? Email <a href="mailto:ai@mansamusainitiative.com" style="color:#6366f1;text-decoration:none">ai@mansamusainitiative.com</a>`;
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
