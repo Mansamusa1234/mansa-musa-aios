@@ -633,6 +633,54 @@ export default function LandingPage({ plans }: Props) {
         </div>
       </section>
 
+      {/* ══ WHO IS THIS FOR ══════════════════════════════════════ */}
+      <section className="bg-[#06060e] px-6 py-24 border-t border-white/5">
+        <div className="mx-auto max-w-6xl">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-14">
+            <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">Who This Is For</motion.p>
+            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
+              Built for businesses that<br className="hidden sm:block" /> refuse to stay small
+            </motion.h2>
+            <motion.p variants={fadeUp} className="mt-4 text-gray-500 text-lg max-w-xl mx-auto">
+              If you run a business and you&apos;re doing the work of five people — this was built for you.
+            </motion.p>
+          </motion.div>
+
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { icon: "🏗️", who: "Founders & Solopreneurs",       pain: "Wearing every hat in the business",               fix: "Your AI team handles calls, admin, follow-ups and marketing so you focus on growth." },
+              { icon: "🏥", who: "Clinics & Healthcare",           pain: "Missing calls, losing bookings, slow follow-up",   fix: "AI receptionist books appointments 24/7, sends reminders, handles enquiries instantly." },
+              { icon: "🔧", who: "Trades & Service Businesses",    pain: "Can't answer calls on the job",                   fix: "Your AI picks up every call, qualifies the job, books it in — while you're on site." },
+              { icon: "🏠", who: "Estate Agents & Property",       pain: "Leads going cold before you call back",           fix: "AI qualifies every enquiry, books viewings, and follows up until they convert." },
+              { icon: "⚖️", who: "Law Firms & Accountants",        pain: "Admin eating into billable time",                 fix: "AI handles intake, scheduling, document queries and client follow-up automatically." },
+              { icon: "🛍️", who: "Retail & E-Commerce",            pain: "Support tickets piling up overnight",             fix: "AI support agent resolves queries 24/7, handles returns, and upsells on autopilot." },
+              { icon: "🚀", who: "Startups & Scale-ups",           pain: "Can't afford to hire full departments yet",       fix: "Deploy a full team of specialist AI agents for less than one junior hire." },
+              { icon: "🌍", who: "Global & Remote Businesses",     pain: "Different time zones, different languages",       fix: "AI agents work in 30+ languages, across every time zone, around the clock." },
+              { icon: "🏢", who: "SMEs Ready to Scale",            pain: "Growth is limited by operational capacity",      fix: "Remove every operational bottleneck with AI that scales instantly with demand." },
+            ].map((item) => (
+              <motion.div
+                key={item.who}
+                variants={scaleIn}
+                whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                className="rounded-2xl border border-white/8 bg-white/3 p-6 hover:border-brand-500/30 transition-colors"
+              >
+                <div className="text-3xl mb-3">{item.icon}</div>
+                <h3 className="font-bold text-white mb-1">{item.who}</h3>
+                <p className="text-xs text-red-400 mb-3">❌ {item.pain}</p>
+                <p className="text-sm text-gray-400 leading-relaxed">✅ {item.fix}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-12 text-center">
+            <p className="text-gray-500 mb-6 text-lg">Starting from <span className="text-white font-bold">£49/month</span> — less than one hour of an employee&apos;s time.</p>
+            <Link href="/register" className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-10 py-4 text-base font-semibold text-white shadow-xl shadow-brand-500/30 hover:bg-brand-600 transition-all hover:-translate-y-0.5">
+              Start free — no card needed →
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ══ WISDOM ECONOMY ═══════════════════════════════════════ */}
       <section className="bg-[#06060e] px-6 py-24 border-t border-white/5">
         <div className="mx-auto max-w-6xl">
