@@ -27,8 +27,9 @@ const cols = [
       { label: "Dashboard",    href: "/dashboard" },
       { label: "Chat",         href: "/chat"      },
       { label: "Compete",      href: "/compete"   },
-      { label: "Wisdom Vault", href: "/wisdom"    },
-      { label: "Workforce",    href: "/workforce" },
+      { label: "Wisdom Vault",    href: "/wisdom"         },
+      { label: "Wisdom Library", href: "/wisdom-library" },
+      { label: "Workforce",      href: "/workforce"      },
     ],
   },
   {
