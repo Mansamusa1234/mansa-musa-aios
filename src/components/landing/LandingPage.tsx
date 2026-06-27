@@ -430,6 +430,91 @@ export default function LandingPage({ plans }: Props) {
         </div>
       </section>
 
+      {/* ══ AGENTS GROW ══════════════════════════════════════════ */}
+      <section className="bg-[#04040c] px-6 py-24 border-t border-white/5 overflow-hidden">
+        <div className="mx-auto max-w-6xl">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-16">
+            <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">Living AI · Not Static Software</motion.p>
+            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
+              Your agents don&apos;t stay the<br className="hidden sm:block" /> same. They grow.
+            </motion.h2>
+            <motion.p variants={fadeUp} className="mt-4 text-gray-400 text-lg max-w-2xl mx-auto">
+              Like a new employee who learns your business on day one and becomes your best performer by year one — MansaMusaAI agents get sharper with every call, every win, every answer saved.
+            </motion.p>
+          </motion.div>
+
+          {/* Growth timeline */}
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            {[
+              {
+                stage: "Day 1",
+                icon: "🌱",
+                color: "from-green-900/40 to-green-900/10 border-green-800/30",
+                accent: "text-green-400",
+                title: "First breath",
+                desc: "Learns your business name, tone, products, and FAQs. Ready to answer calls from the moment you go live.",
+              },
+              {
+                stage: "Week 1",
+                icon: "📈",
+                color: "from-blue-900/40 to-blue-900/10 border-blue-800/30",
+                accent: "text-blue-400",
+                title: "Pattern recognition",
+                desc: "Spots your most common questions, your best-converting responses, and your customers' biggest objections.",
+              },
+              {
+                stage: "Month 1",
+                icon: "🧠",
+                color: "from-purple-900/40 to-purple-900/10 border-purple-800/30",
+                accent: "text-purple-400",
+                title: "Deep expertise",
+                desc: "Handles complex enquiries, qualifies leads with precision, and routes the right customers to the right outcome every time.",
+              },
+              {
+                stage: "Year 1",
+                icon: "👑",
+                color: "from-amber-900/40 to-amber-900/10 border-amber-800/30",
+                accent: "text-amber-400",
+                title: "Your best employee",
+                desc: "A fully trained AI workforce that knows your business inside out — never calls in sick, never forgets, never stops improving.",
+              },
+            ].map((s) => (
+              <motion.div
+                key={s.stage}
+                variants={fadeUp}
+                className={`relative rounded-2xl border bg-gradient-to-b ${s.color} p-6`}
+              >
+                <p className={`text-xs font-bold uppercase tracking-widest ${s.accent} mb-3`}>{s.stage}</p>
+                <div className="text-3xl mb-3">{s.icon}</div>
+                <h3 className="text-lg font-bold text-white mb-2">{s.title}</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">{s.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Bottom pull quote */}
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="mt-14 rounded-2xl border border-brand-500/20 bg-brand-500/5 px-8 py-8 text-center"
+          >
+            <p className="text-xl sm:text-2xl font-semibold text-white leading-snug">
+              &ldquo;Most software is frozen the day you buy it.<br className="hidden sm:block" />
+              MansaMusaAI agents are alive — they compound.&rdquo;
+            </p>
+            <p className="mt-3 text-sm text-gray-500">Every saved answer, every won competition, every customer interaction makes them smarter.</p>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ══ WISDOM ECONOMY ═══════════════════════════════════════ */}
       <section className="bg-[#06060e] px-6 py-24 border-t border-white/5">
         <div className="mx-auto max-w-6xl">
