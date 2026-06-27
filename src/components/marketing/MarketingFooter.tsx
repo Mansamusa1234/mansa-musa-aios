@@ -17,6 +17,7 @@ const cols = [
       { label: "About",             href: "/about"     },
       { label: "Blog",              href: "/blog"      },
       { label: "Affiliate Program", href: "/affiliate" },
+      { label: "Grow with AI",      href: "/grow"      },
       { label: "Contact",           href: "/contact"   },
       { label: "Press & Media",     href: "/press"     },
     ],

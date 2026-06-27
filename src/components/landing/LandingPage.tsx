@@ -9,6 +9,10 @@ import ParticleCanvas from "@/components/ui/ParticleCanvas";
 import TypeWriter from "@/components/ui/TypeWriter";
 import AgentFeed from "@/components/ui/AgentFeed";
 import { fadeUp, scaleIn, stagger, staggerSlow, fadeIn } from "@/lib/motion";
+import ExitIntent from "@/components/marketing/ExitIntent";
+import SocialProofTicker from "@/components/marketing/SocialProofTicker";
+import UrgencyBanner from "@/components/marketing/UrgencyBanner";
+import LeadMagnetBar from "@/components/marketing/LeadMagnetBar";
 
 /* ─── Static data ───────────────────────────────────────────── */
 
@@ -97,6 +101,9 @@ export default function LandingPage({ plans }: Props) {
 
   return (
     <div className="min-h-screen bg-[#030308] font-sans">
+      <UrgencyBanner />
+      <ExitIntent />
+      <SocialProofTicker />
 
       {/* ══ NAV ══════════════════════════════════════════════════ */}
       <motion.nav
@@ -882,6 +889,9 @@ export default function LandingPage({ plans }: Props) {
           </motion.p>
         </motion.div>
       </section>
+
+      {/* ══ LEAD MAGNET ══════════════════════════════════════════ */}
+      <LeadMagnetBar />
 
       {/* ══ COMMUNITY ═════════════════════════════════════════════ */}
       <section className="px-6 py-20 bg-[#0a0a14]">
