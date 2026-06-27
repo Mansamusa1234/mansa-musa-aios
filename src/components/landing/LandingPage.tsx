@@ -215,8 +215,8 @@ export default function LandingPage({ plans }: Props) {
             {/* Sub-text */}
             <motion.p variants={fadeUp} className="max-w-2xl text-base text-gray-500 sm:text-lg leading-relaxed">
               The world&apos;s richest man commanded unlimited resources. Now you can too —
-              an AI operating system with 10 specialist agents built for founders,
-              operators, and enterprises.
+              a complete AI Operating System that runs every department of your business.
+              Sales. Finance. HR. Legal. Marketing. Operations. All in one platform.
             </motion.p>
 
             {/* CTAs */}
@@ -385,6 +385,124 @@ export default function LandingPage({ plans }: Props) {
           <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-10 text-center">
             <Link href="/agents" className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-gray-300 hover:border-brand-500/40 hover:text-white transition-all backdrop-blur-sm">
               Explore all agents <span>→</span>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══ EVERY DEPARTMENT ════════════════════════════════════ */}
+      <section className="bg-[#030308] px-6 py-24 border-t border-white/5">
+        <div className="mx-auto max-w-6xl">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-14">
+            <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">Full Business OS</motion.p>
+            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
+              One platform. Every department.<br className="hidden sm:block" /> Zero gaps.
+            </motion.h2>
+            <motion.p variants={fadeUp} className="mt-4 text-gray-500 text-lg max-w-2xl mx-auto">
+              Most businesses stitch together 12 different tools to run one company. MansaMusaAI replaces all of them — a single AI Operating System for every function, every team, every workflow.
+            </motion.p>
+          </motion.div>
+
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                dept: "Sales & Revenue",
+                icon: "💰",
+                color: "border-green-500/20 hover:border-green-500/40",
+                accent: "text-green-400",
+                agents: ["Lead Qualifier", "Sales Agent", "Follow-up Agent", "Proposal Writer", "Deal Closer"],
+                desc: "Never miss a lead. AI qualifies, nurtures, and closes — 24/7.",
+              },
+              {
+                dept: "Customer Support",
+                icon: "🎧",
+                color: "border-blue-500/20 hover:border-blue-500/40",
+                accent: "text-blue-400",
+                agents: ["Support Agent", "AI Receptionist", "Complaint Handler", "Escalation Router", "Feedback Collector"],
+                desc: "Every customer gets an instant, accurate, on-brand response.",
+              },
+              {
+                dept: "Marketing",
+                icon: "📣",
+                color: "border-purple-500/20 hover:border-purple-500/40",
+                accent: "text-purple-400",
+                agents: ["Content Writer", "SEO Agent", "Social Media Agent", "Email Campaign Agent", "Brand Voice Agent"],
+                desc: "Campaigns, content, and copy — generated and published automatically.",
+              },
+              {
+                dept: "Finance & Accounting",
+                icon: "📊",
+                color: "border-amber-500/20 hover:border-amber-500/40",
+                accent: "text-amber-400",
+                agents: ["Finance Agent", "Invoice Agent", "P&L Analyst", "Tax Prep Agent", "Forecasting Agent"],
+                desc: "Real-time financials, forecasts, and reports without a CFO.",
+              },
+              {
+                dept: "HR & People",
+                icon: "👥",
+                color: "border-pink-500/20 hover:border-pink-500/40",
+                accent: "text-pink-400",
+                agents: ["Hiring Agent", "Onboarding Agent", "Policy Agent", "Performance Agent", "Culture Agent"],
+                desc: "Hire, onboard, and manage your team — AI handles the process.",
+              },
+              {
+                dept: "Legal & Compliance",
+                icon: "⚖️",
+                color: "border-red-500/20 hover:border-red-500/40",
+                accent: "text-red-400",
+                agents: ["Contract Reviewer", "Compliance Agent", "GDPR Agent", "Risk Assessor", "Legal Researcher"],
+                desc: "Contracts reviewed, risks flagged, compliance maintained automatically.",
+              },
+              {
+                dept: "Operations",
+                icon: "⚙️",
+                color: "border-cyan-500/20 hover:border-cyan-500/40",
+                accent: "text-cyan-400",
+                agents: ["Workflow Agent", "Scheduling Agent", "Supplier Agent", "Inventory Agent", "Process Agent"],
+                desc: "Every operational workflow automated — nothing falls through the cracks.",
+              },
+              {
+                dept: "Research & Intelligence",
+                icon: "🔬",
+                color: "border-indigo-500/20 hover:border-indigo-500/40",
+                accent: "text-indigo-400",
+                agents: ["Research Agent", "Competitor Agent", "Market Agent", "Data Analyst", "Insight Agent"],
+                desc: "Competitive intelligence and market research delivered daily.",
+              },
+              {
+                dept: "Executive & Strategy",
+                icon: "👑",
+                color: "border-brand-500/20 hover:border-brand-500/40",
+                accent: "text-brand-400",
+                agents: ["Strategy Agent", "Board Report Agent", "OKR Tracker", "Decision Agent", "Wisdom Arena"],
+                desc: "AI advisors that think at board level — for every major decision.",
+              },
+            ].map((d) => (
+              <motion.div
+                key={d.dept}
+                variants={scaleIn}
+                whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                className={`rounded-2xl border bg-white/3 p-6 transition-colors ${d.color}`}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">{d.icon}</span>
+                  <h3 className={`font-bold text-base ${d.accent}`}>{d.dept}</h3>
+                </div>
+                <p className="text-sm text-gray-400 mb-4 leading-relaxed">{d.desc}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {d.agents.map((a) => (
+                    <span key={a} className="rounded-full border border-white/8 bg-white/4 px-2.5 py-0.5 text-xs text-gray-500">{a}</span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-12 rounded-2xl border border-brand-500/20 bg-brand-500/5 px-8 py-8 text-center">
+            <p className="text-2xl font-bold text-white mb-2">9 departments. 41 specialist agents. 1 subscription.</p>
+            <p className="text-gray-500 mb-6">No per-seat pricing. No department silos. The entire business runs on one platform.</p>
+            <Link href="/agents" className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-8 py-3.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+              See all 41 agents →
             </Link>
           </motion.div>
         </div>
