@@ -14,6 +14,45 @@ export interface BlogPost {
 
 export const posts: BlogPost[] = [
   {
+    slug: "ai-receptionist-for-small-business-uk",
+    title: "AI Receptionist for Small Business UK: The Complete 2026 Guide",
+    subtitle: "How small businesses are saving £2,000+/month with AI",
+    excerpt:
+      "Missing calls costs UK small businesses an estimated £30,000 a year in lost revenue. An AI receptionist costs less than £50/month and never sleeps. Here's everything you need to know.",
+    date: "2026-06-20",
+    readTime: "7 min read",
+    category: "Guide",
+    featured: false,
+    tags: ["AI Receptionist UK", "Small Business AI", "AI Phone Answering", "UK Business"],
+    author: "MansaMusaAI Team",
+  },
+  {
+    slug: "how-to-automate-lead-capture",
+    title: "How to Automate Lead Capture for Your Business in 2026",
+    subtitle: "Turn website visitors and phone calls into booked appointments automatically",
+    excerpt:
+      "73% of leads go cold within the first hour. AI-powered lead capture responds instantly, qualifies prospects, and books them into your calendar — while you sleep.",
+    date: "2026-06-15",
+    readTime: "6 min read",
+    category: "Guide",
+    featured: false,
+    tags: ["Lead Capture", "Business Automation", "CRM", "AI Sales"],
+    author: "MansaMusaAI Team",
+  },
+  {
+    slug: "whatsapp-business-ai-automation",
+    title: "WhatsApp Business AI Automation: How to Handle 100+ Messages a Day",
+    subtitle: "Scale your WhatsApp support without hiring more staff",
+    excerpt:
+      "WhatsApp has 2 billion users. UK businesses that respond within 5 minutes convert 9× more leads. Here's how to automate your entire WhatsApp inbox with AI.",
+    date: "2026-06-12",
+    readTime: "5 min read",
+    category: "Guide",
+    featured: false,
+    tags: ["WhatsApp Business", "AI Automation", "Customer Service", "Messaging"],
+    author: "MansaMusaAI Team",
+  },
+  {
     slug: "rise-of-ai-operating-systems",
     title: "The Rise of AI Operating Systems",
     subtitle: "Why every business will run on AI in 2026",

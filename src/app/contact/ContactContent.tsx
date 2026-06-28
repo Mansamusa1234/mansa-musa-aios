@@ -149,10 +149,10 @@ export default function ContactContent() {
               <h2 className="text-xl font-bold text-gray-900 mb-4">Contact information</h2>
               <div className="space-y-3">
                 {[
-                  { icon: "✉️", label: "Email", value: "hello@mansamusaai.com" },
+                  { icon: "✉️", label: "Email", value: "ai@mansamusainitiative.com" },
                   { icon: "⏰", label: "Response time", value: "Within 24 hours" },
                   { icon: "🌍", label: "Based in", value: "United Kingdom" },
-                  { icon: "💼", label: "Enterprise", value: "enterprise@mansamusaai.com" },
+                  { icon: "💼", label: "Enterprise", value: "sales@mansamusainitiative.com" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-3 rounded-xl border border-gray-100 p-3.5">
                     <span className="text-xl">{item.icon}</span>

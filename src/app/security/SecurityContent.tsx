@@ -156,7 +156,7 @@ export default function SecurityContent() {
                 Found a security vulnerability? We take all reports seriously. Contact our security team and we&apos;ll respond within 24 hours.
               </p>
               <a
-                href="mailto:security@mansamusaai.com"
+                href="mailto:support@mansamusainitiative.com"
                 className="mt-6 inline-block rounded-xl bg-brand-600 px-8 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
               >
                 Report a vulnerability

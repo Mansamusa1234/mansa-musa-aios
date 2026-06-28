@@ -8,11 +8,13 @@ import CountUp from "@/components/ui/CountUp";
 import ParticleCanvas from "@/components/ui/ParticleCanvas";
 import TypeWriter from "@/components/ui/TypeWriter";
 import AgentFeed from "@/components/ui/AgentFeed";
-import { fadeUp, scaleIn, stagger, staggerSlow, fadeIn } from "@/lib/motion";
+import SocialProof from "@/components/marketing/SocialProof";
+import PromoBanner from "@/components/marketing/PromoBanner";
 import ExitIntent from "@/components/marketing/ExitIntent";
 import SocialProofTicker from "@/components/marketing/SocialProofTicker";
 import UrgencyBanner from "@/components/marketing/UrgencyBanner";
 import LeadMagnetBar from "@/components/marketing/LeadMagnetBar";
+import { fadeUp, scaleIn, stagger, staggerSlow, fadeIn } from "@/lib/motion";
 
 /* ─── Static data ───────────────────────────────────────────── */
 
@@ -102,6 +104,7 @@ export default function LandingPage({ plans }: Props) {
   return (
     <div className="min-h-screen bg-[#030308] font-sans">
       <UrgencyBanner />
+      <PromoBanner />
       <ExitIntent />
       <SocialProofTicker />
 
@@ -737,6 +740,9 @@ export default function LandingPage({ plans }: Props) {
           </motion.div>
         </div>
       </section>
+
+      {/* ══ SOCIAL PROOF ═════════════════════════════════════════ */}
+      <SocialProof />
 
       {/* ══ HOW IT WORKS ══════════════════════════════════════════ */}
       <section className="bg-[#030308] px-6 py-24">
