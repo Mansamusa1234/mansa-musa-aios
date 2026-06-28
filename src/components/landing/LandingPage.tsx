@@ -11,6 +11,9 @@ import AgentFeed from "@/components/ui/AgentFeed";
 import SocialProof from "@/components/marketing/SocialProof";
 import PromoBanner from "@/components/marketing/PromoBanner";
 import ExitIntent from "@/components/marketing/ExitIntent";
+import SocialProofTicker from "@/components/marketing/SocialProofTicker";
+import UrgencyBanner from "@/components/marketing/UrgencyBanner";
+import LeadMagnetBar from "@/components/marketing/LeadMagnetBar";
 import { fadeUp, scaleIn, stagger, staggerSlow, fadeIn } from "@/lib/motion";
 
 /* ─── Static data ───────────────────────────────────────────── */
@@ -100,8 +103,10 @@ export default function LandingPage({ plans }: Props) {
 
   return (
     <div className="min-h-screen bg-[#030308] font-sans">
+      <UrgencyBanner />
       <PromoBanner />
       <ExitIntent />
+      <SocialProofTicker />
 
       {/* ══ NAV ══════════════════════════════════════════════════ */}
       <motion.nav
@@ -220,8 +225,8 @@ export default function LandingPage({ plans }: Props) {
             {/* Sub-text */}
             <motion.p variants={fadeUp} className="max-w-2xl text-base text-gray-500 sm:text-lg leading-relaxed">
               The world&apos;s richest man commanded unlimited resources. Now you can too —
-              an AI operating system with 10 specialist agents built for founders,
-              operators, and enterprises.
+              a complete AI Operating System that runs every department of your business.
+              Sales. Finance. HR. Legal. Marketing. Operations. All in one platform.
             </motion.p>
 
             {/* CTAs */}
@@ -395,6 +400,124 @@ export default function LandingPage({ plans }: Props) {
         </div>
       </section>
 
+      {/* ══ EVERY DEPARTMENT ════════════════════════════════════ */}
+      <section className="bg-[#030308] px-6 py-24 border-t border-white/5">
+        <div className="mx-auto max-w-6xl">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-14">
+            <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">Full Business OS</motion.p>
+            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
+              One platform. Every department.<br className="hidden sm:block" /> Zero gaps.
+            </motion.h2>
+            <motion.p variants={fadeUp} className="mt-4 text-gray-500 text-lg max-w-2xl mx-auto">
+              Most businesses stitch together 12 different tools to run one company. MansaMusaAI replaces all of them — a single AI Operating System for every function, every team, every workflow.
+            </motion.p>
+          </motion.div>
+
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                dept: "Sales & Revenue",
+                icon: "💰",
+                color: "border-green-500/20 hover:border-green-500/40",
+                accent: "text-green-400",
+                agents: ["Lead Qualifier", "Sales Agent", "Follow-up Agent", "Proposal Writer", "Deal Closer"],
+                desc: "Never miss a lead. AI qualifies, nurtures, and closes — 24/7.",
+              },
+              {
+                dept: "Customer Support",
+                icon: "🎧",
+                color: "border-blue-500/20 hover:border-blue-500/40",
+                accent: "text-blue-400",
+                agents: ["Support Agent", "AI Receptionist", "Complaint Handler", "Escalation Router", "Feedback Collector"],
+                desc: "Every customer gets an instant, accurate, on-brand response.",
+              },
+              {
+                dept: "Marketing",
+                icon: "📣",
+                color: "border-purple-500/20 hover:border-purple-500/40",
+                accent: "text-purple-400",
+                agents: ["Content Writer", "SEO Agent", "Social Media Agent", "Email Campaign Agent", "Brand Voice Agent"],
+                desc: "Campaigns, content, and copy — generated and published automatically.",
+              },
+              {
+                dept: "Finance & Accounting",
+                icon: "📊",
+                color: "border-amber-500/20 hover:border-amber-500/40",
+                accent: "text-amber-400",
+                agents: ["Finance Agent", "Invoice Agent", "P&L Analyst", "Tax Prep Agent", "Forecasting Agent"],
+                desc: "Real-time financials, forecasts, and reports without a CFO.",
+              },
+              {
+                dept: "HR & People",
+                icon: "👥",
+                color: "border-pink-500/20 hover:border-pink-500/40",
+                accent: "text-pink-400",
+                agents: ["Hiring Agent", "Onboarding Agent", "Policy Agent", "Performance Agent", "Culture Agent"],
+                desc: "Hire, onboard, and manage your team — AI handles the process.",
+              },
+              {
+                dept: "Legal & Compliance",
+                icon: "⚖️",
+                color: "border-red-500/20 hover:border-red-500/40",
+                accent: "text-red-400",
+                agents: ["Contract Reviewer", "Compliance Agent", "GDPR Agent", "Risk Assessor", "Legal Researcher"],
+                desc: "Contracts reviewed, risks flagged, compliance maintained automatically.",
+              },
+              {
+                dept: "Operations",
+                icon: "⚙️",
+                color: "border-cyan-500/20 hover:border-cyan-500/40",
+                accent: "text-cyan-400",
+                agents: ["Workflow Agent", "Scheduling Agent", "Supplier Agent", "Inventory Agent", "Process Agent"],
+                desc: "Every operational workflow automated — nothing falls through the cracks.",
+              },
+              {
+                dept: "Research & Intelligence",
+                icon: "🔬",
+                color: "border-indigo-500/20 hover:border-indigo-500/40",
+                accent: "text-indigo-400",
+                agents: ["Research Agent", "Competitor Agent", "Market Agent", "Data Analyst", "Insight Agent"],
+                desc: "Competitive intelligence and market research delivered daily.",
+              },
+              {
+                dept: "Executive & Strategy",
+                icon: "👑",
+                color: "border-brand-500/20 hover:border-brand-500/40",
+                accent: "text-brand-400",
+                agents: ["Strategy Agent", "Board Report Agent", "OKR Tracker", "Decision Agent", "Wisdom Arena"],
+                desc: "AI advisors that think at board level — for every major decision.",
+              },
+            ].map((d) => (
+              <motion.div
+                key={d.dept}
+                variants={scaleIn}
+                whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                className={`rounded-2xl border bg-white/3 p-6 transition-colors ${d.color}`}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">{d.icon}</span>
+                  <h3 className={`font-bold text-base ${d.accent}`}>{d.dept}</h3>
+                </div>
+                <p className="text-sm text-gray-400 mb-4 leading-relaxed">{d.desc}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {d.agents.map((a) => (
+                    <span key={a} className="rounded-full border border-white/8 bg-white/4 px-2.5 py-0.5 text-xs text-gray-500">{a}</span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-12 rounded-2xl border border-brand-500/20 bg-brand-500/5 px-8 py-8 text-center">
+            <p className="text-2xl font-bold text-white mb-2">9 departments. 41 specialist agents. 1 subscription.</p>
+            <p className="text-gray-500 mb-6">No per-seat pricing. No department silos. The entire business runs on one platform.</p>
+            <Link href="/agents" className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-8 py-3.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+              See all 41 agents →
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
       {/* ══ FEATURES ══════════════════════════════════════════════ */}
       <section className="bg-[#06060e] px-6 py-24">
         <div className="mx-auto max-w-6xl">
@@ -431,6 +554,139 @@ export default function LandingPage({ plans }: Props) {
                 <p className="relative mt-2 text-sm text-gray-500 leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══ AGENTS GROW ══════════════════════════════════════════ */}
+      <section className="bg-[#04040c] px-6 py-24 border-t border-white/5 overflow-hidden">
+        <div className="mx-auto max-w-6xl">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-16">
+            <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">Living AI · Not Static Software</motion.p>
+            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
+              Your agents don&apos;t stay the<br className="hidden sm:block" /> same. They grow.
+            </motion.h2>
+            <motion.p variants={fadeUp} className="mt-4 text-gray-400 text-lg max-w-2xl mx-auto">
+              Like a new employee who learns your business on day one and becomes your best performer by year one — MansaMusaAI agents get sharper with every call, every win, every answer saved.
+            </motion.p>
+          </motion.div>
+
+          {/* Growth timeline */}
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            {[
+              {
+                stage: "Day 1",
+                icon: "🌱",
+                color: "from-green-900/40 to-green-900/10 border-green-800/30",
+                accent: "text-green-400",
+                title: "First breath",
+                desc: "Learns your business name, tone, products, and FAQs. Ready to answer calls from the moment you go live.",
+              },
+              {
+                stage: "Week 1",
+                icon: "📈",
+                color: "from-blue-900/40 to-blue-900/10 border-blue-800/30",
+                accent: "text-blue-400",
+                title: "Pattern recognition",
+                desc: "Spots your most common questions, your best-converting responses, and your customers' biggest objections.",
+              },
+              {
+                stage: "Month 1",
+                icon: "🧠",
+                color: "from-purple-900/40 to-purple-900/10 border-purple-800/30",
+                accent: "text-purple-400",
+                title: "Deep expertise",
+                desc: "Handles complex enquiries, qualifies leads with precision, and routes the right customers to the right outcome every time.",
+              },
+              {
+                stage: "Year 1",
+                icon: "👑",
+                color: "from-amber-900/40 to-amber-900/10 border-amber-800/30",
+                accent: "text-amber-400",
+                title: "Your best employee",
+                desc: "A fully trained AI workforce that knows your business inside out — never calls in sick, never forgets, never stops improving.",
+              },
+            ].map((s) => (
+              <motion.div
+                key={s.stage}
+                variants={fadeUp}
+                className={`relative rounded-2xl border bg-gradient-to-b ${s.color} p-6`}
+              >
+                <p className={`text-xs font-bold uppercase tracking-widest ${s.accent} mb-3`}>{s.stage}</p>
+                <div className="text-3xl mb-3">{s.icon}</div>
+                <h3 className="text-lg font-bold text-white mb-2">{s.title}</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">{s.desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Bottom pull quote */}
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="mt-14 rounded-2xl border border-brand-500/20 bg-brand-500/5 px-8 py-8 text-center"
+          >
+            <p className="text-xl sm:text-2xl font-semibold text-white leading-snug">
+              &ldquo;Most software is frozen the day you buy it.<br className="hidden sm:block" />
+              MansaMusaAI agents are alive — they compound.&rdquo;
+            </p>
+            <p className="mt-3 text-sm text-gray-500">Every saved answer, every won competition, every customer interaction makes them smarter.</p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══ WHO IS THIS FOR ══════════════════════════════════════ */}
+      <section className="bg-[#06060e] px-6 py-24 border-t border-white/5">
+        <div className="mx-auto max-w-6xl">
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-14">
+            <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">Who This Is For</motion.p>
+            <motion.h2 variants={fadeUp} className="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
+              Built for businesses that<br className="hidden sm:block" /> refuse to stay small
+            </motion.h2>
+            <motion.p variants={fadeUp} className="mt-4 text-gray-500 text-lg max-w-xl mx-auto">
+              If you run a business and you&apos;re doing the work of five people — this was built for you.
+            </motion.p>
+          </motion.div>
+
+          <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { icon: "🏗️", who: "Founders & Solopreneurs",       pain: "Wearing every hat in the business",               fix: "Your AI team handles calls, admin, follow-ups and marketing so you focus on growth." },
+              { icon: "🏥", who: "Clinics & Healthcare",           pain: "Missing calls, losing bookings, slow follow-up",   fix: "AI receptionist books appointments 24/7, sends reminders, handles enquiries instantly." },
+              { icon: "🔧", who: "Trades & Service Businesses",    pain: "Can't answer calls on the job",                   fix: "Your AI picks up every call, qualifies the job, books it in — while you're on site." },
+              { icon: "🏠", who: "Estate Agents & Property",       pain: "Leads going cold before you call back",           fix: "AI qualifies every enquiry, books viewings, and follows up until they convert." },
+              { icon: "⚖️", who: "Law Firms & Accountants",        pain: "Admin eating into billable time",                 fix: "AI handles intake, scheduling, document queries and client follow-up automatically." },
+              { icon: "🛍️", who: "Retail & E-Commerce",            pain: "Support tickets piling up overnight",             fix: "AI support agent resolves queries 24/7, handles returns, and upsells on autopilot." },
+              { icon: "🚀", who: "Startups & Scale-ups",           pain: "Can't afford to hire full departments yet",       fix: "Deploy a full team of specialist AI agents for less than one junior hire." },
+              { icon: "🌍", who: "Global & Remote Businesses",     pain: "Different time zones, different languages",       fix: "AI agents work in 30+ languages, across every time zone, around the clock." },
+              { icon: "🏢", who: "SMEs Ready to Scale",            pain: "Growth is limited by operational capacity",      fix: "Remove every operational bottleneck with AI that scales instantly with demand." },
+            ].map((item) => (
+              <motion.div
+                key={item.who}
+                variants={scaleIn}
+                whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                className="rounded-2xl border border-white/8 bg-white/3 p-6 hover:border-brand-500/30 transition-colors"
+              >
+                <div className="text-3xl mb-3">{item.icon}</div>
+                <h3 className="font-bold text-white mb-1">{item.who}</h3>
+                <p className="text-xs text-red-400 mb-3">❌ {item.pain}</p>
+                <p className="text-sm text-gray-400 leading-relaxed">✅ {item.fix}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="mt-12 text-center">
+            <p className="text-gray-500 mb-6 text-lg">Starting from <span className="text-white font-bold">£49/month</span> — less than one hour of an employee&apos;s time.</p>
+            <Link href="/register" className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-10 py-4 text-base font-semibold text-white shadow-xl shadow-brand-500/30 hover:bg-brand-600 transition-all hover:-translate-y-0.5">
+              Start free — no card needed →
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -637,6 +893,41 @@ export default function LandingPage({ plans }: Props) {
           <motion.p variants={fadeIn} className="mt-6 text-xs text-gray-700">
             No credit card required · Free plan forever · Cancel anytime
           </motion.p>
+        </motion.div>
+      </section>
+
+      {/* ══ LEAD MAGNET ══════════════════════════════════════════ */}
+      <LeadMagnetBar />
+
+      {/* ══ COMMUNITY ═════════════════════════════════════════════ */}
+      <section className="px-6 py-20 bg-[#0a0a14]">
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+          className="mx-auto max-w-3xl text-center"
+        >
+          <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">Community</motion.p>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
+            Join 1,000+ businesses<br className="hidden sm:block" /> building with AI
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-gray-400 text-lg mb-8">
+            Get early access to new agents, share wins, ask questions, and connect with founders using MansaMusaAI to scale their business.
+          </motion.p>
+          <motion.a
+            variants={scaleIn}
+            href="https://discord.gg/VCQ25nfGd"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 rounded-xl bg-[#5865F2] px-8 py-4 text-base font-semibold text-white shadow-xl shadow-[#5865F2]/30 hover:bg-[#4752C4] transition-all hover:-translate-y-0.5"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+            </svg>
+            Join our Discord community
+          </motion.a>
+          <motion.p variants={fadeIn} className="mt-4 text-xs text-gray-600">Free to join · No spam · Active founders & builders</motion.p>
         </motion.div>
       </section>
 

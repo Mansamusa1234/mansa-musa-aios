@@ -21,14 +21,13 @@ export default function ExitIntent() {
       setShow(true);
     }
 
-    // Also trigger on mobile: after 30s of inactivity
     const mobileTimer = setTimeout(() => {
       if (!triggered && !sessionStorage.getItem("mm_exit_seen")) {
         triggered = true;
         sessionStorage.setItem("mm_exit_seen", "1");
         setShow(true);
       }
-    }, 30000);
+    }, 45000);
 
     document.addEventListener("mouseleave", onMouseLeave);
     return () => {
@@ -43,7 +42,7 @@ export default function ExitIntent() {
     await fetch("/api/newsletter/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, source: "exit-intent" }),
     }).catch(() => {});
     setSubmitted(true);
   }
@@ -66,7 +65,6 @@ export default function ExitIntent() {
             onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-md rounded-2xl bg-[#0d0d16] border border-white/10 p-8 text-center shadow-2xl overflow-hidden"
           >
-            {/* Glow */}
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-brand-500/10 to-transparent" />
 
             <button
@@ -85,7 +83,7 @@ export default function ExitIntent() {
                   ✅
                 </div>
                 <h3 className="text-xl font-bold text-white">You&apos;re in!</h3>
-                <p className="mt-2 text-sm text-gray-400">Check your inbox for your exclusive discount code.</p>
+                <p className="mt-2 text-sm text-gray-400">Check your inbox for your free AI Business Audit.</p>
                 <Link
                   href="/register"
                   onClick={() => setShow(false)}
@@ -99,9 +97,10 @@ export default function ExitIntent() {
                 <div className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-500/15 text-3xl">
                   🎁
                 </div>
-                <h3 className="relative text-2xl font-bold text-white">Wait — before you go</h3>
+                <h3 className="relative text-2xl font-bold text-white">Before you go — get your free AI Business Audit</h3>
                 <p className="relative mt-2 text-gray-400 text-sm leading-relaxed">
-                  Get <span className="text-brand-400 font-semibold">20% off your first 3 months</span> — free trial included. No card needed.
+                  We&apos;ll analyse your business and show you exactly where AI can save you time and money.{" "}
+                  <span className="text-brand-400 font-semibold">Worth £297. Yours free.</span>
                 </p>
 
                 <form onSubmit={handleSubmit} className="relative mt-5 space-y-3">
@@ -117,7 +116,7 @@ export default function ExitIntent() {
                     type="submit"
                     className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/25"
                   >
-                    Claim my 20% discount
+                    Send my free audit →
                   </button>
                 </form>
 
@@ -125,7 +124,7 @@ export default function ExitIntent() {
                   onClick={() => setShow(false)}
                   className="relative mt-3 text-xs text-gray-700 hover:text-gray-500 transition-colors"
                 >
-                  No thanks, I&apos;ll pay full price
+                  No thanks, I don&apos;t want free money
                 </button>
               </>
             )}
