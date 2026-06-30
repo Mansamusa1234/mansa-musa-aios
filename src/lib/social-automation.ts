@@ -183,6 +183,37 @@ export async function getHeyGenVideoUrl(videoId: string): Promise<string | null>
   return data?.data?.status === "completed" ? data.data.video_url : null;
 }
 
+export async function postToTikTok(videoUrl: string, script: VideoScript): Promise<boolean> {
+  const accessToken = process.env.TIKTOK_ACCESS_TOKEN;
+  if (!accessToken) return false;
+
+  const caption = `${script.caption}\n\n${script.hashtags.join(" ")}`;
+
+  const initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json; charset=UTF-8",
+    },
+    body: JSON.stringify({
+      post_info: {
+        title: caption.slice(0, 2200),
+        privacy_level: "PUBLIC_TO_EVERYONE",
+        disable_duet: false,
+        disable_comment: false,
+        disable_stitch: false,
+      },
+      source_info: {
+        source: "PULL_FROM_URL",
+        video_url: videoUrl,
+      },
+    }),
+  });
+
+  const initData = await initRes.json();
+  return !!initData?.data?.publish_id;
+}
+
 export async function postToLinkedIn(videoUrl: string, script: VideoScript): Promise<boolean> {
   const token = process.env.LINKEDIN_ACCESS_TOKEN;
   const personId = process.env.LINKEDIN_PERSON_ID;
