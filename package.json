@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@sentry/nextjs": "^8",
     "@auth/prisma-adapter": "^2.7.2",
     "@google/generative-ai": "^0.24.1",
     "@mistralai/mistralai": "^2.2.6",

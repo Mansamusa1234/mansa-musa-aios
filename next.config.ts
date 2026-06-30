@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import path from "path";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const securityHeaders = [
   { key: "X-DNS-Prefetch-Control",   value: "on" },
@@ -92,4 +93,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// withSentryConfig is safe to apply unconditionally — it no-ops at build/runtime
+// when Sentry env vars (SENTRY_AUTH_TOKEN, NEXT_PUBLIC_SENTRY_DSN, etc.) are absent,
+// so this does not break local dev or builds where Sentry isn't configured.
+export default withSentryConfig(nextConfig, {
+  // Suppresses source map uploading logs during build when SENTRY_AUTH_TOKEN is absent
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  // Don't fail the build if source map upload fails (e.g. no auth token configured)
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+});
