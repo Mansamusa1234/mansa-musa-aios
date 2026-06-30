@@ -269,3 +269,75 @@ export async function postToInstagram(videoUrl: string, script: VideoScript): Pr
 
   return publishRes.ok;
 }
+
+export async function postToYouTube(videoUrl: string, script: VideoScript): Promise<boolean> {
+  const clientId = process.env.YOUTUBE_CLIENT_ID;
+  const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+  const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) return false;
+
+  // Get fresh access token
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  const tokenData = await tokenRes.json();
+  const accessToken = tokenData.access_token;
+  if (!accessToken) return false;
+
+  // Download video to buffer
+  const videoRes = await fetch(videoUrl);
+  const videoBuffer = await videoRes.arrayBuffer();
+
+  // Upload to YouTube
+  const caption = `${script.caption}\n\n${script.hashtags.join(" ")}`;
+  const metadata = {
+    snippet: {
+      title: script.title,
+      description: caption,
+      tags: script.hashtags.map(h => h.replace("#", "")),
+      categoryId: "22",
+    },
+    status: { privacyStatus: "public" },
+  };
+
+  const boundary = "ManusMusaAI_boundary";
+  const metadataStr = JSON.stringify(metadata);
+  const body = [
+    `--${boundary}`,
+    "Content-Type: application/json; charset=UTF-8",
+    "",
+    metadataStr,
+    `--${boundary}`,
+    "Content-Type: video/mp4",
+    "",
+    "",
+  ].join("\r\n");
+
+  const bodyBytes = new TextEncoder().encode(body);
+  const endBytes = new TextEncoder().encode(`\r\n--${boundary}--`);
+  const combined = new Uint8Array(bodyBytes.length + videoBuffer.byteLength + endBytes.length);
+  combined.set(bodyBytes, 0);
+  combined.set(new Uint8Array(videoBuffer), bodyBytes.length);
+  combined.set(endBytes, bodyBytes.length + videoBuffer.byteLength);
+
+  const uploadRes = await fetch(
+    "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=multipart&part=snippet,status",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body: combined,
+    }
+  );
+
+  return uploadRes.ok;
+}
