@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/email-workflows",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/api/cron/trial-ending",
