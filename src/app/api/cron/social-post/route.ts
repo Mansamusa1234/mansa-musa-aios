@@ -7,6 +7,10 @@ import {
   postToInstagram,
   postToTikTok,
   postToYouTube,
+  postToTwitter,
+  postToFacebook,
+  postToThreads,
+  postToPinterest,
 } from "@/lib/social-automation";
 
 // Runs daily via Vercel Cron - posts a new Mansa video to all platforms
@@ -41,11 +45,15 @@ export async function GET(req: Request) {
   }
 
   // 4. Post to all platforms simultaneously
-  const [linkedin, instagram, tiktok, youtube] = await Promise.all([
+  const [linkedin, instagram, tiktok, youtube, twitter, facebook, threads, pinterest] = await Promise.all([
     postToLinkedIn(videoUrl, script),
     postToInstagram(videoUrl, script),
     postToTikTok(videoUrl, script),
     postToYouTube(videoUrl, script),
+    postToTwitter(videoUrl, script),
+    postToFacebook(videoUrl, script),
+    postToThreads(videoUrl, script),
+    postToPinterest(videoUrl, script),
   ]);
 
   return NextResponse.json({
@@ -53,7 +61,7 @@ export async function GET(req: Request) {
     script: script.title,
     videoId,
     videoUrl,
-    posted: { linkedin, instagram, tiktok, youtube },
+    posted: { linkedin, instagram, tiktok, youtube, twitter, facebook, threads, pinterest },
     timestamp: new Date().toISOString(),
   });
 }
