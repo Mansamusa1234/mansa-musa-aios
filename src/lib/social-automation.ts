@@ -1,7 +1,9 @@
 /**
  * Social Media Automation
- * Auto-generates scripts, creates HeyGen videos, posts to Instagram/LinkedIn/TikTok
+ * Auto-generates scripts, creates HeyGen videos, posts to Instagram/LinkedIn/TikTok/Twitter/Facebook/Threads/Pinterest
  */
+
+import { createHmac } from "crypto";
 
 export interface VideoScript {
   title: string;
@@ -268,6 +270,121 @@ export async function postToInstagram(videoUrl: string, script: VideoScript): Pr
   });
 
   return publishRes.ok;
+}
+
+export async function postToTwitter(videoUrl: string, script: VideoScript): Promise<boolean> {
+  const apiKey = process.env.TWITTER_API_KEY;
+  const apiSecret = process.env.TWITTER_API_SECRET;
+  const accessToken = process.env.TWITTER_ACCESS_TOKEN;
+  const accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET;
+  if (!apiKey || !apiSecret || !accessToken || !accessTokenSecret) return false;
+
+  const url = "https://api.twitter.com/2/tweets";
+  const caption = `${script.caption}\n\n${script.hashtags.join(" ")} ${videoUrl}`.slice(0, 280);
+
+  const oauthTimestamp = Math.floor(Date.now() / 1000).toString();
+  const oauthNonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+
+  const oauthParams: Record<string, string> = {
+    oauth_consumer_key: apiKey,
+    oauth_nonce: oauthNonce,
+    oauth_signature_method: "HMAC-SHA1",
+    oauth_timestamp: oauthTimestamp,
+    oauth_token: accessToken,
+    oauth_version: "1.0",
+  };
+
+  // Build parameter string (sorted alphabetically)
+  const paramString = Object.keys(oauthParams)
+    .sort()
+    .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(oauthParams[k])}`)
+    .join("&");
+
+  const baseString = `POST&${encodeURIComponent(url)}&${encodeURIComponent(paramString)}`;
+  const signingKey = `${encodeURIComponent(apiSecret)}&${encodeURIComponent(accessTokenSecret)}`;
+  const signature = createHmac("sha1", signingKey).update(baseString).digest("base64");
+
+  const oauthHeader =
+    "OAuth " +
+    Object.entries({ ...oauthParams, oauth_signature: signature })
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${encodeURIComponent(k)}="${encodeURIComponent(v)}"`)
+      .join(", ");
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: oauthHeader,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ text: caption }),
+  });
+
+  return res.ok;
+}
+
+export async function postToFacebook(videoUrl: string, script: VideoScript): Promise<boolean> {
+  const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  if (!token || !pageId) return false;
+
+  const description = `${script.caption}\n\n${script.hashtags.join(" ")}`;
+
+  const res = await fetch(`https://graph-video.facebook.com/v19.0/${pageId}/videos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ file_url: videoUrl, description, access_token: token }),
+  });
+
+  return res.ok;
+}
+
+export async function postToThreads(videoUrl: string, script: VideoScript): Promise<boolean> {
+  const token = process.env.THREADS_ACCESS_TOKEN;
+  const userId = process.env.THREADS_USER_ID;
+  if (!token || !userId) return false;
+
+  const caption = `${script.caption}\n\n${script.hashtags.join(" ")}`;
+
+  const containerRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ media_type: "VIDEO", video_url: videoUrl, text: caption, access_token: token }),
+  });
+
+  const container = await containerRes.json();
+  if (!container.id) return false;
+
+  const publishRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ creation_id: container.id, access_token: token }),
+  });
+
+  return publishRes.ok;
+}
+
+export async function postToPinterest(videoUrl: string, script: VideoScript): Promise<boolean> {
+  const token = process.env.PINTEREST_ACCESS_TOKEN;
+  const boardId = process.env.PINTEREST_BOARD_ID;
+  if (!token || !boardId) return false;
+
+  const res = await fetch("https://api.pinterest.com/v5/pins", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      board_id: boardId,
+      title: script.title,
+      description: `${script.caption}\n\n${script.hashtags.join(" ")}`,
+      media_source: { source_type: "video_url", url: videoUrl },
+      link: "https://mansamusainitiative.com",
+    }),
+  });
+
+  return res.ok;
 }
 
 export async function postToYouTube(videoUrl: string, script: VideoScript): Promise<boolean> {
