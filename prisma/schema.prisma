@@ -85,6 +85,7 @@ model User {
   activationNudge1SentAt   DateTime?
   activationNudge2SentAt   DateTime?
   activationNudge3SentAt   DateTime?
+  referralNudgeSentAt      DateTime?
 }
 
 model Account {
@@ -136,6 +137,10 @@ model Subscription {
   winBack1SentAt           DateTime?
   winBack2SentAt           DateTime?
   winBack3SentAt           DateTime?
+  trialUpsell1SentAt       DateTime?
+  trialUpsell2SentAt       DateTime?
+  trialUpsell3SentAt       DateTime?
+  planUpsellSentAt         DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 

@@ -48,6 +48,26 @@
     {
       "path": "/api/cron/lead-followup",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/trial-upsell",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/plan-upsell",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/prospect-outreach",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/affiliate-recruit",
+      "schedule": "0 8 * * 1"
+    },
+    {
+      "path": "/api/cron/referral-nudge",
+      "schedule": "0 13 * * 4"
     }
   ]
 }
