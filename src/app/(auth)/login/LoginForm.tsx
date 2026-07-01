@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface Props {
@@ -14,10 +15,10 @@ interface Props {
 }
 
 const inputBase =
-  "w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 " +
-  "px-4 py-3 text-base sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 " +
-  "outline-none transition-colors " +
-  "focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 " +
+  "w-full rounded-xl border border-white/10 bg-white/5 " +
+  "px-4 py-3 text-sm text-white placeholder:text-gray-500 " +
+  "outline-none transition-all " +
+  "focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:bg-white/8 " +
   "disabled:opacity-50";
 
 function OAuthSpinner() {
@@ -305,11 +306,21 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
 
   // ── Credentials phase ─────────────────────────────────────────────────────────
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#070712] px-4 transition-colors">
-      <div className="absolute top-4 left-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#04040f] px-4 overflow-hidden">
+      {/* Animated background orbs */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-violet-600/20 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl animate-pulse [animation-delay:1s]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-64 w-64 rounded-full bg-purple-600/10 blur-3xl animate-pulse [animation-delay:2s]" />
+      </div>
+
+      {/* Grid overlay */}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
+
+      <div className="absolute top-4 left-4 z-10">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-white transition-colors"
           aria-label="Back to home"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
@@ -318,22 +329,27 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
           Home
         </Link>
       </div>
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 z-10">
         <ThemeToggle size="sm" />
       </div>
 
-      <div className="w-full max-w-md">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-md"
+      >
         <div className="mb-8 text-center">
-          <Link href="/" className="text-2xl font-bold text-brand-600 dark:text-brand-400" aria-label="MansaMusaAI home">
-            MansaMusaAI
+          <Link href="/" className="inline-block text-2xl font-extrabold text-white tracking-tight" aria-label="MansaMusaAI home">
+            <span className="text-violet-400">Mansa</span><span className="text-white">MusaAI</span>
           </Link>
-          <h1 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">
+          <h1 className="mt-4 text-3xl font-bold text-white">
             Welcome back
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Sign in to your account</p>
+          <p className="mt-2 text-sm text-gray-400">Sign in to your AI command centre</p>
         </div>
 
-        <div className="rounded-2xl bg-white dark:bg-[#09091a] p-8 shadow-card dark:shadow-none border border-gray-100 dark:border-white/8">
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl p-8 border border-white/10 shadow-2xl">
           {passkeySupported && (
             <>
               <button
@@ -532,7 +548,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
               </div>
             </div>
 
-            <label className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+            <label className="flex items-center gap-2.5 text-sm text-gray-400 cursor-pointer">
               <input
                 type="checkbox"
                 checked={rememberMe}
@@ -545,7 +561,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 active:scale-[0.98] disabled:opacity-50 transition-all"
+              className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-3.5 text-sm font-bold text-white hover:from-violet-500 hover:to-blue-500 active:scale-[0.98] disabled:opacity-50 transition-all shadow-lg shadow-violet-500/25"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -559,13 +575,13 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
           </form>
         </div>
 
-        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-6 text-center text-sm text-gray-500">
           New to MansaMusaAI?{" "}
-          <Link href="/register" className="font-medium text-brand-600 dark:text-brand-400 hover:underline">
+          <Link href="/register" className="font-medium text-violet-400 hover:text-violet-300 hover:underline">
             Create a free account
           </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }
