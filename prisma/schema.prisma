@@ -1145,3 +1145,70 @@ model AgentIntelligenceReport {
   @@unique([agentRole, date])
   @@index([date])
 }
+
+/* ── Outreach Campaigns ─────────────────────────────────────── */
+
+enum OutreachStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SENT
+  FAILED
+}
+
+model OutreachCampaign {
+  id          String   @id @default(cuid())
+  name        String
+  industry    String?
+  subject     String
+  status      String   @default("ACTIVE")
+  sentCount   Int      @default(0)
+  openCount   Int      @default(0)
+  replyCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contacts OutreachContact[]
+}
+
+model OutreachContact {
+  id           String         @id @default(cuid())
+  campaignId   String
+  name         String
+  email        String
+  company      String?
+  industry     String?
+  aiDraft      String?        @db.Text
+  status       OutreachStatus @default(DRAFT)
+  sentAt       DateTime?
+  openedAt     DateTime?
+  repliedAt    DateTime?
+  createdAt    DateTime       @default(now())
+
+  campaign OutreachCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+/* ── Content Approval Queue ─────────────────────────────────── */
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SENT
+}
+
+model ContentQueue {
+  id          String         @id @default(cuid())
+  type        String         // "social_post" | "email" | "lead_followup" | "pr"
+  platform    String?        // "twitter" | "linkedin" | "instagram" | "email" etc
+  title       String
+  content     String         @db.Text
+  metadata    String?        @db.Text  // JSON extras (leadId, scheduledFor, etc)
+  status      ApprovalStatus @default(PENDING)
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  sentAt      DateTime?
+  scheduledFor DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
