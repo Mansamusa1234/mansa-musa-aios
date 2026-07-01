@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
 
-const ADMIN_EMAIL = "mansamusainitiative@gmail.com";
+const ADMIN_EMAIL = process.env.REPORT_EMAIL ?? "ai@mansamusainitiative.com";
 
 export async function GET(req: Request) {
   const secret = req.headers.get("authorization");
