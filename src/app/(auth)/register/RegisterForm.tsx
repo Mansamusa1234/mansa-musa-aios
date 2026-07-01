@@ -36,14 +36,14 @@ function validateConfirm(pw: string, confirm: string) {
 }
 
 const base =
-  "w-full rounded-xl border bg-white dark:bg-white/5 px-4 py-3 text-base sm:text-sm " +
-  "text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 " +
+  "w-full rounded-xl border bg-white/5 px-4 py-3 text-base sm:text-sm " +
+  "text-white placeholder:text-gray-500 " +
   "outline-none transition-colors focus:ring-2 disabled:opacity-50";
 
 function fieldCls(error: string, touched: boolean) {
-  if (!touched) return `${base} border-gray-200 dark:border-white/10 focus:border-brand-500 focus:ring-brand-500/20`;
-  if (error) return `${base} border-red-400 dark:border-red-500/50 focus:border-red-400 focus:ring-red-400/20`;
-  return `${base} border-green-400 dark:border-green-500/50 focus:border-green-400 focus:ring-green-400/20`;
+  if (!touched) return `${base} border-white/10 focus:border-violet-500 focus:ring-violet-500/20`;
+  if (error) return `${base} border-red-500/50 focus:border-red-400 focus:ring-red-400/20`;
+  return `${base} border-green-500/50 focus:border-green-400 focus:ring-green-400/20`;
 }
 
 function Check() {
@@ -71,7 +71,7 @@ function PasswordReqs({ password }: { password: string }) {
   return (
     <ul className="mt-2 space-y-1">
       {reqs.map((r) => (
-        <li key={r.label} className={`flex items-center gap-1.5 text-[11px] ${r.met ? "text-green-600 dark:text-green-400" : "text-gray-400 dark:text-gray-500"}`}>
+        <li key={r.label} className={`flex items-center gap-1.5 text-[11px] ${r.met ? "text-green-400" : "text-gray-500"}`}>
           <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} aria-hidden="true">
             {r.met
               ? <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -92,7 +92,7 @@ function TrustBar() {
     { label: "100k+ businesses", d: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" },
   ];
   return (
-    <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-gray-400 dark:text-gray-500">
+    <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-gray-500">
       {items.map((i) => (
         <span key={i.label} className="flex items-center gap-1.5">
           <svg className="h-3.5 w-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
@@ -250,10 +250,10 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
   }
 
   function oauthCls(provider: string) {
-    const b = "flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-white/8 py-2.5 text-sm font-medium transition-all";
-    if (loadingOAuth === provider) return `${b} bg-gray-50 dark:bg-white/5 text-gray-500 cursor-wait`;
+    const b = "flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 py-2.5 text-sm font-medium transition-all";
+    if (loadingOAuth === provider) return `${b} bg-white/5 text-gray-500 cursor-wait`;
     if (loadingOAuth) return `${b} opacity-50 cursor-not-allowed text-gray-400`;
-    return `${b} text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98]`;
+    return `${b} text-gray-200 hover:bg-white/5 active:scale-[0.98]`;
   }
 
   function Field({ id, label, value, onChange, onBlur, touched: t, error: err, type = "text", autoComplete, placeholder, children }: {
@@ -262,7 +262,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
   }) {
     return (
       <div>
-        <label htmlFor={id} className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor={id} className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-300">
           <span>{label}</span>
           {t && !err && <Check />}
         </label>
@@ -276,7 +276,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
           />
           {children}
         </div>
-        {t && err && <p id={`${id}-err`} role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{err}</p>}
+        {t && err && <p id={`${id}-err`} role="alert" className="mt-1 text-xs text-red-400">{err}</p>}
       </div>
     );
   }
@@ -294,34 +294,43 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
   );
   const toggleBtn = (show: boolean, onToggle: () => void, label: string) => (
     <button type="button" onClick={onToggle} aria-label={label}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors">
       {show ? <EyeOff /> : <EyeOn />}
     </button>
   );
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#070712] px-4 transition-colors">
-      <div className="absolute top-4 left-4">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors" aria-label="Back to home">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#04040f] px-4 overflow-hidden">
+      {/* Animated background orbs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-violet-600/20 blur-[120px] animate-pulse" />
+        <div className="absolute -bottom-40 -right-20 h-[400px] w-[400px] rounded-full bg-blue-600/15 blur-[100px] animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[300px] w-[300px] rounded-full bg-indigo-500/10 blur-[80px]" />
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px)", backgroundSize: "64px 64px" }} />
+      </div>
+
+      <div className="absolute top-4 left-4 z-10">
+        <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-white transition-colors" aria-label="Back to home">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
           </svg>
           Home
         </Link>
       </div>
-      <div className="absolute top-4 right-4"><ThemeToggle size="sm" /></div>
 
-      <div className="w-full max-w-md py-16 sm:py-8">
+      <div className="relative z-10 w-full max-w-md py-16 sm:py-8">
         <div className="mb-8 text-center">
-          <Link href="/" className="text-2xl font-bold text-brand-600 dark:text-brand-400" aria-label="MansaMusaAI home">MansaMusaAI</Link>
-          <h1 className="mt-4 text-2xl font-semibold text-gray-900 dark:text-white">Create your account</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Free forever. No credit card required.</p>
+          <Link href="/" className="text-2xl font-bold" aria-label="MansaMusaAI home">
+            <span className="text-violet-400">Mansa</span><span className="text-white">MusaAI</span>
+          </Link>
+          <h1 className="mt-4 text-2xl font-semibold text-white">Create your account</h1>
+          <p className="mt-1 text-sm text-gray-400">Free forever. No credit card required.</p>
         </div>
 
-        <div className="rounded-2xl bg-white dark:bg-[#09091a] p-8 shadow-card dark:shadow-none border border-gray-100 dark:border-white/8">
-          <p className="mb-6 text-center text-xs text-gray-500 dark:text-gray-400">
+        <div className="rounded-2xl bg-white/5 backdrop-blur-xl p-8 border border-white/10 shadow-2xl">
+          <p className="mb-6 text-center text-xs text-gray-400">
             Already have an account?{" "}
-            <Link href="/login" className="font-semibold text-brand-600 dark:text-brand-400 hover:underline">Sign in</Link>
+            <Link href="/login" className="font-semibold text-violet-400 hover:text-violet-300 hover:underline">Sign in</Link>
           </p>
 
           {/* Passkey / biometric */}
@@ -330,7 +339,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
               <button
                 type="button"
                 onClick={handlePasskey}
-                className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-white/8 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98] transition-all mb-3"
+                className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-gray-200 hover:bg-white/5 active:scale-[0.98] transition-all mb-3"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
@@ -338,9 +347,9 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
                 Sign up with Passkey / Face ID / Touch ID
               </button>
               <div className="mb-4 flex items-center gap-4">
-                <div className="flex-1 border-t border-gray-200 dark:border-white/8" />
-                <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
-                <div className="flex-1 border-t border-gray-200 dark:border-white/8" />
+                <div className="flex-1 border-t border-white/8" />
+                <span className="text-xs text-gray-500">or</span>
+                <div className="flex-1 border-t border-white/8" />
               </div>
             </>
           )}
@@ -395,20 +404,20 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
                 )}
               </div>
               <div className="my-6 flex items-center gap-4">
-                <div className="flex-1 border-t border-gray-200 dark:border-white/8" />
-                <span className="text-xs text-gray-400 dark:text-gray-500">or continue with email</span>
-                <div className="flex-1 border-t border-gray-200 dark:border-white/8" />
+                <div className="flex-1 border-t border-white/8" />
+                <span className="text-xs text-gray-500">or continue with email</span>
+                <div className="flex-1 border-t border-white/8" />
               </div>
             </>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {error && (
-              <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 px-4 py-3">
+              <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
                 <svg className="h-4 w-4 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                 </svg>
-                <span className="text-sm text-red-700 dark:text-red-400">{error}</span>
+                <span className="text-sm text-red-400">{error}</span>
               </div>
             )}
 
@@ -435,7 +444,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
             {/* Password */}
             <div>
-              <label htmlFor="register-password" className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="register-password" className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-300">
                 <span>Password</span>
                 {touched.password && !fe.password && <Check />}
               </label>
@@ -453,12 +462,12 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
               </div>
               <PasswordStrengthMeter password={password} />
               <div id="pw-reqs"><PasswordReqs password={password} /></div>
-              {touched.password && fe.password && <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{fe.password}</p>}
+              {touched.password && fe.password && <p role="alert" className="mt-1 text-xs text-red-400">{fe.password}</p>}
             </div>
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="register-confirm" className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="register-confirm" className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-300">
                 <span>Confirm password</span>
                 {touched.confirm && !fe.confirm && <Check />}
               </label>
@@ -474,18 +483,18 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
                 />
                 {toggleBtn(showConfirm, () => setShowConfirm((v) => !v), showConfirm ? "Hide password" : "Show password")}
               </div>
-              {touched.confirm && fe.confirm && <p id="confirm-err" role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">{fe.confirm}</p>}
+              {touched.confirm && fe.confirm && <p id="confirm-err" role="alert" className="mt-1 text-xs text-red-400">{fe.confirm}</p>}
             </div>
 
-            <p className="text-xs text-gray-400 dark:text-gray-500">
+            <p className="text-xs text-gray-500">
               By creating an account you agree to our{" "}
-              <Link href="/terms" className="underline hover:text-gray-600 dark:hover:text-gray-300">Terms</Link>{" "}
+              <Link href="/terms" className="underline hover:text-gray-300">Terms</Link>{" "}
               and{" "}
-              <Link href="/privacy" className="underline hover:text-gray-600 dark:hover:text-gray-300">Privacy Policy</Link>.
+              <Link href="/privacy" className="underline hover:text-gray-300">Privacy Policy</Link>.
             </p>
 
             <button type="submit" disabled={loading}
-              className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 active:scale-[0.98] disabled:opacity-50 transition-all">
+              className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 active:scale-[0.98] disabled:opacity-50 transition-all">
               {loading ? <span className="flex items-center justify-center gap-2"><Spinner />Creating account…</span> : "Create free account"}
             </button>
           </form>
@@ -495,3 +504,4 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
     </div>
   );
 }
+
