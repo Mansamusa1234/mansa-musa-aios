@@ -211,7 +211,7 @@ export async function GET(req: Request) {
 </body>
 </html>`;
 
-  const reportTo = process.env.REPORT_EMAIL ?? "ai@mansamusainitiative.com";
+  const reportTo = process.env.REPORT_EMAIL ?? "media@mansamusainitiative.com";
   await sendEmail(reportTo, `📊 MansaMusaAI Daily Report — ${now.toLocaleDateString("en-GB")}`, html);
 
   return NextResponse.json({

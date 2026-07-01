@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { db } from "@/lib/db";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM         = process.env.EMAIL_FROM          ?? "MansaMusaAI <ai@mansamusainitiative.com>";
+const FROM         = process.env.EMAIL_FROM          ?? "MansaMusaAI <sales@mansamusainitiative.com>";
 const FROM_WELCOME = process.env.EMAIL_FROM_WELCOME  ?? "MansaMusaAI <greetings@mansamusainitiative.com>";
 const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
@@ -49,7 +49,7 @@ function wrapper(title: string, bodyHtml: string, footer = "If you didn't reques
   </div>`;
 }
 
-const SUPPORT_FOOTER = `Questions? Email <a href="mailto:ai@mansamusainitiative.com" style="color:#6366f1;text-decoration:none">ai@mansamusainitiative.com</a>`;
+const SUPPORT_FOOTER = `Questions? Email <a href="mailto:support@mansamusainitiative.com" style="color:#6366f1;text-decoration:none">support@mansamusainitiative.com</a>`;
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
