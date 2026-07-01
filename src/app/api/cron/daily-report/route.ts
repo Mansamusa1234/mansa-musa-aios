@@ -74,7 +74,7 @@ export async function GET(req: Request) {
     db.subscription.count({ where: { status: "ACTIVE" } }),
     db.subscription.count({ where: { status: "TRIALING" } }),
     db.subscription.count({ where: { status: "CANCELED", updatedAt: { gte: thirtyDaysAgo } } }),
-    db.payment.aggregate({ _sum: { amount: true }, where: { status: "succeeded" } }).catch(() => ({ _sum: { amount: 0 } })),
+    Promise.resolve({ _sum: { amount: 0 } }),
   ]);
 
   // ── AI Receptionist ──
@@ -116,7 +116,7 @@ export async function GET(req: Request) {
   // ── Affiliates ──
   const [totalAffiliates, activeAffiliates, conversionsThisMonth] = await Promise.all([
     db.affiliate.count().catch(() => 0),
-    db.affiliate.count({ where: { isApproved: true } }).catch(() => 0),
+    db.affiliate.count({ where: { status: "APPROVED" } }).catch(() => 0),
     db.affiliateConversion.count({ where: { createdAt: { gte: thirtyDaysAgo } } }).catch(() => 0),
   ]);
 
@@ -162,7 +162,7 @@ export async function GET(req: Request) {
       ["Active Subscriptions", activeSubscriptions.toString()],
       ["On Trial", trialingSubscriptions.toString()],
       ["Cancelled This Month", cancelledThisMonth.toString()],
-      ["Total Revenue (all time)", revenueTotal > 0 ? `£${(revenueTotal / 100).toLocaleString("en-GB", { minimumFractionDigits: 2 })}` : "Check Stripe dashboard"],
+      ["Total Revenue (all time)", "Check Stripe dashboard → stripe.com"],
       ["Trial → Paid Rate", pct(activeSubscriptions, activeSubscriptions + trialingSubscriptions)],
     ])}
 
