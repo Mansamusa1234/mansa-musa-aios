@@ -1125,3 +1125,17 @@ model VoiceCall {
 
   receptionist Receptionist @relation(fields: [receptionistId], references: [id], onDelete: Cascade)
 }
+
+/* ── Agent Intelligence Reports ────────────────────────────── */
+
+model AgentIntelligenceReport {
+  id        String   @id @default(cuid())
+  agentRole String
+  date      String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agentRole, date])
+  @@index([date])
+}
