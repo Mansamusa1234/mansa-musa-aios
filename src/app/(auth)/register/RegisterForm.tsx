@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -107,7 +107,6 @@ function TrustBar() {
 
 export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, showApple }: Props) {
   const router = useRouter();
-  const firstRef = useRef<HTMLInputElement>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -129,7 +128,6 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
   useEffect(() => {
     setRef(new URLSearchParams(window.location.search).get("ref"));
-    firstRef.current?.focus();
     // Detect passkey support
     if (typeof window !== "undefined" && window.PublicKeyCredential) {
       window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
@@ -256,9 +254,9 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
     return `${b} text-gray-200 hover:bg-white/5 active:scale-[0.98]`;
   }
 
-  function Field({ id, label, value, onChange, onBlur, touched: t, error: err, type = "text", autoComplete, placeholder, children }: {
+  function Field({ id, label, value, onChange, onBlur, touched: t, error: err, type = "text", autoComplete, inputName, placeholder, children }: {
     id: string; label: string; value: string; onChange: (v: string) => void; onBlur: () => void;
-    touched: boolean; error: string; type?: string; autoComplete?: string; placeholder?: string; children?: React.ReactNode;
+    touched: boolean; error: string; type?: string; autoComplete?: string; inputName?: string; placeholder?: string; children?: React.ReactNode;
   }) {
     return (
       <div>
@@ -268,7 +266,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
         </label>
         <div className="relative">
           <input
-            id={id} type={type} autoComplete={autoComplete} value={value} placeholder={placeholder} required
+            id={id} name={inputName ?? id} type={type} autoComplete={autoComplete} value={value} placeholder={placeholder} required
             onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
             aria-invalid={t && !!err ? true : undefined}
             aria-describedby={t && err ? `${id}-err` : undefined}
@@ -424,12 +422,12 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
             {/* First + Last name — side by side on sm+ */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field
-                id="register-first" label="First name" value={firstName} autoComplete="given-name" placeholder="Jane"
+                id="register-first" label="First name" inputName="given-name" value={firstName} autoComplete="given-name" placeholder="Jane"
                 onChange={(v) => { setFirstName(v); if (touched.firstName) revalidate({ firstName: validateRequired(v, "First name") }); }}
                 onBlur={() => touchField("firstName")} touched={touched.firstName} error={fe.firstName}
-              ><input ref={firstRef} className="sr-only" tabIndex={-1} aria-hidden="true" /></Field>
+              />
               <Field
-                id="register-last" label="Last name" value={lastName} autoComplete="family-name" placeholder="Smith"
+                id="register-last" label="Last name" inputName="family-name" value={lastName} autoComplete="family-name" placeholder="Smith"
                 onChange={(v) => { setLastName(v); if (touched.lastName) revalidate({ lastName: validateRequired(v, "Last name") }); }}
                 onBlur={() => touchField("lastName")} touched={touched.lastName} error={fe.lastName}
               />
@@ -437,7 +435,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
             {/* Email */}
             <Field
-              id="register-email" label="Email address" value={email} type="email" autoComplete="email" placeholder="you@example.com"
+              id="register-email" label="Email address" inputName="email" value={email} type="email" autoComplete="email" placeholder="you@example.com"
               onChange={(v) => { setEmail(v); if (touched.email) revalidate({ email: validateEmail(v) }); }}
               onBlur={() => touchField("email")} touched={touched.email} error={fe.email}
             />
