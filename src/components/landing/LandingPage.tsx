@@ -9,6 +9,7 @@ import ParticleCanvas from "@/components/ui/ParticleCanvas";
 import TypeWriter from "@/components/ui/TypeWriter";
 import AgentFeed from "@/components/ui/AgentFeed";
 import SocialProof from "@/components/marketing/SocialProof";
+import ROICalculator from "@/components/marketing/ROICalculator";
 import PromoBanner from "@/components/marketing/PromoBanner";
 import ExitIntent from "@/components/marketing/ExitIntent";
 import SocialProofTicker from "@/components/marketing/SocialProofTicker";
@@ -740,6 +741,9 @@ export default function LandingPage({ plans }: Props) {
           </motion.div>
         </div>
       </section>
+
+      {/* ══ ROI CALCULATOR ═══════════════════════════════════════ */}
+      <ROICalculator />
 
       {/* ══ SOCIAL PROOF ═════════════════════════════════════════ */}
       <SocialProof />

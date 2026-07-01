@@ -82,6 +82,9 @@ model User {
   agentListings            AgentListing[]   @relation("AgentListingSeller")
   agentPurchases           AgentPurchase[]  @relation("AgentPurchaseBuyer")
   workforceChats           WorkforceChat[]
+  activationNudge1SentAt   DateTime?
+  activationNudge2SentAt   DateTime?
+  activationNudge3SentAt   DateTime?
 }
 
 model Account {
@@ -130,6 +133,9 @@ model Subscription {
   trialEndsAt              DateTime?
   trialUsed                Boolean            @default(false)
   trialEndingNotifiedAt    DateTime?
+  winBack1SentAt           DateTime?
+  winBack2SentAt           DateTime?
+  winBack3SentAt           DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 
