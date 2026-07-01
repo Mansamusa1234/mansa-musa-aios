@@ -29,13 +29,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const email = process.env.SUBSTACK_EMAIL;
-  const password = process.env.SUBSTACK_PASSWORD;
+  const sessionCookie = process.env.SUBSTACK_SESSION_COOKIE;
   const publication = process.env.SUBSTACK_PUBLICATION;
 
-  if (!email || !password || !publication) {
+  if (!sessionCookie || !publication) {
     return NextResponse.json(
-      { error: "Missing SUBSTACK_EMAIL, SUBSTACK_PASSWORD, or SUBSTACK_PUBLICATION env vars" },
+      { error: "Missing SUBSTACK_SESSION_COOKIE or SUBSTACK_PUBLICATION env vars" },
       { status: 500 }
     );
   }
@@ -46,31 +45,9 @@ export async function GET(req: Request) {
   const draftSubtitle = script.caption;
   const draftBody = generateNewsletterHTML(script);
 
-  // Step 1: Login
-  const loginRes = await fetch(`${baseUrl}/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+  const cookies = `substack.sid=${sessionCookie}`;
 
-  if (!loginRes.ok) {
-    console.error("[cron/substack-post] Login failed", loginRes.status);
-    return NextResponse.json({ error: "Substack login failed" }, { status: 401 });
-  }
-
-  const setCookieHeader = loginRes.headers.get("set-cookie");
-  if (!setCookieHeader) {
-    console.error("[cron/substack-post] No session cookie returned");
-    return NextResponse.json({ error: "No session cookie from Substack login" }, { status: 401 });
-  }
-
-  // Extract cookie value(s) for subsequent requests
-  const cookies = setCookieHeader
-    .split(/,(?=[^ ])/)
-    .map((c) => c.split(";")[0].trim())
-    .join("; ");
-
-  // Step 2: Create draft
+  // Step 1: Create draft
   const draftRes = await fetch(`${baseUrl}/posts`, {
     method: "POST",
     headers: {
