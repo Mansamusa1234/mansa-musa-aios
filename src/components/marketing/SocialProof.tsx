@@ -1,7 +1,47 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
+import { useRef, useEffect, useState } from "react";
 import { fadeUp, stagger, scaleIn } from "@/lib/motion";
+
+function useCountUp(target: number, duration = 2000, enabled = true) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!enabled) return;
+    const start = performance.now();
+    const step = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(eased * target));
+      if (progress < 1) requestAnimationFrame(step);
+      else setCount(target);
+    };
+    requestAnimationFrame(step);
+  }, [target, duration, enabled]);
+  return count;
+}
+
+function AnimatedStat({ stat, enabled }: { stat: { value: string; label: string }; enabled: boolean }) {
+  // Parse numeric value and suffix (e.g. "2,400+" → 2400, "+"; "£12M+" → 12, "M+"; "98.7%" → 98.7, "%"; "4.9★" → 4.9, "★")
+  const match = stat.value.match(/^([£]?)(\d[\d,.]*)([^\d]*)$/);
+  const prefix = match?.[1] ?? "";
+  const rawNum = match?.[2]?.replace(/,/g, "") ?? "0";
+  const suffix = match?.[3] ?? "";
+  const target = parseFloat(rawNum);
+  const decimals = rawNum.includes(".") ? rawNum.split(".")[1].length : 0;
+
+  const count = useCountUp(target, 2200, enabled);
+  const display = decimals > 0 ? count.toFixed(decimals) : count.toLocaleString();
+
+  return (
+    <div className="text-center">
+      <p className="text-4xl font-extrabold text-gray-900">
+        {prefix}{display}{suffix}
+      </p>
+      <p className="mt-1 text-sm text-gray-500">{stat.label}</p>
+    </div>
+  );
+}
 
 const TESTIMONIALS = [
   {
@@ -71,12 +111,16 @@ const STATS = [
 ];
 
 export default function SocialProof() {
+  const statsRef = useRef(null);
+  const statsInView = useInView(statsRef, { once: true, margin: "-80px" });
+
   return (
     <section className="bg-white px-6 py-24 border-t border-gray-100">
       <div className="mx-auto max-w-6xl">
 
         {/* Stats strip */}
         <motion.div
+          ref={statsRef}
           variants={stagger}
           initial="hidden"
           whileInView="visible"
@@ -84,9 +128,8 @@ export default function SocialProof() {
           className="grid grid-cols-2 gap-4 sm:grid-cols-4 mb-20"
         >
           {STATS.map((s) => (
-            <motion.div key={s.label} variants={scaleIn} className="text-center">
-              <p className="text-4xl font-extrabold text-gray-900">{s.value}</p>
-              <p className="mt-1 text-sm text-gray-500">{s.label}</p>
+            <motion.div key={s.label} variants={scaleIn}>
+              <AnimatedStat stat={s} enabled={statsInView} />
             </motion.div>
           ))}
         </motion.div>

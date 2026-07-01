@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 
 interface Props {
   userName: string;
@@ -29,6 +30,7 @@ export default function OnboardingClient({
   const [recName, setRecName]       = useState(initialName || "AI Receptionist");
   const [greeting, setGreeting]     = useState("Hello! How can I help you today?");
   const [persona, setPersona]       = useState("professional, friendly and helpful");
+  const [businessAddress, setBusinessAddress] = useState("");
   const [recSaved, setRecSaved]     = useState(receptionistExists);
 
   // Step 2 — Trial
@@ -40,7 +42,7 @@ export default function OnboardingClient({
       await fetch("/api/receptionist/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: recName, greeting, persona }),
+        body: JSON.stringify({ name: recName, greeting, persona, businessAddress }),
       });
       setRecSaved(true);
       setStep(2);
@@ -148,6 +150,16 @@ export default function OnboardingClient({
                 <input value={persona} onChange={(e) => setPersona(e.target.value)}
                   className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                   placeholder="professional, friendly and helpful" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-400 mb-1">Business address <span className="text-gray-600">(optional)</span></label>
+                <AddressAutocomplete
+                  id="onboarding-address"
+                  value={businessAddress}
+                  onChange={setBusinessAddress}
+                  placeholder="Start typing your business address…"
+                  className="border-gray-700 bg-gray-800 text-white placeholder:text-gray-500 focus:ring-brand-500"
+                />
               </div>
             </div>
 
