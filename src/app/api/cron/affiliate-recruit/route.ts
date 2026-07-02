@@ -1,11 +1,6 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
-
-// Runs weekly on Monday at 8am. AI generates affiliate recruitment emails targeting
-// people who already have audiences of UK SMB owners: business coaches, accountants,
-// digital agencies, LinkedIn influencers in the SMB space, virtual assistants, BNI leads.
-// Drafts go to Command Centre for approval.
+import { withCron } from "@/lib/cronUtils";
 
 const AFFILIATE_PROFILES = [
   {
@@ -40,15 +35,9 @@ const AFFILIATE_PROFILES = [
   },
 ];
 
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Only run on Monday (day 1)
+export const GET = withCron(async () => {
   if (new Date().getDay() !== 1) {
-    return NextResponse.json({ ok: true, skipped: "Not Monday", timestamp: new Date().toISOString() });
+    return { skipped: "Not Monday" };
   }
 
   let drafted = 0;
@@ -105,5 +94,5 @@ Subject line on first line: Subject: [subject]`,
     }
   }
 
-  return NextResponse.json({ ok: true, drafted, timestamp: new Date().toISOString() });
-}
+  return { drafted };
+});

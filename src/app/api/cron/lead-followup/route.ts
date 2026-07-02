@@ -1,16 +1,8 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
+import { withCron } from "@/lib/cronUtils";
 
-// Runs every 15 minutes. Finds new leads with email addresses that haven't
-// had a follow-up drafted yet, generates AI follow-up, queues for approval.
-
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withCron(async () => {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const leads = await db.lead.findMany({
@@ -22,7 +14,6 @@ export async function GET(req: Request) {
     take: 20,
   });
 
-  // Filter out leads already in the queue
   const existingMeta = await db.contentQueue.findMany({
     where: { type: "lead_followup", status: { in: ["PENDING", "APPROVED", "SENT"] } },
     select: { metadata: true },
@@ -81,5 +72,5 @@ Email body only, no subject line.`,
     }
   }
 
-  return NextResponse.json({ ok: true, drafted: results.filter((r) => r.success).length, results, timestamp: new Date().toISOString() });
-}
+  return { drafted: results.filter((r) => r.success).length, results };
+});

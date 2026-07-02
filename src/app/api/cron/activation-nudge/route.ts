@@ -1,9 +1,6 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-
-// Targets users who signed up but never set up their AI receptionist.
-// Fires at day 1, day 3, and day 7 after signup.
+import { withCron } from "@/lib/cronUtils";
 
 const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
@@ -11,11 +8,11 @@ function nudgeHtml(name: string, wave: 1 | 2 | 3): string {
   const content = {
     1: {
       headline: "Your AI receptionist is waiting — 2 minutes to set up",
-      body: `You signed up for MansaMusaAI yesterday — brilliant move.<br><br>You haven't set up your AI receptionist yet. It takes <strong>under 2 minutes</strong> and once it's live, it answers every call and captures every lead automatically — even at 2am.<br><br>Here's what happens after setup:<br><br>✅ Every missed call gets answered<br>✅ Leads are captured into your CRM<br>✅ Appointments book themselves<br>✅ WhatsApp replies go out instantly<br><br>Let's get you live.`,
+      body: `You signed up for MansaMusaAI yesterday — brilliant move.<br><br>You haven't set up your AI receptionist yet. It takes <strong>under 2 minutes</strong> and once it's live, it answers every call and captures every lead automatically — even at 2am.<br><br>Here's what happens after setup:<br><br>Every missed call gets answered<br>Leads are captured into your CRM<br>Appointments book themselves<br>WhatsApp replies go out instantly<br><br>Let's get you live.`,
     },
     2: {
       headline: "Still missing calls? Let's fix that right now",
-      body: `Three days in and your AI receptionist still isn't live.<br><br>Every day without it, you're losing leads to businesses that are already using AI. The setup literally takes 2 minutes — just give it a name, a greeting, and you're live.<br><br><strong>UK businesses using MansaMusaAI see on average:</strong><br><br>📞 3× more leads captured<br>📅 40% more appointments booked<br>💰 60%+ revenue increase within 90 days<br><br>Don't leave money on the table.`,
+      body: `Three days in and your AI receptionist still isn't live.<br><br>Every day without it, you're losing leads to businesses that are already using AI. The setup literally takes 2 minutes — just give it a name, a greeting, and you're live.<br><br><strong>UK businesses using MansaMusaAI see on average:</strong><br><br>3x more leads captured<br>40% more appointments booked<br>60%+ revenue increase within 90 days<br><br>Don't leave money on the table.`,
     },
     3: {
       headline: "One week in — you're still not set up. Here's why that matters.",
@@ -36,7 +33,7 @@ function nudgeHtml(name: string, wave: 1 | 2 | 3): string {
       <p style="margin:0 0 8px;color:#64748b;font-size:15px">Hi ${name},</p>
       <p style="margin:8px 0 24px;color:#334155;font-size:15px;line-height:1.7">${content.body}</p>
       <a href="${APP}/onboarding" style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:15px">
-        Set up my AI receptionist →
+        Set up my AI receptionist
       </a>
       <p style="margin:24px 0 0;color:#94a3b8;font-size:13px">Need help? Just reply — we respond within 2 hours.</p>
     </div>
@@ -47,17 +44,12 @@ function nudgeHtml(name: string, wave: 1 | 2 | 3): string {
 }
 
 const subjects: Record<1 | 2 | 3, string> = {
-  1: "Your AI receptionist is ready — 2 mins to go live 🚀",
+  1: "Your AI receptionist is ready — 2 mins to go live",
   2: "Still missing calls? Your AI receptionist isn't live yet",
   3: "Last nudge — get set up before your trial runs out",
 };
 
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withCron(async () => {
   const now = new Date();
   const results: { userId: string; wave: number; success: boolean }[] = [];
 
@@ -71,7 +63,6 @@ export async function GET(req: Request) {
     const from = new Date(now.getTime() - (daysAgo + 1) * 86400000);
     const to   = new Date(now.getTime() - daysAgo * 86400000);
 
-    // Find users with no receptionist set up
     const users = await db.user.findMany({
       where: {
         createdAt: { gte: from, lte: to },
@@ -98,5 +89,5 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, sent: results.filter((r) => r.success).length, results, timestamp: now.toISOString() });
-}
+  return { sent: results.filter((r) => r.success).length, results };
+});

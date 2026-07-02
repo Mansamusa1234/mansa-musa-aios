@@ -1,11 +1,6 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
-
-// Runs daily at 7am. AI generates a batch of cold outreach emails targeting
-// UK SMBs in the industries most likely to buy (dentists, accountants, estate agents,
-// restaurants, scaffolders, car dealerships, solicitors, physios).
-// Each draft goes to Command Centre for Darren's approval before anything sends.
+import { withCron } from "@/lib/cronUtils";
 
 const INDUSTRIES = [
   { name: "dental practice", pain: "missed calls cost you £200-£500 per new patient", hook: "your receptionist can't answer every call at once" },
@@ -18,17 +13,9 @@ const INDUSTRIES = [
   { name: "physiotherapy clinic", pain: "appointment booking calls interrupt treatment sessions", hook: "your therapists should be treating patients, not answering phones" },
 ];
 
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Pick 2 industries per run (rotating through all 8 over 4 days)
+export const GET = withCron(async () => {
   const dayIndex = Math.floor(Date.now() / (24 * 60 * 60 * 1000)) % 4;
   const todayIndustries = INDUSTRIES.slice(dayIndex * 2, dayIndex * 2 + 2);
-
-  // Check if campaign for these industries already exists
   const results: { industry: string; drafted: number }[] = [];
 
   for (const industry of todayIndustries) {
@@ -46,7 +33,6 @@ export async function GET(req: Request) {
       });
     }
 
-    // Generate 5 prospect email drafts per industry per day
     const PROSPECT_NAMES = [
       { name: "the owner", company: `a UK ${industry.name}` },
       { name: "the practice manager", company: `a busy ${industry.name}` },
@@ -111,5 +97,5 @@ Keep under 150 words total. No fluff. No corporate speak.`,
     results.push({ industry: industry.name, drafted });
   }
 
-  return NextResponse.json({ ok: true, results, timestamp: new Date().toISOString() });
-}
+  return { results };
+});

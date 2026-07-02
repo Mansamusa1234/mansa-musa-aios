@@ -1,15 +1,8 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { triggerWorkflows } from "@/lib/email-automation";
+import { withCron } from "@/lib/cronUtils";
 
-// Runs daily. Finds trials expiring within 72 hours that haven't been notified,
-// fires TRIAL_ENDING workflows, and marks them so we don't double-fire.
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withCron(async () => {
   const now = new Date();
   const in72h = new Date(now.getTime() + 72 * 3600 * 1000);
 
@@ -42,5 +35,5 @@ export async function GET(req: Request) {
     })
   );
 
-  return NextResponse.json({ ok: true, notified, timestamp: new Date().toISOString() });
-}
+  return { notified };
+});

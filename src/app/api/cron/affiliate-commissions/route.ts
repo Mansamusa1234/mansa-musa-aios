@@ -1,12 +1,7 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { withCron } from "@/lib/cronUtils";
 
-// Called monthly to compute recurring commissions on active subscriptions
-export async function POST(req: Request) {
-  if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withCron(async () => {
   const conversions = await db.affiliateConversion.findMany({
     where: {
       status: "CONVERTED",
@@ -25,7 +20,6 @@ export async function POST(req: Request) {
       const { requireStripe } = await import("@/lib/stripe");
       const stripe = requireStripe();
 
-      // Find latest paid invoice for this subscription
       const invoices = await stripe.invoices.list({
         subscription: conversion.stripeSubscriptionId!,
         limit: 1,
@@ -34,7 +28,6 @@ export async function POST(req: Request) {
       const latest = invoices.data[0];
       if (!latest || latest.status !== "paid" || !latest.id) continue;
 
-      // Skip if already recorded
       const exists = await db.affiliateRenewal.findUnique({ where: { invoiceId: latest.id } });
       if (exists) continue;
 
@@ -58,7 +51,6 @@ export async function POST(req: Request) {
           },
         });
 
-        // Tier-2: pay parent affiliate a cut if they exist
         if (conversion.affiliate.parentAffiliateId && conversion.affiliate.tier2Rate > 0) {
           const tier2Cents = Math.round((amountCents * conversion.affiliate.tier2Rate) / 100);
           await tx.commissionLedger.create({
@@ -94,5 +86,5 @@ export async function POST(req: Request) {
     });
   }
 
-  return NextResponse.json({ processed, totalCommissionCents });
-}
+  return { processed, totalCommissionCents };
+});

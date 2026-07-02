@@ -1,9 +1,6 @@
-import { NextResponse } from "next/server";
 import { anthropic } from "@/lib/anthropic";
 import { db } from "@/lib/db";
-
-// Runs daily - each AI agent autonomously generates intelligence reports
-// stored in the database and surfaced on the workforce dashboard
+import { withCron } from "@/lib/cronUtils";
 
 const DAILY_TASKS = [
   {
@@ -68,12 +65,7 @@ Max 250 words. Focus on UK market and conversion.`,
   },
 ];
 
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withCron(async () => {
   const results: { role: string; success: boolean; error?: string }[] = [];
 
   for (const task of DAILY_TASKS) {
@@ -86,7 +78,6 @@ export async function GET(req: Request) {
 
       const content = response.content[0].type === "text" ? response.content[0].text : "";
 
-      // Store in database as agent intelligence report
       await db.agentIntelligenceReport.upsert({
         where: {
           agentRole_date: {
@@ -108,10 +99,8 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({
-    ok: true,
+  return {
     date: new Date().toISOString().split("T")[0],
     results,
-    timestamp: new Date().toISOString(),
-  });
-}
+  };
+});

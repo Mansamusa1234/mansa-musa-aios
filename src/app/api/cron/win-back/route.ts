@@ -1,9 +1,6 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-
-// Runs daily. Targets users who cancelled 3, 7, and 30 days ago and sends win-back emails.
-// Each wave fires once per user using cancelledWinBackSentAt tiers stored on subscription.
+import { withCron } from "@/lib/cronUtils";
 
 const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
@@ -28,7 +25,7 @@ function winBackHtml(name: string, wave: 1 | 2 | 3): string {
       <p style="margin:0 0 8px;color:#64748b;font-size:15px">Hi ${name},</p>
       <p style="margin:8px 0 24px;color:#334155;font-size:15px;line-height:1.6">${subject3.body}</p>
       <a href="${APP}/pricing" style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:15px">
-        Reactivate my account →
+        Reactivate my account
       </a>
       <p style="margin:24px 0 0;color:#94a3b8;font-size:13px">Questions? Reply to this email — a real human will respond within 2 hours.</p>
     </div>
@@ -39,17 +36,12 @@ function winBackHtml(name: string, wave: 1 | 2 | 3): string {
 }
 
 const subjects: Record<1 | 2 | 3, string> = {
-  1: "We miss you — 30 days free to come back 👋",
+  1: "We miss you — 30 days free to come back",
   2: "New features since you left (+ a gift inside)",
   3: "Your final offer from MansaMusaAI — 50% off 3 months",
 };
 
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withCron(async () => {
   const now = new Date();
   const results: { userId: string; wave: number; success: boolean }[] = [];
 
@@ -89,5 +81,5 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, sent: results.filter((r) => r.success).length, results, timestamp: now.toISOString() });
-}
+  return { sent: results.filter((r) => r.success).length, results };
+});
