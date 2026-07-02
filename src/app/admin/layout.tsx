@@ -18,7 +18,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <nav className="flex-1 px-3 py-2 space-y-1">
           {[
             { href: "/admin", label: "Overview" },
-            { href: "/admin/users", label: "Users" },
+            { href: "/admin/customers", label: "Customers" },
+            { href: "/admin/users", label: "All Users" },
             { href: "/admin/billing", label: "Billing" },
             { href: "/admin/commissions", label: "Commissions" },
             { href: "/admin/connectors", label: "Connectors" },
