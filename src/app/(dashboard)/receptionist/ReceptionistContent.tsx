@@ -25,9 +25,6 @@ interface Props {
   stats: Stats;
 }
 
-const inputCls = "w-full rounded-xl border border-white/8 px-3 py-2.5 text-sm outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50 appearance-none";
-const inputStyle = { backgroundColor: '#1a1a2e', color: '#ffffff', WebkitTextFillColor: '#ffffff' } as React.CSSProperties;
-
 export default function ReceptionistContent({ receptionist: initial, recentChats, stats }: Props) {
   const [rec, setRec] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -82,6 +79,8 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
     ? `<script src="https://www.mansamusainitiative.com/receptionist-widget.js" data-id="${rec.id}" data-color="${rec.widgetColor}" defer></script>`
     : "Save your configuration first to generate the embed code.";
 
+  const iosInputStyle = { backgroundColor: "#1a1a2e", color: "#ffffff", WebkitTextFillColor: "#ffffff" } as React.CSSProperties;
+
   return (
     <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-6 max-w-4xl">
       <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -99,6 +98,7 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
         )}
       </motion.div>
 
+      {/* Stats */}
       <motion.div variants={fadeUp} className="grid grid-cols-3 gap-3">
         {[
           { label: "Total chats", value: stats.totalChats },
@@ -112,6 +112,7 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
         ))}
       </motion.div>
 
+      {/* Tabs */}
       <motion.div variants={fadeUp} className="flex gap-1 rounded-xl border border-white/8 bg-white/3 p-1 w-fit">
         {(["config", "preview", "embed", "chats"] as const).map((t) => (
           <button key={t} onClick={() => setActiveTab(t)} className={`rounded-lg px-4 py-1.5 text-xs font-semibold capitalize transition-colors ${activeTab === t ? "bg-brand-500 text-white" : "text-gray-500 hover:text-gray-300"}`}>
@@ -125,7 +126,7 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1">Receptionist name</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} style={inputStyle} />
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" style={iosInputStyle} />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1">Widget colour</label>
@@ -137,15 +138,15 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Opening greeting</label>
-            <textarea value={form.greeting} onChange={(e) => setForm({ ...form, greeting: e.target.value })} rows={2} className={inputCls + " resize-none"} style={inputStyle} />
+            <textarea value={form.greeting} onChange={(e) => setForm({ ...form, greeting: e.target.value })} rows={2} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none resize-none focus:border-brand-500/50" style={iosInputStyle} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Personality / tone (comma-separated traits)</label>
-            <input value={form.persona} onChange={(e) => setForm({ ...form, persona: e.target.value })} placeholder="professional, friendly, concise" className={inputCls} style={inputStyle} />
+            <input value={form.persona} onChange={(e) => setForm({ ...form, persona: e.target.value })} placeholder="professional, friendly, concise" className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" style={iosInputStyle} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Business hours (optional)</label>
-            <input value={form.businessHours ?? ""} onChange={(e) => setForm({ ...form, businessHours: e.target.value })} placeholder="Mon-Fri 9am-6pm GMT" className={inputCls} style={inputStyle} />
+            <input value={form.businessHours ?? ""} onChange={(e) => setForm({ ...form, businessHours: e.target.value })} placeholder="Mon-Fri 9am-6pm GMT" className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" style={iosInputStyle} />
           </div>
           <div className="flex items-center gap-3">
             <label className="relative inline-flex items-center cursor-pointer">
@@ -182,7 +183,7 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
                   {previewing && <div className="flex justify-start"><div className="rounded-xl bg-white/8 px-3 py-2 text-xs text-gray-400">Typing...</div></div>}
                 </div>
                 <form onSubmit={sendPreview} className="p-3 border-t border-white/8 flex gap-2">
-                  <input value={previewInput} onChange={(e) => setPreviewInput(e.target.value)} placeholder="Type a message..." className="flex-1 rounded-lg border border-white/8 px-2 py-1.5 text-xs outline-none" style={inputStyle} />
+                  <input value={previewInput} onChange={(e) => setPreviewInput(e.target.value)} placeholder="Type a message..." className="flex-1 rounded-lg border border-white/8 bg-white/4 px-2 py-1.5 text-xs text-white outline-none" style={iosInputStyle} />
                   <button type="submit" style={{ background: form.widgetColor }} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white">Send</button>
                 </form>
               </div>
