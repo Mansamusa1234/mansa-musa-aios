@@ -123,14 +123,13 @@ export default function IntelligenceContent() {
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· AI Intelligence ·</p>
             <h1 className="text-2xl font-extrabold text-white">Market Intelligence</h1>
-            <p className="mt-1 text-sm text-gray-500">Live market data, competitive intelligence, and sector analysis</p>
+            <p className="mt-1 text-sm text-gray-500">Simulated market data, competitive intelligence, and sector analysis</p>
           </div>
-          <div className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-green-500/25 bg-green-500/10 px-3 py-1.5">
+          <div className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1.5">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
             </span>
-            <span className="text-xs font-semibold text-green-400">LIVE · {secondsAgo}s ago</span>
+            <span className="text-xs font-semibold text-amber-400">SIMULATED DATA</span>
           </div>
         </motion.div>
 

@@ -14,13 +14,8 @@ interface Props {
   totalUsers: number;
   isAdmin: boolean;
   weeklyData?: { day: string; msgs: number }[];
+  modelSplit?: { model: string; pct: number; color: string }[];
 }
-
-const MODEL_SPLIT = [
-  { model: "Claude Opus",   pct: 8,  color: "bg-brand-500" },
-  { model: "Claude Sonnet", pct: 62, color: "bg-blue-500"  },
-  { model: "Claude Haiku",  pct: 30, color: "bg-green-500" },
-];
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -43,6 +38,7 @@ export default function AnalyticsContent({
   totalUsers,
   isAdmin,
   weeklyData,
+  modelSplit,
 }: Props) {
   const weekly = weeklyData ?? FALLBACK_WEEKLY;
   const maxMsgs  = Math.max(...weekly.map((d) => d.msgs), 1);
@@ -130,7 +126,7 @@ export default function AnalyticsContent({
         <div>
           <h2 className="text-sm font-bold text-white mb-3">Model Usage Split</h2>
           <div className="rounded-2xl border border-white/8 bg-white/3 p-5 space-y-4">
-            {MODEL_SPLIT.map((m) => (
+            {modelSplit && modelSplit.length > 0 ? modelSplit.map((m) => (
               <div key={m.model}>
                 <div className="flex justify-between text-[11px] mb-1.5">
                   <span className="text-gray-300 font-medium">{m.model}</span>
@@ -145,7 +141,9 @@ export default function AnalyticsContent({
                   />
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-xs text-gray-500 text-center py-4">No model usage data yet</p>
+            )}
 
             {/* Token summary */}
             <div className="mt-2 rounded-xl border border-white/6 bg-white/2 p-3 space-y-2">

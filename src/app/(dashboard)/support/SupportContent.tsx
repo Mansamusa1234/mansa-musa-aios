@@ -36,14 +36,36 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    const res = await fetch("/api/support/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-    const data = await res.json();
-    if (res.ok) {
-      setTickets((p) => [{ ...data.ticket, userName: null, userEmail: "" }, ...p]);
+    try {
+      const res = await fetch("/api/support/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      if (!res.ok) return;
+      const data = await res.json();
+      const newTicket = { ...data.ticket, userName: null, userEmail: "" };
+      setTickets((p) => [newTicket, ...p]);
       setShowNew(false);
       setForm({ subject: "", body: "", priority: "MEDIUM" });
+      setSelected(newTicket);
+
+      // Poll until AI response arrives (up to 30s)
+      const ticketId = data.ticket.id;
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        if (attempts > 15) { clearInterval(poll); return; }
+        try {
+          const r = await fetch(`/api/support/tickets/${ticketId}`);
+          if (!r.ok) return;
+          const d = await r.json();
+          if (d.ticket?.aiResponse) {
+            clearInterval(poll);
+            setTickets((p) => p.map((t) => t.id === ticketId ? { ...t, aiResponse: d.ticket.aiResponse } : t));
+            setSelected((s) => s?.id === ticketId ? { ...s, aiResponse: d.ticket.aiResponse } : s);
+          }
+        } catch { /* continue polling */ }
+      }, 2000);
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   }
 
   async function updateStatus(id: string, status: Status) {

@@ -87,8 +87,12 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
   const fmtGBP = (p: number) => `£${(p / 100).toLocaleString("en-GB", { minimumFractionDigits: 0 })}`;
 
   const loadActivities = useCallback(async (leadId: string) => {
-    const res = await fetch(`/api/crm/leads/${leadId}/activities`);
-    if (res.ok) setActivities((await res.json()).activities);
+    try {
+      const res = await fetch(`/api/crm/leads/${leadId}/activities`);
+      if (res.ok) setActivities((await res.json()).activities);
+    } catch {
+      // leave activities as-is; user sees previous state
+    }
   }, []);
 
   useEffect(() => {
@@ -115,18 +119,23 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
   async function addLead(e: React.FormEvent) {
     e.preventDefault();
     setAdding(true);
-    const res = await fetch("/api/crm/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, value: parseInt(form.value, 10) * 100 }),
-    });
-    const data = await res.json();
-    if (res.ok && data.lead) {
-      setCols((prev) => prev.map((col) => col.stage === data.lead.stage ? { ...col, leads: [data.lead, ...col.leads] } : col));
-      setShowAdd(false);
-      setForm({ name: "", email: "", company: "", phone: "", value: "0", source: "", notes: "", stage: "NEW" });
+    try {
+      const res = await fetch("/api/crm/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, value: parseInt(form.value, 10) * 100 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.lead) {
+          setCols((prev) => prev.map((col) => col.stage === data.lead.stage ? { ...col, leads: [data.lead, ...col.leads] } : col));
+          setShowAdd(false);
+          setForm({ name: "", email: "", company: "", phone: "", value: "0", source: "", notes: "", stage: "NEW" });
+        }
+      }
+    } finally {
+      setAdding(false);
     }
-    setAdding(false);
   }
 
   async function moveLead(leadId: string, toStage: Stage) {
@@ -145,9 +154,16 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
   }
 
   async function deleteLead(id: string) {
-    await fetch(`/api/crm/leads/${id}`, { method: "DELETE" });
-    setCols((prev) => prev.map((col) => ({ ...col, leads: col.leads.filter((l) => l.id !== id) })));
-    if (selectedLead?.id === id) setSelectedLead(null);
+    if (!confirm("Delete this lead? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/crm/leads/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setCols((prev) => prev.map((col) => ({ ...col, leads: col.leads.filter((l) => l.id !== id) })));
+        if (selectedLead?.id === id) setSelectedLead(null);
+      }
+    } catch {
+      // network error — no UI change, lead stays visible
+    }
   }
 
   return (
@@ -367,7 +383,7 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
               {/* Footer */}
               <div className="px-5 py-4 border-t border-white/8">
                 <button
-                  onClick={() => { deleteLead(selectedLead.id); setSelectedLead(null); }}
+                  onClick={() => deleteLead(selectedLead.id)}
                   className="w-full rounded-xl border border-red-500/20 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
                 >
                   Delete lead

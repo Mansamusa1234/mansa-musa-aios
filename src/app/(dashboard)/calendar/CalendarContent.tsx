@@ -26,8 +26,11 @@ export default function CalendarContent({ bookings: initialBookings, availabilit
 
   async function saveAvailability() {
     setSaving(true);
-    await fetch("/api/calendar/availability", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(avail) });
-    setSaving(false);
+    try {
+      await fetch("/api/calendar/availability", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(avail) });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function addBooking(e: React.FormEvent) {
@@ -40,8 +43,17 @@ export default function CalendarContent({ bookings: initialBookings, availabilit
   }
 
   async function cancelBooking(id: string) {
-    await fetch(`/api/calendar/bookings/${id}`, { method: "DELETE" });
+    if (!confirm("Cancel this booking?")) return;
     setBookings((p) => p.map((b) => b.id === id ? { ...b, status: "CANCELLED" } : b));
+    try {
+      const res = await fetch(`/api/calendar/bookings/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        // revert optimistic update on failure
+        setBookings((p) => p.map((b) => b.id === id ? { ...b, status: "CONFIRMED" } : b));
+      }
+    } catch {
+      setBookings((p) => p.map((b) => b.id === id ? { ...b, status: "CONFIRMED" } : b));
+    }
   }
 
   const STATUS_COLORS: Record<string, string> = { CONFIRMED: "text-green-400", CANCELLED: "text-red-400", PENDING: "text-amber-400" };

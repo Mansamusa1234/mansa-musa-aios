@@ -82,13 +82,6 @@ const SEED_ARTICLES: Article[] = [
   },
 ];
 
-const EXTRA_ARTICLES: Omit<Article, "id">[] = [
-  { category: "Markets", source: "Reuters", time: "just now", headline: "Gold surges past $2,800 per troy ounce as dollar weakens", excerpt: "Safe-haven demand and central bank buying pushed gold to a fresh record, with analysts targeting $3,000 by mid-2026.", sentiment: "Positive", readTime: "2 min" },
-  { category: "AI", source: "Bloomberg", time: "just now", headline: "OpenAI's GPT-5 clears US government security review", excerpt: "Clearance paves the way for deployment in classified federal workflows, a significant expansion of commercial AI in defence.", sentiment: "Neutral", readTime: "3 min" },
-  { category: "Finance", source: "FT", time: "just now", headline: "ECB cuts rates by 25bps, signals further easing in 2026", excerpt: "Christine Lagarde cited cooling eurozone inflation and weakening German industrial output as justification for the decision.", sentiment: "Positive", readTime: "4 min" },
-  { category: "Business", source: "WSJ", time: "just now", headline: "Amazon acquires logistics AI startup for $1.2B", excerpt: "The deal gives Amazon control of route optimisation technology used by over 40 last-mile delivery operators globally.", sentiment: "Positive", readTime: "3 min" },
-];
-
 const SENTIMENT_STYLES: Record<Sentiment, string> = {
   Positive: "bg-green-500/15 text-green-400 border-green-500/25",
   Neutral:  "bg-gray-500/15 text-gray-400 border-gray-500/25",
@@ -114,13 +107,13 @@ const CATEGORIES: Category[] = ["All", "Business", "Finance", "AI", "Tech", "Mar
 
 export default function NewsContent() {
   const [activeCategory, setActiveCategory] = useState<Category>("All");
-  const [articles, setArticles] = useState<Article[]>(SEED_ARTICLES);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [usingSample, setUsingSample] = useState(false);
   const [saved, setSaved]  = useState<Set<number>>(new Set());
   const [read, setRead]    = useState<Set<number>>(new Set());
   const idRef = useRef(SEED_ARTICLES.length + 1);
-  const extraRef = useRef(0);
 
-  // Fetch real articles from RSS on mount; fall back to seeds silently
   useEffect(() => {
     fetch("/api/news")
       .then((r) => r.ok ? r.json() : null)
@@ -128,24 +121,32 @@ export default function NewsContent() {
         if (data?.articles?.length) {
           setArticles(data.articles);
           idRef.current = data.articles.length + 1;
+        } else {
+          setArticles(SEED_ARTICLES);
+          setUsingSample(true);
         }
       })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      const next = EXTRA_ARTICLES[extraRef.current % EXTRA_ARTICLES.length];
-      extraRef.current++;
-      const article: Article = { ...next, id: idRef.current++ };
-      setArticles((prev) => [article, ...prev].slice(0, 20));
-    }, 5000);
-    return () => clearInterval(t);
+      .catch(() => {
+        setArticles(SEED_ARTICLES);
+        setUsingSample(true);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = activeCategory === "All" ? articles : articles.filter((a) => a.category === activeCategory);
   const featured = filtered.find((a) => a.featured) ?? filtered[0];
   const rest = filtered.filter((a) => a.id !== featured?.id);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
+          <p className="text-sm text-gray-400">Loading news feed…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -154,7 +155,12 @@ export default function NewsContent() {
         <motion.div variants={fadeUp}>
           <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· Live Intelligence ·</p>
           <h1 className="text-2xl font-extrabold text-white">News Feed</h1>
-          <p className="mt-1 text-sm text-gray-500">AI-curated business intelligence — updating in real time</p>
+          <p className="mt-1 text-sm text-gray-500">AI-curated business intelligence</p>
+          {usingSample && (
+            <p className="mt-1 text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5 inline-block">
+              Sample content — live feed unavailable
+            </p>
+          )}
         </motion.div>
 
         {/* Ticker */}
