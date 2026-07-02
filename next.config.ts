@@ -36,6 +36,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // Tree-shake these large packages — only import what's used
     optimizePackageImports: ["framer-motion", "lucide-react"],
+    instrumentationHook: true,
   },
   images: {
     remotePatterns: [
@@ -46,65 +47,16 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      // Security headers on all routes
       {
-        source: "/(.*)",
+        source: "/:path*",
         headers: securityHeaders,
       },
-      // Cache public marketing pages for 60 seconds at CDN, revalidate in background
-      {
-        source: "/(pricing|ai-receptionist|contact|about|blog)(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, s-maxage=60, stale-while-revalidate=300" },
-        ],
-      },
-      // Cache static assets aggressively
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      // Cache root landing page briefly
-      {
-        source: "/",
-        headers: [
-          { key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=120" },
-        ],
-      },
     ];
-  },
-  async redirects() {
-    // www.mansamusainitiative.com is the Vercel primary domain (apex 308s to www at Vercel edge).
-    // Keep www as canonical here to match that — do NOT redirect www or the loop re-forms.
-    const PRIMARY = "https://www.mansamusainitiative.com";
-    const nonPrimaryHosts = [
-      "mansamusaai.vercel.app",
-      "app.mansamusainitiative.com",
-      "mansamusainitiative.co.uk",
-      "www.mansamusainitiative.co.uk",
-    ];
-    return nonPrimaryHosts.map((host) => ({
-      source: "/:path*",
-      has: [{ type: "host", value: host }],
-      destination: `${PRIMARY}/:path*`,
-      permanent: true,
-    }));
   },
 };
 
-// withSentryConfig is safe to apply unconditionally — it no-ops at build/runtime
-// when Sentry env vars (SENTRY_AUTH_TOKEN, NEXT_PUBLIC_SENTRY_DSN, etc.) are absent,
-// so this does not break local dev or builds where Sentry isn't configured.
 export default withSentryConfig(nextConfig, {
-  // Suppresses source map uploading logs during build when SENTRY_AUTH_TOKEN is absent
   silent: true,
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
-  widenClientFileUpload: true,
-  disableLogger: true,
-  // Don't fail the build if source map upload fails (e.g. no auth token configured)
-  sourcemaps: {
-    disable: !process.env.SENTRY_AUTH_TOKEN,
-  },
 });
