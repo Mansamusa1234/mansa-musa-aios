@@ -222,7 +222,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
       db.agentResponse.create({ data: { sessionId, agentId: betaLeader.id,  round: "IMPROVED", content: `[TEAM BETA CONSENSUS]\n${betaConsensus}` } }),
     ]);
 
-    // ── Phase 2: Teams cross-challenge each other ───────────────────────────
+    // ── Phase 2: Teams cross-challenge each other ─────────────────────────────
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "CRITIQUING" } });
 
     const [alphaChallenge, betaChallenge] = await Promise.all([
@@ -254,9 +254,10 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
       ),
     ]);
 
-    // ── Phase 4: Wisdom Judge scores both teams and all individual agents ────
+    // ── Phase 4: Wisdom Judge scores both teams' final answers ────────────────
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "SCORING" } });
 
+    // Score individual agents too (using their IMPROVED round answers for leaderboard)
     const improvedResponses = await db.agentResponse.findMany({
       where: { sessionId, round: "IMPROVED" },
       include: { agent: true },
@@ -271,7 +272,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
 
     await Promise.all(
       scores.map((s) => {
-        const agent = allDebaters.find((a) => a.key === s.agentKey);
+        const agent = allDebaters.find((a) => a.key === s.agentKey)!;
         if (!agent) return Promise.resolve();
         const total = s.truth + s.evidence + s.depth + s.practicality + s.riskAwareness + s.originality + s.clarity + s.longTermValue;
         return db.agentScore.create({
@@ -293,12 +294,12 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
     const winningTeam   = alphaTotal >= betaTotal ? "Team Alpha (Evidence & Facts)" : "Team Beta (Law & Risk)";
     const winningAnswer = alphaTotal >= betaTotal ? alphaFinal : betaFinal;
 
-    // ── Phase 5: Synthesis Agent produces the final Deep Wisdom Answer ──────
+    // ── Phase 5: Synthesis Agent produces the final Deep Wisdom Answer ────────
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "SYNTHESIZING" } });
 
     const scoresBlock = scores
       .map((s) => {
-        const agent = allDebaters.find((a) => a.key === s.agentKey);
+        const agent = allDebaters.find((a) => a.key === s.agentKey)!;
         const total = s.truth + s.evidence + s.depth + s.practicality + s.riskAwareness + s.originality + s.clarity + s.longTermValue;
         return `${agent?.name ?? s.agentKey}: ${total}/80 — ${s.rationale}`;
       })
@@ -313,6 +314,7 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
 
     await db.finalSynthesis.create({ data: { sessionId, content: synthesisContent } });
 
+    // Auto-save WisdomMemory
     if (arenaOwner?.userId) {
       await db.wisdomMemory.upsert({
         where: { sessionId },
