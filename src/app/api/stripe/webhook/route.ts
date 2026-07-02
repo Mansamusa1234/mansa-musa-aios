@@ -55,25 +55,24 @@ export async function POST(req: Request) {
           userId: session.metadata!.userId,
           stripeCustomerId: session.customer as string,
           stripeSubscriptionId: sub.id,
-          stripePriceId: sub.items.data[0].price.id,
+          stripePriceId: sub.items.data[0]?.price.id ?? "",
           status: "ACTIVE",
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
         },
         update: {
           stripeSubscriptionId: sub.id,
-          stripePriceId: sub.items.data[0].price.id,
+          stripePriceId: sub.items.data[0]?.price.id ?? "",
           status: "ACTIVE",
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
         },
       });
 
-      // Referral/affiliate conversion — best-effort, must never affect webhook processing.
       try {
         await recordConversion(
           session.metadata!.userId,
-          sub.items.data[0].price.id,
+          sub.items.data[0]?.price.id ?? "",
           sub.id,
           session.metadata?.affiliateCode ?? null,
         );
@@ -81,7 +80,6 @@ export async function POST(req: Request) {
         console.error("[webhook] referral/affiliate conversion tracking failed:", err);
       }
 
-      // Subscription started email + trigger automation workflows
       after(async () => {
         try {
           const user = await db.user.findUnique({
@@ -89,14 +87,15 @@ export async function POST(req: Request) {
             select: { email: true, name: true },
           });
           if (user) {
-            const planName = PLANS.find((p) => p.priceId === sub.items.data[0].price.id)?.name ?? "paid";
+            const priceItem = sub.items.data[0];
+            const planName = PLANS.find((p) => p.priceId === priceItem?.price.id)?.name ?? "paid";
             await sendEmail(
               user.email,
               `Your ${planName} plan is now active`,
               subscriptionStartedEmailHtml({
                 name: user.name ?? "there",
                 plan: planName,
-                amount: formatAmount(sub.items.data[0].price.unit_amount, sub.items.data[0].price.currency),
+                amount: formatAmount(priceItem?.price.unit_amount ?? null, priceItem?.price.currency ?? "gbp"),
                 nextBillDate: formatDate(sub.current_period_end),
               })
             );
@@ -121,7 +120,6 @@ export async function POST(req: Request) {
         unpaid: "PAST_DUE",
       };
 
-      // Fetch user before update so we have their details for the email
       const existingSub = await db.subscription.findFirst({
         where: { stripeSubscriptionId: sub.id },
         include: { user: { select: { email: true, name: true } } },
@@ -131,14 +129,13 @@ export async function POST(req: Request) {
         where: { stripeSubscriptionId: sub.id },
         data: {
           status: (statusMap[sub.status] ?? "INACTIVE") as never,
-          stripePriceId: sub.items.data[0].price.id,
+          stripePriceId: sub.items.data[0]?.price.id ?? "",
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
           cancelAtPeriodEnd: sub.cancel_at_period_end,
         },
       });
 
-      // Cancellation email + trigger automation workflows
       if (event.type === "customer.subscription.deleted" && existingSub?.user) {
         after(async () => {
           try {
@@ -177,7 +174,6 @@ export async function POST(req: Request) {
           },
         });
 
-        // Record recurring affiliate commission for subscription renewals
         if (invoice.billing_reason === "subscription_cycle" && invoice.id) {
           after(async () => {
             try {

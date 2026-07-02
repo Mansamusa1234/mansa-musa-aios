@@ -6,7 +6,6 @@ export async function GET() {
   const start = Date.now();
   const checks: Record<string, { ok: boolean; message?: string; ms?: number }> = {};
 
-  // ── Database ──────────────────────────────────────────────────────────
   try {
     const t = Date.now();
     await db.$queryRaw`SELECT 1`;
@@ -15,7 +14,6 @@ export async function GET() {
     checks.database = { ok: false, message: err instanceof Error ? err.message : "DB unreachable" };
   }
 
-  // ── Environment variables ──────────────────────────────────────────
   const envResult = checkEnv();
   checks.env = {
     ok: envResult.ok,
@@ -24,7 +22,6 @@ export async function GET() {
       : `Missing required: ${envResult.missing.map((v) => v.key).join(", ")}`,
   };
 
-  // ── Auth config ──────────────────────────────────────────────────────
   checks.auth = {
     ok: !!process.env.NEXTAUTH_SECRET && !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
     message: [
@@ -34,14 +31,13 @@ export async function GET() {
     ].filter(Boolean).join(", ") || "OK",
   };
 
-  // ── Social posting readiness ─────────────────────────────────────────
   const socialPlatforms = {
     twitter:   !!process.env.TWITTER_API_KEY && !!process.env.TWITTER_ACCESS_TOKEN,
     linkedin:  !!process.env.LINKEDIN_ACCESS_TOKEN,
     instagram: !!process.env.INSTAGRAM_ACCESS_TOKEN,
-    facebook:  !!process.env.FACEBOOK_ACCESS_TOKEN,
+    facebook:  !!process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
     tiktok:    !!process.env.TIKTOK_ACCESS_TOKEN,
-    youtube:   !!process.env.YOUTUBE_ACCESS_TOKEN,
+    youtube:   !!process.env.YOUTUBE_CLIENT_ID && !!process.env.YOUTUBE_REFRESH_TOKEN,
     pinterest: !!process.env.PINTEREST_ACCESS_TOKEN,
     threads:   !!process.env.THREADS_ACCESS_TOKEN,
   };
@@ -51,19 +47,16 @@ export async function GET() {
     message: `${socialReady}/8 platforms configured — ${Object.entries(socialPlatforms).filter(([,v]) => v).map(([k]) => k).join(", ") || "none"}`,
   };
 
-  // ── HeyGen video ───────────────────────────────────────────────────────
   checks.heygen = {
     ok: !!process.env.HEYGEN_API_KEY,
     message: process.env.HEYGEN_API_KEY ? "Configured — video posts enabled" : "Not configured — text-only mode active",
   };
 
-  // ── Email ───────────────────────────────────────────────────────────────
   checks.email = {
     ok: !!process.env.RESEND_API_KEY,
     message: process.env.RESEND_API_KEY ? "Resend configured" : "RESEND_API_KEY missing — emails will not send",
   };
 
-  // ── AI ───────────────────────────────────────────────────────────────────
   checks.ai = {
     ok: !!process.env.ANTHROPIC_API_KEY,
     message: process.env.ANTHROPIC_API_KEY ? "Anthropic configured" : "ANTHROPIC_API_KEY missing",

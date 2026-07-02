@@ -34,9 +34,7 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   experimental: {
-    // Tree-shake these large packages — only import what's used
     optimizePackageImports: ["framer-motion", "lucide-react"],
-    instrumentationHook: true,
   },
   images: {
     remotePatterns: [

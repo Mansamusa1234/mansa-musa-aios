@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
+  // This route is a developer-only tool for obtaining YouTube OAuth tokens.
+  // It must never be publicly accessible.
+  const authHeader = req.headers.get("authorization");
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
 
   if (!code) {
-    // Step 1: Redirect to Google OAuth
     const params = new URLSearchParams({
       client_id: process.env.YOUTUBE_CLIENT_ID ?? "",
       redirect_uri: "https://mansamusainitiative.com/api/auth/",
@@ -17,7 +23,6 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`https://accounts.google.com/o/oauth2/auth?${params}`);
   }
 
-  // Step 2: Exchange code for refresh token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
