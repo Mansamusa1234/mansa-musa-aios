@@ -8,6 +8,19 @@ export const authConfig = {
     signIn: "/login",
     error: "/login",
   },
+  events: {
+    async signIn({ user, account }: any) {
+      console.log("[auth] signIn event", { userId: user?.id, provider: account?.provider });
+    },
+  },
+  logger: {
+    error(error: any) {
+      console.error("[auth] ERROR", error?.name, error?.message, JSON.stringify(error));
+    },
+    warn(code: any) {
+      console.warn("[auth] WARN", code);
+    },
+  },
   providers: [],
   callbacks: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
