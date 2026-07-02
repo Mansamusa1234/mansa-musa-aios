@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Design tokens ─────────────────────────────────────────────── */
+/* ── Design tokens ────────────────────────────────────────────────── */
 @layer base {
   :root {
     --surface-base:      249 250 251;
@@ -47,10 +47,30 @@
   :focus-visible {
     @apply outline-none ring-2 ring-brand-500 ring-offset-2;
   }
+
+  /* Fix iOS Safari overriding dark input backgrounds across the whole app */
+  input, textarea, select {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* Override iOS autofill yellow/white background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px #1a1a2e inset !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #ffffff;
+    transition: background-color 5000s ease-in-out 0s;
+  }
 }
 
 @layer utilities {
-  /* ── Scrollbars ──────────────────────────────────────────────── */
+  /* ── Scrollbars ──────────────────────────────────────────── */
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: theme(colors.gray.300) transparent;
@@ -68,7 +88,7 @@
     background-color: rgba(255,255,255,0.1);
   }
 
-  /* ── Text gradients ──────────────────────────────────────────── */
+  /* ── Text gradients ────────────────────────────────────────── */
   .gradient-text {
     @apply bg-gradient-to-r from-brand-400 to-violet-400 bg-clip-text text-transparent;
   }
@@ -76,7 +96,7 @@
     @apply bg-gradient-to-r from-brand-500 to-brand-400 bg-clip-text text-transparent;
   }
 
-  /* ── Glass ───────────────────────────────────────────────────── */
+  /* ── Glass ─────────────────────────────────────────────────── */
   .glass {
     @apply border border-white/10 bg-white/5 backdrop-blur-xl;
   }
@@ -87,7 +107,7 @@
     @apply border border-white/8 bg-white/4 backdrop-blur-md;
   }
 
-  /* ── Glow ────────────────────────────────────────────────────── */
+  /* ── Glow ──────────────────────────────────────────────────── */
   .glow-brand {
     box-shadow: 0 0 40px rgb(99 102 241 / 0.2);
   }
@@ -102,7 +122,7 @@
     animation: shimmer 1.5s linear infinite;
   }
 
-  /* ── Sweep animation ─────────────────────────────────────────── */
+  /* ── Sweep animation ─────────────────────────────────────────────── */
   .gradient-sweep {
     background-size: 200% auto;
     animation: sweep 3s linear infinite;
