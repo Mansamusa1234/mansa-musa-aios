@@ -280,7 +280,8 @@ export async function postToTwitter(videoUrl: string, script: VideoScript): Prom
   if (!apiKey || !apiSecret || !accessToken || !accessTokenSecret) return false;
 
   const url = "https://api.twitter.com/2/tweets";
-  const caption = `${script.caption}\n\n${script.hashtags.join(" ")} ${videoUrl}`.slice(0, 280);
+  const suffix = videoUrl ? ` ${videoUrl}` : "";
+  const caption = `${script.caption}\n\n${script.hashtags.join(" ")}${suffix}`.slice(0, 280);
 
   const oauthTimestamp = Math.floor(Date.now() / 1000).toString();
   const oauthNonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
@@ -294,7 +295,6 @@ export async function postToTwitter(videoUrl: string, script: VideoScript): Prom
     oauth_version: "1.0",
   };
 
-  // Build parameter string (sorted alphabetically)
   const paramString = Object.keys(oauthParams)
     .sort()
     .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(oauthParams[k])}`)
@@ -393,7 +393,6 @@ export async function postToYouTube(videoUrl: string, script: VideoScript): Prom
   const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
   if (!clientId || !clientSecret || !refreshToken) return false;
 
-  // Get fresh access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -408,11 +407,9 @@ export async function postToYouTube(videoUrl: string, script: VideoScript): Prom
   const accessToken = tokenData.access_token;
   if (!accessToken) return false;
 
-  // Download video to buffer
   const videoRes = await fetch(videoUrl);
   const videoBuffer = await videoRes.arrayBuffer();
 
-  // Upload to YouTube
   const caption = `${script.caption}\n\n${script.hashtags.join(" ")}`;
   const metadata = {
     snippet: {
@@ -457,4 +454,77 @@ export async function postToYouTube(videoUrl: string, script: VideoScript): Prom
   );
 
   return uploadRes.ok;
+}
+
+// ── Text-only fallbacks (no video required) ──────────────────────────────────
+
+export async function postToLinkedInText(script: VideoScript): Promise<boolean> {
+  const token = process.env.LINKEDIN_ACCESS_TOKEN;
+  const personId = process.env.LINKEDIN_PERSON_ID;
+  if (!token || !personId) return false;
+
+  const caption = `${script.script}\n\n${script.hashtags.join(" ")}\n\nhttps://mansamusainitiative.com`;
+
+  const res = await fetch("https://api.linkedin.com/v2/ugcPosts", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-Restli-Protocol-Version": "2.0.0",
+    },
+    body: JSON.stringify({
+      author: `urn:li:person:${personId}`,
+      lifecycleState: "PUBLISHED",
+      specificContent: {
+        "com.linkedin.ugc.ShareContent": {
+          shareCommentary: { text: caption },
+          shareMediaCategory: "NONE",
+        },
+      },
+      visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
+    }),
+  });
+
+  return res.ok;
+}
+
+export async function postToFacebookText(script: VideoScript): Promise<boolean> {
+  const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  if (!token || !pageId) return false;
+
+  const message = `${script.script}\n\n${script.hashtags.join(" ")}\n\nhttps://mansamusainitiative.com`;
+
+  const res = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, access_token: token }),
+  });
+
+  return res.ok;
+}
+
+export async function postToThreadsText(script: VideoScript): Promise<boolean> {
+  const token = process.env.THREADS_ACCESS_TOKEN;
+  const userId = process.env.THREADS_USER_ID;
+  if (!token || !userId) return false;
+
+  const text = `${script.caption}\n\n${script.hashtags.join(" ")}\n\nhttps://mansamusainitiative.com`;
+
+  const containerRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ media_type: "TEXT", text, access_token: token }),
+  });
+
+  const container = await containerRes.json();
+  if (!container.id) return false;
+
+  const publishRes = await fetch(`https://graph.threads.net/v1.0/${userId}/threads_publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ creation_id: container.id, access_token: token }),
+  });
+
+  return publishRes.ok;
 }
