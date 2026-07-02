@@ -82,13 +82,6 @@ const SEED_ARTICLES: Article[] = [
   },
 ];
 
-const EXTRA_ARTICLES: Omit<Article, "id">[] = [
-  { category: "Markets", source: "Reuters", time: "just now", headline: "Gold surges past $2,800 per troy ounce as dollar weakens", excerpt: "Safe-haven demand and central bank buying pushed gold to a fresh record, with analysts targeting $3,000 by mid-2026.", sentiment: "Positive", readTime: "2 min" },
-  { category: "AI", source: "Bloomberg", time: "just now", headline: "OpenAI's GPT-5 clears US government security review", excerpt: "Clearance paves the way for deployment in classified federal workflows, a significant expansion of commercial AI in defence.", sentiment: "Neutral", readTime: "3 min" },
-  { category: "Finance", source: "FT", time: "just now", headline: "ECB cuts rates by 25bps, signals further easing in 2026", excerpt: "Christine Lagarde cited cooling eurozone inflation and weakening German industrial output as justification for the decision.", sentiment: "Positive", readTime: "4 min" },
-  { category: "Business", source: "WSJ", time: "just now", headline: "Amazon acquires logistics AI startup for $1.2B", excerpt: "The deal gives Amazon control of route optimisation technology used by over 40 last-mile delivery operators globally.", sentiment: "Positive", readTime: "3 min" },
-];
-
 const SENTIMENT_STYLES: Record<Sentiment, string> = {
   Positive: "bg-green-500/15 text-green-400 border-green-500/25",
   Neutral:  "bg-gray-500/15 text-gray-400 border-gray-500/25",
@@ -114,13 +107,13 @@ const CATEGORIES: Category[] = ["All", "Business", "Finance", "AI", "Tech", "Mar
 
 export default function NewsContent() {
   const [activeCategory, setActiveCategory] = useState<Category>("All");
-  const [articles, setArticles] = useState<Article[]>(SEED_ARTICLES);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [usingSample, setUsingSample] = useState(false);
   const [saved, setSaved]  = useState<Set<number>>(new Set());
   const [read, setRead]    = useState<Set<number>>(new Set());
   const idRef = useRef(SEED_ARTICLES.length + 1);
-  const extraRef = useRef(0);
 
-  // Fetch real articles from RSS on mount; fall back to seeds silently
   useEffect(() => {
     fetch("/api/news")
       .then((r) => r.ok ? r.json() : null)
@@ -128,143 +121,107 @@ export default function NewsContent() {
         if (data?.articles?.length) {
           setArticles(data.articles);
           idRef.current = data.articles.length + 1;
+        } else {
+          setArticles(SEED_ARTICLES);
+          setUsingSample(true);
         }
       })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const t = setInterval(() => {
-      const next = EXTRA_ARTICLES[extraRef.current % EXTRA_ARTICLES.length];
-      extraRef.current++;
-      const article: Article = { ...next, id: idRef.current++ };
-      setArticles((prev) => [article, ...prev].slice(0, 20));
-    }, 5000);
-    return () => clearInterval(t);
+      .catch(() => {
+        setArticles(SEED_ARTICLES);
+        setUsingSample(true);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = activeCategory === "All" ? articles : articles.filter((a) => a.category === activeCategory);
   const featured = filtered.find((a) => a.featured) ?? filtered[0];
   const rest = filtered.filter((a) => a.id !== featured?.id);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
+          <p className="text-sm text-gray-400">Loading news feed…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
-      {/* Header */}
       <motion.div variants={stagger} initial="hidden" animate="visible">
         <motion.div variants={fadeUp}>
           <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· Live Intelligence ·</p>
           <h1 className="text-2xl font-extrabold text-white">News Feed</h1>
-          <p className="mt-1 text-sm text-gray-500">AI-curated business intelligence — updating in real time</p>
+          <p className="mt-1 text-sm text-gray-500">AI-curated business intelligence</p>
+          {usingSample && (
+            <p className="mt-1 text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-1.5 inline-block">
+              Sample content — live feed unavailable
+            </p>
+          )}
         </motion.div>
-
-        {/* Ticker */}
         <motion.div variants={fadeUp} className="mt-4 overflow-hidden rounded-xl border border-white/8 bg-white/3">
           <div className="flex items-center">
-            <span className="flex-shrink-0 border-r border-white/8 bg-brand-500/10 px-3 py-2 text-[10px] font-bold text-brand-400 uppercase tracking-widest">
-              LIVE
-            </span>
+            <span className="flex-shrink-0 border-r border-white/8 bg-brand-500/10 px-3 py-2 text-[10px] font-bold text-brand-400 uppercase tracking-widest">LIVE</span>
             <div className="overflow-hidden flex-1">
-              <motion.div
-                className="flex gap-8 px-4 py-2"
-                animate={{ x: [0, -1400] }}
-                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-              >
+              <motion.div className="flex gap-8 px-4 py-2" animate={{ x: [0, -1400] }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }}>
                 {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-                  <span key={i} className="whitespace-nowrap text-xs text-gray-400 font-mono">
-                    {item}
-                  </span>
+                  <span key={i} className="whitespace-nowrap text-xs text-gray-400 font-mono">{item}</span>
                 ))}
               </motion.div>
             </div>
           </div>
         </motion.div>
-
-        {/* Category filter */}
         <motion.div variants={fadeUp} className="mt-4 flex gap-2 overflow-x-auto pb-0.5 scrollbar-thin">
           {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                activeCategory === cat
-                  ? "bg-brand-500 text-white"
-                  : "border border-white/8 bg-white/3 text-gray-500 hover:text-gray-200 hover:bg-white/6"
-              }`}
-            >
+            <button key={cat} onClick={() => setActiveCategory(cat)}
+              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${activeCategory === cat ? "bg-brand-500 text-white" : "border border-white/8 bg-white/3 text-gray-500 hover:text-gray-200 hover:bg-white/6"}`}>
               {cat}
             </button>
           ))}
         </motion.div>
       </motion.div>
-
-      {/* Featured article */}
       <AnimatePresence mode="wait">
         {featured && (
-          <motion.div
-            key={featured.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
+          <motion.div key={featured.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
             className="relative overflow-hidden rounded-2xl border border-white/8 bg-white/3 p-5 hover:border-brand-500/25 transition-colors cursor-pointer"
-            onClick={() => setRead((r) => new Set([...r, featured.id]))}
-          >
+            onClick={() => setRead((r) => new Set([...r, featured.id]))}>
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${SENTIMENT_STYLES[featured.sentiment]}`}>
-                {featured.sentiment}
-              </span>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${CAT_STYLES[featured.category]}`}>
-                {featured.category}
-              </span>
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${SENTIMENT_STYLES[featured.sentiment]}`}>{featured.sentiment}</span>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${CAT_STYLES[featured.category]}`}>{featured.category}</span>
               <span className="text-[10px] text-gray-400">{featured.source}</span>
               <span className="text-[10px] text-gray-400">·</span>
               <span className="text-[10px] text-gray-400">{featured.time}</span>
             </div>
-            <h2 className={`text-lg font-bold leading-snug ${read.has(featured.id) ? "text-gray-400" : "text-white"}`}>
-              {featured.headline}
-            </h2>
+            <h2 className={`text-lg font-bold leading-snug ${read.has(featured.id) ? "text-gray-400" : "text-white"}`}>{featured.headline}</h2>
             <p className="mt-2 text-sm text-gray-500 leading-relaxed">{featured.excerpt}</p>
             <div className="mt-3 flex items-center justify-between">
               <span className="text-xs text-gray-400">{featured.readTime} read</span>
-              <button
-                onClick={(e) => { e.stopPropagation(); setSaved((s) => { const n = new Set(s); n.has(featured.id) ? n.delete(featured.id) : n.add(featured.id); return n; }); }}
-                className={`text-xs font-medium transition-colors ${saved.has(featured.id) ? "text-brand-400" : "text-gray-400 hover:text-gray-300"}`}
-              >
+              <button onClick={(e) => { e.stopPropagation(); setSaved((s) => { const n = new Set(s); n.has(featured.id) ? n.delete(featured.id) : n.add(featured.id); return n; }); }}
+                className={`text-xs font-medium transition-colors ${saved.has(featured.id) ? "text-brand-400" : "text-gray-400 hover:text-gray-300"}`}>
                 {saved.has(featured.id) ? "★ Saved" : "☆ Save"}
               </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Article grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <AnimatePresence initial={false}>
           {rest.map((article) => (
-            <motion.div
-              key={article.id}
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.25 }}
-              whileHover={{ y: -2, transition: { duration: 0.15 } }}
+            <motion.div key={article.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25 }} whileHover={{ y: -2, transition: { duration: 0.15 } }}
               className="flex flex-col rounded-xl border border-white/8 bg-white/3 p-4 hover:border-white/12 transition-colors cursor-pointer"
-              onClick={() => setRead((r) => new Set([...r, article.id]))}
-            >
+              onClick={() => setRead((r) => new Set([...r, article.id]))}>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${CAT_STYLES[article.category]}`}>{article.category}</span>
                 <span className="text-[9px] text-gray-400">{article.source} · {article.time}</span>
               </div>
-              <h3 className={`text-xs font-bold leading-snug flex-1 ${read.has(article.id) ? "text-gray-500" : "text-gray-200"}`}>
-                {article.headline}
-              </h3>
+              <h3 className={`text-xs font-bold leading-snug flex-1 ${read.has(article.id) ? "text-gray-500" : "text-gray-200"}`}>{article.headline}</h3>
               <div className="mt-2 flex items-center justify-between">
-                <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${SENTIMENT_STYLES[article.sentiment]}`}>
-                  {article.sentiment}
-                </span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setSaved((s) => { const n = new Set(s); n.has(article.id) ? n.delete(article.id) : n.add(article.id); return n; }); }}
-                  className={`text-[11px] ${saved.has(article.id) ? "text-brand-400" : "text-gray-500 hover:text-gray-400"} transition-colors`}
-                >
+                <span className={`rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${SENTIMENT_STYLES[article.sentiment]}`}>{article.sentiment}</span>
+                <button onClick={(e) => { e.stopPropagation(); setSaved((s) => { const n = new Set(s); n.has(article.id) ? n.delete(article.id) : n.add(article.id); return n; }); }}
+                  className={`text-[11px] ${saved.has(article.id) ? "text-brand-400" : "text-gray-500 hover:text-gray-400"} transition-colors`}>
                   {saved.has(article.id) ? "★" : "☆"}
                 </button>
               </div>
