@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { withCron } from "@/lib/cronUtils";
 
 function pct(a: number, b: number): string {
   if (b === 0) return "N/A";
@@ -31,12 +31,7 @@ function section(title: string, rows: [string, string, string?][]): string {
     </div>`;
 }
 
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withCron(async () => {
   const now = new Date();
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
@@ -45,7 +40,6 @@ export async function GET(req: Request) {
   const thirtyDaysAgo = new Date(today.getTime() - 30 * 86400000);
   const prevThirtyDaysAgo = new Date(today.getTime() - 60 * 86400000);
 
-  // ── Users & Signups ──
   const [
     totalUsers,
     newUsersToday,
@@ -64,20 +58,16 @@ export async function GET(req: Request) {
     db.user.count({ where: { emailVerified: { not: null } } }),
   ]);
 
-  // ── Subscriptions & Revenue ──
   const [
     activeSubscriptions,
     trialingSubscriptions,
     cancelledThisMonth,
-    totalRevenue,
   ] = await Promise.all([
     db.subscription.count({ where: { status: "ACTIVE" } }),
     db.subscription.count({ where: { status: "TRIALING" } }),
     db.subscription.count({ where: { status: "CANCELED", updatedAt: { gte: thirtyDaysAgo } } }),
-    Promise.resolve({ _sum: { amount: 0 } }),
   ]);
 
-  // ── AI Receptionist ──
   const [
     totalReceptionists,
     activeReceptionists,
@@ -98,7 +88,6 @@ export async function GET(req: Request) {
     db.lead.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
   ]);
 
-  // ── Bookings ──
   const [bookingsToday, bookingsYesterday, bookings7d, totalBookings] = await Promise.all([
     db.calendarBooking.count({ where: { createdAt: { gte: today } } }),
     db.calendarBooking.count({ where: { createdAt: { gte: yesterday, lt: today } } }),
@@ -106,29 +95,20 @@ export async function GET(req: Request) {
     db.calendarBooking.count(),
   ]);
 
-  // ── Support ──
   const [openTickets, closedToday, totalTickets] = await Promise.all([
     db.supportTicket.count({ where: { status: { not: "CLOSED" } } }),
     db.supportTicket.count({ where: { status: "CLOSED", updatedAt: { gte: today } } }),
     db.supportTicket.count(),
   ]);
 
-  // ── Affiliates ──
   const [totalAffiliates, activeAffiliates, conversionsThisMonth] = await Promise.all([
     db.affiliate.count().catch(() => 0),
     db.affiliate.count({ where: { status: "APPROVED" } }).catch(() => 0),
     db.affiliateConversion.count({ where: { createdAt: { gte: thirtyDaysAgo } } }).catch(() => 0),
   ]);
 
-  // ── Social Media Posts (from cron logs) ──
-  const socialPostsThisMonth = 30 - Math.floor((now.getTime() - thirtyDaysAgo.getTime()) / 86400000 - 30);
-
-  // ── Agent Intelligence ──
   const todayStr = now.toISOString().split("T")[0];
   const intelligenceReports = await db.agentIntelligenceReport.count({ where: { date: todayStr } }).catch(() => 0);
-
-  // ── Build Email ──
-  const revenueTotal = totalRevenue._sum?.amount ?? 0;
 
   const html = `
 <!DOCTYPE html>
@@ -136,37 +116,30 @@ export async function GET(req: Request) {
 <head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#020617;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
   <div style="max-width:640px;margin:0 auto;padding:32px 16px">
-
-    <!-- Header -->
     <div style="text-align:center;margin-bottom:32px">
       <h1 style="margin:0;font-size:24px;font-weight:800;color:#f1f5f9">MansaMusaAI</h1>
       <p style="margin:4px 0 0;color:#64748b;font-size:14px">Daily Performance Report — ${now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
     </div>
-
-    <!-- Status Banner -->
     <div style="background:linear-gradient(135deg,#7c3aed,#2563eb);border-radius:12px;padding:20px;margin-bottom:24px;text-align:center">
       <p style="margin:0;color:rgba(255,255,255,0.8);font-size:13px;text-transform:uppercase;letter-spacing:1px">Organization Status</p>
-      <p style="margin:4px 0 0;color:#fff;font-size:28px;font-weight:800">🟢 FULLY OPERATIONAL</p>
+      <p style="margin:4px 0 0;color:#fff;font-size:28px;font-weight:800">FULLY OPERATIONAL</p>
       <p style="margin:8px 0 0;color:rgba(255,255,255,0.7);font-size:13px">${activeSubscriptions} active customers · ${activeReceptionists} AI receptionists live · ${intelligenceReports}/5 agent reports generated</p>
     </div>
-
-    ${section("👥 Users & Growth", [
+    ${section("Users & Growth", [
       ["Total Users", totalUsers.toLocaleString()],
       ["New Today", newUsersToday.toString(), trend(newUsersToday, newUsersYesterday)],
       ["New This Week", newUsers7d.toString()],
       ["New This Month", newUsers30d.toString(), trend(newUsers30d, newUsersPrev30d)],
       ["Email Verified", `${verifiedUsers} (${pct(verifiedUsers, totalUsers)})`],
     ])}
-
-    ${section("💰 Revenue & Subscriptions", [
+    ${section("Revenue & Subscriptions", [
       ["Active Subscriptions", activeSubscriptions.toString()],
       ["On Trial", trialingSubscriptions.toString()],
       ["Cancelled This Month", cancelledThisMonth.toString()],
-      ["Total Revenue (all time)", "Check Stripe dashboard → stripe.com"],
-      ["Trial → Paid Rate", pct(activeSubscriptions, activeSubscriptions + trialingSubscriptions)],
+      ["Total Revenue (all time)", "Check Stripe dashboard"],
+      ["Trial to Paid Rate", pct(activeSubscriptions, activeSubscriptions + trialingSubscriptions)],
     ])}
-
-    ${section("🤖 AI Receptionist", [
+    ${section("AI Receptionist", [
       ["Total Receptionists Set Up", totalReceptionists.toString()],
       ["Currently Active", activeReceptionists.toString()],
       ["Calls Handled Today", callsToday.toString(), trend(callsToday, callsYesterday)],
@@ -174,54 +147,45 @@ export async function GET(req: Request) {
       ["Leads Captured Today", leadsToday.toString(), trend(leadsToday, leadsYesterday)],
       ["Total Leads Captured", totalLeads.toString()],
     ])}
-
-    ${section("📅 Bookings", [
+    ${section("Bookings", [
       ["Bookings Today", bookingsToday.toString(), trend(bookingsToday, bookingsYesterday)],
       ["Bookings This Week", bookings7d.toString()],
       ["Total Bookings (all time)", totalBookings.toString()],
     ])}
-
-    ${section("🤝 Affiliates", [
+    ${section("Affiliates", [
       ["Total Affiliates", totalAffiliates.toString()],
       ["Approved & Active", activeAffiliates.toString()],
       ["Conversions This Month", conversionsThisMonth.toString()],
     ])}
-
-    ${section("🎧 Support", [
+    ${section("Support", [
       ["Open Tickets", openTickets.toString()],
       ["Resolved Today", closedToday.toString()],
       ["Total Tickets (all time)", totalTickets.toString()],
     ])}
-
-    ${section("📱 Social Media & Content", [
+    ${section("Social Media & Content", [
       ["Platforms Posting Daily", "5 (Twitter, Facebook, Instagram, YouTube, Substack)"],
       ["Posts This Month", "Daily automated at 9am"],
       ["Newsletter", "Daily automated at 10am"],
       ["Blog/Medium", "Daily automated at 11am"],
       ["AI Agent Reports Generated Today", `${intelligenceReports}/5`],
     ])}
-
-    <!-- Footer -->
     <div style="text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid #1e293b">
       <p style="margin:0;color:#475569;font-size:13px">MansaMusaAI · mansamusainitiative.com</p>
       <p style="margin:4px 0 0;color:#334155;font-size:12px">This report is generated automatically every morning at 8am.</p>
     </div>
-
   </div>
 </body>
 </html>`;
 
   const reportTo = process.env.REPORT_EMAIL ?? "media@mansamusainitiative.com";
-  await sendEmail(reportTo, `📊 MansaMusaAI Daily Report — ${now.toLocaleDateString("en-GB")}`, html);
+  await sendEmail(reportTo, `MansaMusaAI Daily Report — ${now.toLocaleDateString("en-GB")}`, html);
 
-  return NextResponse.json({
-    ok: true,
+  return {
     metrics: {
       totalUsers, newUsersToday, activeSubscriptions, trialingSubscriptions,
       callsToday, leadsToday, bookingsToday, openTickets, activeAffiliates,
       intelligenceReports,
     },
     sentTo: reportTo,
-    timestamp: now.toISOString(),
-  });
-}
+  };
+});

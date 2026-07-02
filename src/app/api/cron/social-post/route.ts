@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   getTodaysScript,
   createHeyGenVideo,
@@ -15,28 +14,18 @@ import {
   postToFacebookText,
   postToThreadsText,
 } from "@/lib/social-automation";
+import { withCron } from "@/lib/cronUtils";
 
-// Runs daily via Vercel Cron at 9am.
-// Mode A (video): HeyGen creates a video → posted to all 8 platforms as video + caption.
-// Mode B (text): No HeyGen — posts professional text to Twitter, LinkedIn, Facebook, Threads.
-// Either way something posts every single day.
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withCron(async () => {
   const avatarId = process.env.HEYGEN_AVATAR_ID ?? "";
   const voiceId = process.env.HEYGEN_VOICE_ID ?? "";
   const script = getTodaysScript();
 
   let videoUrl: string | null = null;
 
-  // Attempt HeyGen video creation
   if (process.env.HEYGEN_API_KEY && avatarId && voiceId) {
     const videoId = await createHeyGenVideo(script, avatarId, voiceId);
     if (videoId) {
-      // Poll up to 10 minutes for render to complete
       for (let i = 0; i < 20; i++) {
         await new Promise(r => setTimeout(r, 30000));
         videoUrl = await getHeyGenVideoUrl(videoId);
@@ -48,7 +37,6 @@ export async function GET(req: Request) {
   let posted: Record<string, boolean>;
 
   if (videoUrl) {
-    // Mode A: Full video posts to all platforms
     const [linkedin, instagram, tiktok, youtube, twitter, facebook, threads, pinterest] = await Promise.all([
       postToLinkedIn(videoUrl, script),
       postToInstagram(videoUrl, script),
@@ -61,7 +49,6 @@ export async function GET(req: Request) {
     ]);
     posted = { linkedin, instagram, tiktok, youtube, twitter, facebook, threads, pinterest };
   } else {
-    // Mode B: Text posts to all text-capable platforms (no video required)
     const [twitter, linkedin, facebook, threads] = await Promise.all([
       postToTwitter("", script),
       postToLinkedInText(script),
@@ -73,13 +60,11 @@ export async function GET(req: Request) {
 
   const successCount = Object.values(posted).filter(Boolean).length;
 
-  return NextResponse.json({
-    ok: true,
+  return {
     script: script.title,
     mode: videoUrl ? "video" : "text",
     videoUrl,
     posted,
     successCount,
-    timestamp: new Date().toISOString(),
-  });
-}
+  };
+});

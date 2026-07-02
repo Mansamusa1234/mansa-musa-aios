@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
 import { getTodaysScript, VideoScript } from "@/lib/social-automation";
+import { withCron } from "@/lib/cronUtils";
 
 function generateNewsletterHTML(script: VideoScript): string {
   const topic = script.title;
   const hook = script.script.split("\n")[0];
-
   return `<p>Hi {{first_name}},</p>
 
 <p>${hook}</p>
@@ -23,98 +22,59 @@ function generateNewsletterHTML(script: VideoScript): string {
 <p><strong>Darren Neil, Founder — MansaMusaAI</strong></p>`;
 }
 
-export async function GET(req: Request) {
-  const secret = req.headers.get("authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withCron(async () => {
   const sessionCookie = process.env.SUBSTACK_SESSION_COOKIE;
   const publication = process.env.SUBSTACK_PUBLICATION;
 
   if (!sessionCookie || !publication) {
-    return NextResponse.json(
-      { error: "Missing SUBSTACK_SESSION_COOKIE or SUBSTACK_PUBLICATION env vars" },
-      { status: 500 }
-    );
+    return { skipped: true, reason: "SUBSTACK_SESSION_COOKIE or SUBSTACK_PUBLICATION not configured" };
   }
 
   const baseUrl = `https://${publication}.substack.com/api/v1`;
   const script = getTodaysScript();
-  const draftTitle = script.title;
-  const draftSubtitle = script.caption;
-  const draftBody = generateNewsletterHTML(script);
-
   const cookies = `substack.sid=${sessionCookie}`;
 
-  // Step 1: Create draft
   const draftRes = await fetch(`${baseUrl}/posts`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Cookie: cookies,
-    },
+    headers: { "Content-Type": "application/json", Cookie: cookies },
     body: JSON.stringify({
       type: "newsletter",
-      draft_title: draftTitle,
-      draft_body: draftBody,
-      draft_subtitle: draftSubtitle,
+      draft_title: script.title,
+      draft_body: generateNewsletterHTML(script),
+      draft_subtitle: script.caption,
       audience: "everyone",
     }),
   });
 
   if (!draftRes.ok) {
     const errText = await draftRes.text();
-    console.error("[cron/substack-post] Draft creation failed", draftRes.status, errText);
-    return NextResponse.json({ error: "Failed to create Substack draft" }, { status: 500 });
+    throw new Error(`Substack draft creation failed ${draftRes.status}: ${errText.slice(0, 200)}`);
   }
 
   const draft = await draftRes.json() as { id: number; slug?: string };
-  const postId = draft.id;
 
-  // Step 3: Update draft (PUT) then publish
-  const updateRes = await fetch(`${baseUrl}/posts/${postId}`, {
+  const updateRes = await fetch(`${baseUrl}/posts/${draft.id}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Cookie: cookies,
-    },
+    headers: { "Content-Type": "application/json", Cookie: cookies },
     body: JSON.stringify({
-      draft_title: draftTitle,
-      draft_body: draftBody,
-      draft_subtitle: draftSubtitle,
+      draft_title: script.title,
+      draft_body: generateNewsletterHTML(script),
+      draft_subtitle: script.caption,
       audience: "everyone",
     }),
   });
+  if (!updateRes.ok) throw new Error(`Substack update failed ${updateRes.status}`);
 
-  if (!updateRes.ok) {
-    const errText = await updateRes.text();
-    console.error("[cron/substack-post] Draft update failed", updateRes.status, errText);
-    return NextResponse.json({ error: "Failed to update Substack draft before publish" }, { status: 500 });
-  }
-
-  const publishRes = await fetch(`${baseUrl}/posts/${postId}/publish`, {
+  const publishRes = await fetch(`${baseUrl}/posts/${draft.id}/publish`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Cookie: cookies,
-    },
+    headers: { "Content-Type": "application/json", Cookie: cookies },
     body: JSON.stringify({}),
   });
+  if (!publishRes.ok) throw new Error(`Substack publish failed ${publishRes.status}`);
 
-  if (!publishRes.ok) {
-    const errText = await publishRes.text();
-    console.error("[cron/substack-post] Publish failed", publishRes.status, errText);
-    return NextResponse.json({ error: "Failed to publish Substack post" }, { status: 500 });
-  }
-
-  const postSlug = draft.slug ?? postId.toString();
-  const postUrl = `https://${publication}.substack.com/p/${postSlug}`;
-
-  return NextResponse.json({
-    ok: true,
-    title: draftTitle,
-    url: postUrl,
-    timestamp: new Date().toISOString(),
-  });
-}
+  const postSlug = draft.slug ?? draft.id.toString();
+  return {
+    title: script.title,
+    url: `https://${publication}.substack.com/p/${postSlug}`,
+  };
+});
