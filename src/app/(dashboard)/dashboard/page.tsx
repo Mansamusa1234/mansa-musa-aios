@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PLANS } from "@/lib/stripe";
 import DashboardClient from "@/components/dashboard/DashboardClient";
+import OnboardingAgent from "@/components/onboarding/OnboardingAgent";
 
 export const metadata: Metadata = {
   title: "Dashboard | MansaMusaAI",
@@ -54,17 +55,23 @@ export default async function DashboardPage() {
   const shouldShowFirstWelcome = isRecentlyRegistered || onboardingProgress === 0;
 
   return (
-    <DashboardClient
-      userName={(user?.name ?? session!.user.name)?.split(" ")[0] ?? "there"}
-      conversations={conversations}
-      plan={planDef.name}
-      status={subscription?.status ?? "Inactive"}
-      totalConversations={conversations.length}
-      onboardingItems={onboardingItems}
-      onboardingComplete={!!user?.onboardingComplete}
-      showFirstWelcome={shouldShowFirstWelcome}
-      msgUsed={msgThisMonth}
-      msgLimit={planDef.messagesPerMonth === Infinity ? null : planDef.messagesPerMonth}
-    />
+    <>
+      <DashboardClient
+        userName={(user?.name ?? session!.user.name)?.split(" ")[0] ?? "there"}
+        conversations={conversations}
+        plan={planDef.name}
+        status={subscription?.status ?? "Inactive"}
+        totalConversations={conversations.length}
+        onboardingItems={onboardingItems}
+        onboardingComplete={!!user?.onboardingComplete}
+        showFirstWelcome={shouldShowFirstWelcome}
+        msgUsed={msgThisMonth}
+        msgLimit={planDef.messagesPerMonth === Infinity ? null : planDef.messagesPerMonth}
+      />
+      <OnboardingAgent
+        userName={user?.name ?? session!.user.name ?? ""}
+        isNewUser={shouldShowFirstWelcome}
+      />
+    </>
   );
 }
