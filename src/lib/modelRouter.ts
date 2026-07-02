@@ -20,7 +20,7 @@ export interface ModelDef {
 }
 
 export const MODEL_CATALOG: ModelDef[] = [
-  // ── Anthropic ─────────────────────────────────────────
+  // ── Anthropic ─────────────────────────────────────
   {
     provider: "anthropic",
     modelId: "claude-haiku-4-5-20251001",
@@ -37,11 +37,22 @@ export const MODEL_CATALOG: ModelDef[] = [
     modelId: "claude-sonnet-4-6",
     displayName: "Claude Sonnet 4.6",
     description: "Balanced intelligence for professional use",
+    planGate: "basic",
+    contextWindow: 200000,
+    costPer1kInMicro: 3000,
+    costPer1kOutMicro: 15000,
+    available: () => !!process.env.ANTHROPIC_API_KEY,
+  },
+  {
+    provider: "anthropic",
+    modelId: "claude-sonnet-5",
+    displayName: "Claude Sonnet 5",
+    description: "Next-generation intelligence — fastest Claude 5",
     planGate: "pro",
     contextWindow: 200000,
     costPer1kInMicro: 3000,
     costPer1kOutMicro: 15000,
-    badge: "Pro",
+    badge: "New",
     available: () => !!process.env.ANTHROPIC_API_KEY,
   },
   {
@@ -49,6 +60,18 @@ export const MODEL_CATALOG: ModelDef[] = [
     modelId: "claude-opus-4-8",
     displayName: "Claude Opus 4.8",
     description: "Most powerful Claude — complex reasoning",
+    planGate: "pro",
+    contextWindow: 200000,
+    costPer1kInMicro: 15000,
+    costPer1kOutMicro: 75000,
+    badge: "Pro",
+    available: () => !!process.env.ANTHROPIC_API_KEY,
+  },
+  {
+    provider: "anthropic",
+    modelId: "claude-fable-5",
+    displayName: "Claude Fable 5",
+    description: "Anthropic's most powerful model — frontier intelligence",
     planGate: "enterprise",
     contextWindow: 200000,
     costPer1kInMicro: 15000,
@@ -56,13 +79,13 @@ export const MODEL_CATALOG: ModelDef[] = [
     badge: "Enterprise",
     available: () => !!process.env.ANTHROPIC_API_KEY,
   },
-  // ── OpenAI ────────────────────────────────────────────
+  // ── OpenAI ──────────────────────────────────────────
   {
     provider: "openai",
     modelId: "gpt-4o-mini",
     displayName: "GPT-4o Mini",
     description: "OpenAI's fast and affordable model",
-    planGate: "basic",
+    planGate: "free",
     contextWindow: 128000,
     costPer1kInMicro: 150,
     costPer1kOutMicro: 600,
@@ -73,11 +96,34 @@ export const MODEL_CATALOG: ModelDef[] = [
     modelId: "gpt-4o",
     displayName: "GPT-4o",
     description: "OpenAI's flagship multimodal model",
-    planGate: "pro",
+    planGate: "basic",
     contextWindow: 128000,
     costPer1kInMicro: 2500,
     costPer1kOutMicro: 10000,
-    badge: "Pro",
+    available: () => !!process.env.OPENAI_API_KEY,
+  },
+  {
+    provider: "openai",
+    modelId: "gpt-4.1",
+    displayName: "GPT-4.1",
+    description: "OpenAI's latest model — improved coding & instruction following",
+    planGate: "pro",
+    contextWindow: 1047576,
+    costPer1kInMicro: 2000,
+    costPer1kOutMicro: 8000,
+    badge: "New",
+    available: () => !!process.env.OPENAI_API_KEY,
+  },
+  {
+    provider: "openai",
+    modelId: "o3",
+    displayName: "OpenAI o3",
+    description: "Frontier reasoning model — solves the hardest problems",
+    planGate: "enterprise",
+    contextWindow: 200000,
+    costPer1kInMicro: 10000,
+    costPer1kOutMicro: 40000,
+    badge: "Enterprise",
     available: () => !!process.env.OPENAI_API_KEY,
   },
   // ── xAI Grok ─────────────────────────────────────────
@@ -104,6 +150,18 @@ export const MODEL_CATALOG: ModelDef[] = [
     badge: "Pro",
     available: () => !!process.env.XAI_API_KEY,
   },
+  {
+    provider: "grok",
+    modelId: "grok-4",
+    displayName: "Grok 4",
+    description: "xAI's most powerful model — real-time web + reasoning",
+    planGate: "enterprise",
+    contextWindow: 131072,
+    costPer1kInMicro: 15000,
+    costPer1kOutMicro: 75000,
+    badge: "Enterprise",
+    available: () => !!process.env.XAI_API_KEY,
+  },
   // ── Google Gemini ─────────────────────────────────────
   {
     provider: "gemini",
@@ -128,7 +186,7 @@ export const MODEL_CATALOG: ModelDef[] = [
     costPer1kOutMicro: 10000,
     available: () => !!process.env.GOOGLE_AI_API_KEY,
   },
-  // ── OpenRouter ────────────────────────────────────────
+  // ── OpenRouter ──────────────────────────────────────────
   {
     provider: "openrouter",
     modelId: "meta-llama/llama-3.1-8b-instruct:free",
@@ -153,17 +211,51 @@ export const MODEL_CATALOG: ModelDef[] = [
   },
   {
     provider: "openrouter",
+    modelId: "meta-llama/llama-4-maverick",
+    displayName: "Llama 4 Maverick",
+    description: "Meta's latest frontier model — multimodal",
+    planGate: "pro",
+    contextWindow: 1000000,
+    costPer1kInMicro: 200,
+    costPer1kOutMicro: 600,
+    badge: "New",
+    available: () => !!process.env.OPENROUTER_API_KEY,
+  },
+  {
+    provider: "openrouter",
     modelId: "deepseek/deepseek-r1",
     displayName: "DeepSeek R1",
     description: "Advanced reasoning model from DeepSeek",
-    planGate: "pro",
+    planGate: "basic",
     contextWindow: 65536,
     costPer1kInMicro: 550,
     costPer1kOutMicro: 2190,
-    badge: "Pro",
     available: () => !!process.env.OPENROUTER_API_KEY,
   },
-  // ── Mistral ───────────────────────────────────────────
+  {
+    provider: "openrouter",
+    modelId: "deepseek/deepseek-r2",
+    displayName: "DeepSeek R2",
+    description: "DeepSeek's next-generation reasoning model",
+    planGate: "pro",
+    contextWindow: 131072,
+    costPer1kInMicro: 500,
+    costPer1kOutMicro: 2000,
+    badge: "New",
+    available: () => !!process.env.OPENROUTER_API_KEY,
+  },
+  {
+    provider: "openrouter",
+    modelId: "google/gemini-2.5-flash-preview",
+    displayName: "Gemini 2.5 Flash",
+    description: "Google's fastest thinking model via OpenRouter",
+    planGate: "basic",
+    contextWindow: 1048576,
+    costPer1kInMicro: 75,
+    costPer1kOutMicro: 300,
+    available: () => !!process.env.OPENROUTER_API_KEY,
+  },
+  // ── Mistral ────────────────────────────────────────────
   {
     provider: "mistral",
     modelId: "mistral-small-latest",
@@ -201,9 +293,9 @@ const planRank = (p: string) => PLAN_ORDER.indexOf(p);
 
 export function getAutoModel(plan: string): ModelDef {
   const candidates: Record<string, string> = {
-    enterprise: "claude-opus-4-8",
-    pro:        "claude-sonnet-4-6",
-    basic:      "claude-haiku-4-5-20251001",
+    enterprise: "claude-fable-5",
+    pro:        "claude-sonnet-5",
+    basic:      "claude-sonnet-4-6",
     free:       "claude-haiku-4-5-20251001",
   };
   const target = candidates[plan] ?? candidates.free;
@@ -270,7 +362,7 @@ function routeAnthropic(model: ModelDef, messages: ChatMessage[], system: string
   return { stream, onComplete };
 }
 
-/* ── OpenAI ─────────────────────────────────────────────────── */
+/* ── OpenAI ──────────────────────────────────────────────────── */
 function routeOpenAI(model: ModelDef, messages: ChatMessage[], system: string): RouteResult {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
   const encoder = new TextEncoder();
@@ -300,7 +392,7 @@ function routeOpenAI(model: ModelDef, messages: ChatMessage[], system: string): 
   return { stream, onComplete };
 }
 
-/* ── xAI Grok (OpenAI-compatible) ──────────────────────────── */
+/* ── xAI Grok (OpenAI-compatible) ────────────────────────────────────── */
 function routeGrok(model: ModelDef, messages: ChatMessage[], system: string): RouteResult {
   const client = new OpenAI({ apiKey: process.env.XAI_API_KEY!, baseURL: "https://api.x.ai/v1" });
   const encoder = new TextEncoder();
@@ -330,7 +422,7 @@ function routeGrok(model: ModelDef, messages: ChatMessage[], system: string): Ro
   return { stream, onComplete };
 }
 
-/* ── Google Gemini ──────────────────────────────────────────── */
+/* ── Google Gemini ─────────────────────────────────────────────── */
 function routeGemini(model: ModelDef, messages: ChatMessage[], system: string): RouteResult {
   const encoder = new TextEncoder();
   let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
@@ -371,7 +463,7 @@ function routeGemini(model: ModelDef, messages: ChatMessage[], system: string): 
   return { stream, onComplete };
 }
 
-/* ── Mistral ─────────────────────────────────────────────────── */
+/* ── Mistral ───────────────────────────────────────────────────── */
 function routeMistral(model: ModelDef, messages: ChatMessage[], system: string): RouteResult {
   const encoder = new TextEncoder();
   let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
@@ -409,7 +501,7 @@ function routeMistral(model: ModelDef, messages: ChatMessage[], system: string):
   return { stream, onComplete };
 }
 
-/* ── OpenRouter (OpenAI-compatible) ─────────────────────────── */
+/* ── OpenRouter (OpenAI-compatible) ─────────────────────────────────────── */
 function routeOpenRouter(model: ModelDef, messages: ChatMessage[], system: string): RouteResult {
   const client = new OpenAI({
     apiKey: process.env.OPENROUTER_API_KEY!,
