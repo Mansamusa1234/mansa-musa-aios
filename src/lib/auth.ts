@@ -37,11 +37,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          redirect_uri: `${process.env.NEXTAUTH_URL ?? "https://mansamusainitiative.com"}/api/auth/callback/google`,
-        },
-      },
     }),
     ...microsoftEntraIdProvider,
     ...appleProvider,
@@ -87,7 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return { id: user.id, email: user.email, name: user.name, role: user.role, jti };
         }
 
-        // ── Path B: Normal credentials ───────────────────────────────────────
+        // ── Path B: Normal credentials ─────────────────────────────────────
         const parsed = credentialsSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
