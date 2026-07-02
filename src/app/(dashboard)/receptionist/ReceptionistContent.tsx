@@ -124,7 +124,7 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1">Receptionist name</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" />
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-white/8 bg-[#1a1a2e] px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1">Widget colour</label>
@@ -136,15 +136,15 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Opening greeting</label>
-            <textarea value={form.greeting} onChange={(e) => setForm({ ...form, greeting: e.target.value })} rows={2} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none resize-none focus:border-brand-500/50" />
+            <textarea value={form.greeting} onChange={(e) => setForm({ ...form, greeting: e.target.value })} rows={2} className="w-full rounded-xl border border-white/8 bg-[#1a1a2e] px-3 py-2.5 text-sm text-white outline-none resize-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Personality / tone (comma-separated traits)</label>
-            <input value={form.persona} onChange={(e) => setForm({ ...form, persona: e.target.value })} placeholder="professional, friendly, concise" className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" />
+            <input value={form.persona} onChange={(e) => setForm({ ...form, persona: e.target.value })} placeholder="professional, friendly, concise" className="w-full rounded-xl border border-white/8 bg-[#1a1a2e] px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Business hours (optional)</label>
-            <input value={form.businessHours ?? ""} onChange={(e) => setForm({ ...form, businessHours: e.target.value })} placeholder="Mon-Fri 9am-6pm GMT" className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" />
+            <input value={form.businessHours ?? ""} onChange={(e) => setForm({ ...form, businessHours: e.target.value })} placeholder="Mon-Fri 9am-6pm GMT" className="w-full rounded-xl border border-white/8 bg-[#1a1a2e] px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50 focus:ring-1 focus:ring-brand-500/50" />
           </div>
           <div className="flex items-center gap-3">
             <label className="relative inline-flex items-center cursor-pointer">
