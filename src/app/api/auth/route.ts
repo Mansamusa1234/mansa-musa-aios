@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
+  // This route is a developer-only tool for obtaining YouTube OAuth tokens.
+  // It must never be publicly accessible.
+  const authHeader = req.headers.get("authorization");
+  if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
 

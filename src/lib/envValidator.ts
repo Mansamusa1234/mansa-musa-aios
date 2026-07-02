@@ -20,8 +20,21 @@ const ENV_MANIFEST: EnvVar[] = [
   // ── Database ──────────────────────────────────────────────────────────
   { key: "DATABASE_URL",         required: true,  description: "PostgreSQL connection string",           group: "Database" },
 
+  // ── Stripe ───────────────────────────────────────────────────────────
+  { key: "STRIPE_SECRET_KEY",         required: true,  description: "Stripe secret API key",                  group: "Stripe" },
+  { key: "STRIPE_WEBHOOK_SECRET",     required: true,  description: "Stripe webhook signing secret",          group: "Stripe" },
+  { key: "STRIPE_PRICE_STARTER",      required: false, description: "Stripe price ID for Starter plan",       group: "Stripe" },
+  { key: "STRIPE_PRICE_PRO",          required: false, description: "Stripe price ID for Pro plan",           group: "Stripe" },
+  { key: "STRIPE_PRICE_PROFESSIONAL", required: false, description: "Stripe price ID for Professional plan",  group: "Stripe" },
+  { key: "STRIPE_PRICE_ENTERPRISE",   required: false, description: "Stripe price ID for Enterprise plan",    group: "Stripe" },
+
   // ── AI ───────────────────────────────────────────────────────────────
   { key: "ANTHROPIC_API_KEY",    required: true,  description: "Anthropic Claude API key",               group: "AI" },
+  { key: "OPENAI_API_KEY",       required: false, description: "OpenAI API key for GPT models",          group: "AI" },
+  { key: "XAI_API_KEY",          required: false, description: "xAI Grok API key",                       group: "AI" },
+  { key: "GOOGLE_AI_API_KEY",    required: false, description: "Google Gemini API key",                  group: "AI" },
+  { key: "MISTRAL_API_KEY",      required: false, description: "Mistral API key",                        group: "AI" },
+  { key: "OPENROUTER_API_KEY",   required: false, description: "OpenRouter API key",                     group: "AI" },
 
   // ── Email ────────────────────────────────────────────────────────────
   { key: "RESEND_API_KEY",       required: false, description: "Resend email API key (password reset, welcome emails)", group: "Email" },
@@ -32,10 +45,14 @@ const ENV_MANIFEST: EnvVar[] = [
   { key: "TWITTER_ACCESS_TOKEN",       required: false, description: "Twitter/X access token",          group: "Social" },
   { key: "TWITTER_ACCESS_TOKEN_SECRET",required: false, description: "Twitter/X access token secret",  group: "Social" },
   { key: "LINKEDIN_ACCESS_TOKEN",      required: false, description: "LinkedIn access token",           group: "Social" },
+  { key: "LINKEDIN_PERSON_ID",         required: false, description: "LinkedIn person URN for posting", group: "Social" },
   { key: "INSTAGRAM_ACCESS_TOKEN",     required: false, description: "Instagram access token",          group: "Social" },
-  { key: "FACEBOOK_ACCESS_TOKEN",      required: false, description: "Facebook access token",           group: "Social" },
+  { key: "FACEBOOK_PAGE_ACCESS_TOKEN", required: false, description: "Facebook page access token",      group: "Social" },
+  { key: "FACEBOOK_PAGE_ID",           required: false, description: "Facebook page ID",                group: "Social" },
   { key: "TIKTOK_ACCESS_TOKEN",        required: false, description: "TikTok access token",             group: "Social" },
-  { key: "YOUTUBE_ACCESS_TOKEN",       required: false, description: "YouTube access token",            group: "Social" },
+  { key: "YOUTUBE_CLIENT_ID",          required: false, description: "YouTube OAuth client ID",         group: "Social" },
+  { key: "YOUTUBE_CLIENT_SECRET",      required: false, description: "YouTube OAuth client secret",     group: "Social" },
+  { key: "YOUTUBE_REFRESH_TOKEN",      required: false, description: "YouTube OAuth refresh token",     group: "Social" },
   { key: "PINTEREST_ACCESS_TOKEN",     required: false, description: "Pinterest access token",          group: "Social" },
   { key: "THREADS_ACCESS_TOKEN",       required: false, description: "Threads access token",            group: "Social" },
 

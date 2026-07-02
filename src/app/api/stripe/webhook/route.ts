@@ -55,14 +55,14 @@ export async function POST(req: Request) {
           userId: session.metadata!.userId,
           stripeCustomerId: session.customer as string,
           stripeSubscriptionId: sub.id,
-          stripePriceId: sub.items.data[0].price.id,
+          stripePriceId: sub.items.data[0]?.price.id ?? "",
           status: "ACTIVE",
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
         },
         update: {
           stripeSubscriptionId: sub.id,
-          stripePriceId: sub.items.data[0].price.id,
+          stripePriceId: sub.items.data[0]?.price.id ?? "",
           status: "ACTIVE",
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
       try {
         await recordConversion(
           session.metadata!.userId,
-          sub.items.data[0].price.id,
+          sub.items.data[0]?.price.id ?? "",
           sub.id,
           session.metadata?.affiliateCode ?? null,
         );
@@ -89,14 +89,15 @@ export async function POST(req: Request) {
             select: { email: true, name: true },
           });
           if (user) {
-            const planName = PLANS.find((p) => p.priceId === sub.items.data[0].price.id)?.name ?? "paid";
+            const priceItem = sub.items.data[0];
+            const planName = PLANS.find((p) => p.priceId === priceItem?.price.id)?.name ?? "paid";
             await sendEmail(
               user.email,
               `Your ${planName} plan is now active`,
               subscriptionStartedEmailHtml({
                 name: user.name ?? "there",
                 plan: planName,
-                amount: formatAmount(sub.items.data[0].price.unit_amount, sub.items.data[0].price.currency),
+                amount: formatAmount(priceItem?.price.unit_amount ?? null, priceItem?.price.currency ?? "gbp"),
                 nextBillDate: formatDate(sub.current_period_end),
               })
             );
@@ -131,7 +132,7 @@ export async function POST(req: Request) {
         where: { stripeSubscriptionId: sub.id },
         data: {
           status: (statusMap[sub.status] ?? "INACTIVE") as never,
-          stripePriceId: sub.items.data[0].price.id,
+          stripePriceId: sub.items.data[0]?.price.id ?? "",
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
           cancelAtPeriodEnd: sub.cancel_at_period_end,

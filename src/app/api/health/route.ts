@@ -39,9 +39,9 @@ export async function GET() {
     twitter:   !!process.env.TWITTER_API_KEY && !!process.env.TWITTER_ACCESS_TOKEN,
     linkedin:  !!process.env.LINKEDIN_ACCESS_TOKEN,
     instagram: !!process.env.INSTAGRAM_ACCESS_TOKEN,
-    facebook:  !!process.env.FACEBOOK_ACCESS_TOKEN,
+    facebook:  !!process.env.FACEBOOK_PAGE_ACCESS_TOKEN,
     tiktok:    !!process.env.TIKTOK_ACCESS_TOKEN,
-    youtube:   !!process.env.YOUTUBE_ACCESS_TOKEN,
+    youtube:   !!process.env.YOUTUBE_CLIENT_ID && !!process.env.YOUTUBE_REFRESH_TOKEN,
     pinterest: !!process.env.PINTEREST_ACCESS_TOKEN,
     threads:   !!process.env.THREADS_ACCESS_TOKEN,
   };

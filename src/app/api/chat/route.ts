@@ -77,8 +77,8 @@ export async function POST(req: Request) {
   if (subscription?.status === "ACTIVE" && subscription.stripePriceId) {
     const priceId = subscription.stripePriceId;
     if (priceId === process.env.STRIPE_PRICE_ENTERPRISE) plan = "enterprise";
-    else if (priceId === process.env.STRIPE_PRICE_PRO || priceId === process.env.STRIPE_PRICE_PROFESSIONAL) plan = "professional";
-    else if (priceId === process.env.STRIPE_PRICE_BASIC || priceId === process.env.STRIPE_PRICE_STARTER) plan = "starter";
+    else if (priceId === process.env.STRIPE_PRICE_PRO || priceId === process.env.STRIPE_PRICE_PROFESSIONAL) plan = "pro";
+    else if (priceId === process.env.STRIPE_PRICE_BASIC || priceId === process.env.STRIPE_PRICE_STARTER) plan = "basic";
   }
 
   const planDef = PLANS.find((p) => p.id === plan) ?? PLANS[0];
