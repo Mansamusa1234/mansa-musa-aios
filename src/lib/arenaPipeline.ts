@@ -1,12 +1,20 @@
 import { db } from "@/lib/db";
+import type { Agent } from "@prisma/client";
 import { anthropic } from "@/lib/anthropic";
 import { DEBATER_KEYS, ensureArenaAgentsSeeded } from "@/lib/arenaAgents";
 import { findDictionaryEntriesInText, formatDictionaryEntriesForPrompt, formatDictionarySources } from "@/lib/legalDictionary";
 import { formatEvidenceForPrompt, formatEvidenceSourcesPanel, searchEvidenceChunks } from "@/lib/evidenceVault";
 
+// Teams-within-teams competition pipeline:
+// Team Alpha (fact/evidence focus) vs Team Beta (risk/commercial focus)
+// Each team debates internally → produces team consensus → teams battle → synthesis picks winner
+
 const DEBATER_MODEL = "claude-haiku-4-5-20251001";
 const JUDGE_MODEL = "claude-sonnet-4-6";
 const SYNTHESIS_MODEL = "claude-opus-4-8";
+
+const TEAM_ALPHA_KEYS = ["research", "legal-dictionary", "evidence", "plain-english"] as const;
+const TEAM_BETA_KEYS  = ["common-law", "statute", "risk", "commercial"] as const;
 
 interface ScoreResult {
   agentKey: string;
@@ -117,6 +125,58 @@ async function scoreAnswers(
   }));
 }
 
+// Each team debates internally and produces a single team consensus answer
+async function runTeamDebate(
+  teamAgents: Agent[],
+  teamName: string,
+  question: string,
+  context: string,
+  sessionId: string
+): Promise<string> {
+  // Step 1: Each agent gives their individual answer
+  const individualAnswers = await Promise.all(
+    teamAgents.map(async (agent: Agent) => {
+      const content = await callAgent(
+        agent.systemPrompt,
+        `Question: ${question}\n\n${context}\n\nYou are on ${teamName}. Give your specialist perspective in 4-6 sentences. Be direct and evidence-focused.`,
+        DEBATER_MODEL,
+        600
+      );
+      await db.agentResponse.create({ data: { sessionId, agentId: agent.id, round: "INITIAL", content } });
+      return { agent, content };
+    })
+  );
+
+  // Step 2: Each agent challenges teammates — within-team debate
+  const challenged = await Promise.all(
+    individualAnswers.map(async ({ agent, content: own }: { agent: Agent; content: string }) => {
+      const othersBlock = individualAnswers
+        .filter((r: { agent: Agent; content: string }) => r.agent.key !== agent.key)
+        .map((r: { agent: Agent; content: string }) => `${r.agent.name}: ${r.content}`)
+        .join("\n\n");
+      const critique = await callAgent(
+        agent.systemPrompt,
+        `Question: ${question}\n\nYour initial answer: ${own}\n\nYour ${teamName} teammates answered:\n\n${othersBlock}\n\nChallenge any weak points in your teammates' answers and strengthen your own position in 3 sentences.`,
+        DEBATER_MODEL,
+        400
+      );
+      await db.agentResponse.create({ data: { sessionId, agentId: agent.id, round: "CRITIQUE", content: critique } });
+      return { agent, improved: own + "\n\nRefinement: " + critique };
+    })
+  );
+
+  // Step 3: Team produces a single consensus answer incorporating all perspectives
+  const refinedBlock = challenged.map((r: { agent: Agent; improved: string }) => `${r.agent.name}:\n${r.improved}`).join("\n\n---\n\n");
+  const consensus = await callAgent(
+    `You are the ${teamName} consensus synthesiser. Your job is to take all your team members' answers and produce ONE unified team position — the strongest, most truthful answer the team collectively agrees on. Combine the best evidence, identify where teammates agreed, resolve disagreements in favour of the most supported position, and produce a clear, honest, well-structured answer. Never exaggerate or hide uncertainty.`,
+    `Question: ${question}\n\n${teamName} members' refined answers:\n\n${refinedBlock}\n\nProduce the single strongest team consensus answer in 8-12 sentences. This will compete directly against the opposing team's consensus.`,
+    JUDGE_MODEL,
+    900
+  );
+
+  return consensus;
+}
+
 export async function runArenaPipeline(sessionId: string, question: string): Promise<void> {
   await ensureArenaAgentsSeeded();
   const dictionaryEntries = findDictionaryEntriesInText(question, 8);
@@ -128,75 +188,91 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
   const evidenceContext = formatEvidenceForPrompt(evidenceSources);
   const evidencePanel = formatEvidenceSourcesPanel(evidenceSources);
 
-  const debaters = await db.agent.findMany({ where: { key: { in: DEBATER_KEYS } }, orderBy: { sortOrder: "asc" } });
+  const context = [
+    dictionaryContext ? `Legal dictionary context (explanation only, not legal authority):\n${dictionaryContext}` : "",
+    evidenceContext ? `Evidence Vault context. Cite exact labels like [E1] only when using these sources:\n${evidenceContext}` : "",
+  ].filter(Boolean).join("\n\n");
+
+  const allDebaters = await db.agent.findMany({ where: { key: { in: DEBATER_KEYS } }, orderBy: { sortOrder: "asc" } });
   const judgeAgent = await db.agent.findUnique({ where: { key: "wisdom-judge" } });
   const synthesisAgent = await db.agent.findUnique({ where: { key: "synthesis" } });
 
-  if (!judgeAgent || !synthesisAgent || debaters.length !== DEBATER_KEYS.length) {
+  if (!judgeAgent || !synthesisAgent || allDebaters.length !== DEBATER_KEYS.length) {
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "FAILED", error: "Arena agents are not seeded correctly" } });
     return;
   }
 
+  const teamAlpha = allDebaters.filter((a) => (TEAM_ALPHA_KEYS as readonly string[]).includes(a.key));
+  const teamBeta  = allDebaters.filter((a) => (TEAM_BETA_KEYS  as readonly string[]).includes(a.key));
+
   try {
-    // Round 1 — initial answers, all debaters in parallel
+    // ── Phase 1: Both teams debate internally in parallel ─────────────────────
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "DEBATING" } });
-    const initial = await Promise.all(
-      debaters.map(async (agent) => {
-        const content = await callAgent(
-          agent.systemPrompt,
-          `Question: ${question}\n\nLegal dictionary context for explanation only, not legal authority:\n${dictionaryContext}\n\nEvidence Vault context. Cite exact labels like [E1] only when using these sources:\n${evidenceContext}\n\nGive your own specialist answer. Include source/fact-check notes where possible, flag uncertainty, and never present legal theories as guaranteed law. This is informational support, not advice from a solicitor. 5-9 concise sentences.`,
-          DEBATER_MODEL,
-          700
-        );
-        await db.agentResponse.create({ data: { sessionId, agentId: agent.id, round: "INITIAL", content } });
-        return { agent, content };
-      })
-    );
 
-    // Round 2 — each debater critiques everyone else's initial answer
+    const [alphaConsensus, betaConsensus] = await Promise.all([
+      runTeamDebate(teamAlpha, "Team Alpha (Evidence & Facts)", question, context, sessionId),
+      runTeamDebate(teamBeta,  "Team Beta (Law & Risk)", question, context, sessionId),
+    ]);
+
+    // Save team consensus responses
+    const alphaLeader = teamAlpha[0];
+    const betaLeader  = teamBeta[0];
+    await Promise.all([
+      db.agentResponse.create({ data: { sessionId, agentId: alphaLeader.id, round: "IMPROVED", content: `[TEAM ALPHA CONSENSUS]\n${alphaConsensus}` } }),
+      db.agentResponse.create({ data: { sessionId, agentId: betaLeader.id,  round: "IMPROVED", content: `[TEAM BETA CONSENSUS]\n${betaConsensus}` } }),
+    ]);
+
+    // ── Phase 2: Teams cross-challenge each other ───────────────────────────
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "CRITIQUING" } });
-    const critiques = await Promise.all(
-      initial.map(async ({ agent }) => {
-        const othersBlock = initial
-          .filter((r) => r.agent.key !== agent.key)
-          .map((r) => `${r.agent.name}: ${r.content}`)
-          .join("\n\n");
-        const content = await callAgent(
-          agent.systemPrompt,
-          `Question: ${question}\n\nHere are the other agents' initial answers:\n\n${othersBlock}\n\nCritique these answers from your perspective. Score their accuracy, usefulness, risk awareness, and clarity informally. What is missing, wrong, unsafe, unsupported, unclear, or commercially weak? Be specific in 3-5 sentences.`,
-          DEBATER_MODEL,
-          500
-        );
-        await db.agentResponse.create({ data: { sessionId, agentId: agent.id, round: "CRITIQUE", content } });
-        return { agent, content };
-      })
-    );
 
-    // Round 3 — each debater improves their own answer in light of the critiques
+    const [alphaChallenge, betaChallenge] = await Promise.all([
+      callAgent(
+        `You are Team Alpha's spokesperson. Challenge Team Beta's answer — expose any weaknesses, missing evidence, legal errors, or overlooked risks. Be sharp and specific.`,
+        `Question: ${question}\n\nTeam Alpha consensus:\n${alphaConsensus}\n\nTeam Beta consensus:\n${betaConsensus}\n\nChallenge Team Beta's answer in 4-6 sentences.`,
+        JUDGE_MODEL, 500
+      ),
+      callAgent(
+        `You are Team Beta's spokesperson. Challenge Team Alpha's answer — expose any weaknesses, missing evidence, legal errors, or overlooked risks. Be sharp and specific.`,
+        `Question: ${question}\n\nTeam Beta consensus:\n${betaConsensus}\n\nTeam Alpha consensus:\n${alphaConsensus}\n\nChallenge Team Alpha's answer in 4-6 sentences.`,
+        JUDGE_MODEL, 500
+      ),
+    ]);
+
+    // ── Phase 3: Each team improves their answer after cross-challenge ─────────
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "IMPROVING" } });
-    const critiquesBlock = critiques.map((c) => `${c.agent.name}: ${c.content}`).join("\n\n");
-    const improved = await Promise.all(
-      initial.map(async ({ agent, content: ownInitial }) => {
-        const content = await callAgent(
-          agent.systemPrompt,
-          `Question: ${question}\n\nYour initial answer was:\n${ownInitial}\n\nHow the debate critiqued the answers so far:\n\n${critiquesBlock}\n\nGive your improved final answer. Include: source/fact-check notes where possible, evidence needed, risks, and practical next steps. Do not guarantee legal outcomes. 6-10 sentences.`,
-          DEBATER_MODEL,
-          700
-        );
-        await db.agentResponse.create({ data: { sessionId, agentId: agent.id, round: "IMPROVED", content } });
-        return { agent, content };
-      })
-    );
 
-    // Round 4 — Wisdom Judge scores the final (improved) answers
+    const [alphaFinal, betaFinal] = await Promise.all([
+      callAgent(
+        `You are Team Alpha's spokesperson. Defend your position and improve your answer after receiving Team Beta's challenge.`,
+        `Question: ${question}\n\nYour team's consensus:\n${alphaConsensus}\n\nTeam Beta challenged you:\n${betaChallenge}\n\nDefend, correct, and strengthen your final answer in 8-10 sentences.`,
+        JUDGE_MODEL, 800
+      ),
+      callAgent(
+        `You are Team Beta's spokesperson. Defend your position and improve your answer after receiving Team Alpha's challenge.`,
+        `Question: ${question}\n\nYour team's consensus:\n${betaConsensus}\n\nTeam Alpha challenged you:\n${alphaChallenge}\n\nDefend, correct, and strengthen your final answer in 8-10 sentences.`,
+        JUDGE_MODEL, 800
+      ),
+    ]);
+
+    // ── Phase 4: Wisdom Judge scores both teams and all individual agents ────
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "SCORING" } });
-    const answersBlock = improved.map((r) => `### ${r.agent.name} (key: ${r.agent.key})\n${r.content}`).join("\n\n");
-    const validKeys = improved.map((r) => r.agent.key);
-    const scores = await scoreAnswers(judgeAgent.systemPrompt, question, answersBlock, validKeys);
+
+    const improvedResponses = await db.agentResponse.findMany({
+      where: { sessionId, round: "IMPROVED" },
+      include: { agent: true },
+    });
+
+    const agentAnswersBlock = improvedResponses
+      .map((r) => `### ${r.agent.name} (key: ${r.agent.key})\n${r.content}`)
+      .join("\n\n");
+
+    const validKeys = [...TEAM_ALPHA_KEYS, ...TEAM_BETA_KEYS] as string[];
+    const scores = await scoreAnswers(judgeAgent.systemPrompt, question, agentAnswersBlock, validKeys);
 
     await Promise.all(
       scores.map((s) => {
-        const agent = debaters.find((a) => a.key === s.agentKey)!;
+        const agent = allDebaters.find((a) => a.key === s.agentKey);
+        if (!agent) return Promise.resolve();
         const total = s.truth + s.evidence + s.depth + s.practicality + s.riskAwareness + s.originality + s.clarity + s.longTermValue;
         return db.agentScore.create({
           data: {
@@ -209,29 +285,38 @@ export async function runArenaPipeline(sessionId: string, question: string): Pro
       })
     );
 
-    // Round 5 — Synthesis Agent produces the Deep Wisdom Answer
+    // Determine winning team
+    const alphaKeys = TEAM_ALPHA_KEYS as readonly string[];
+    const betaKeys  = TEAM_BETA_KEYS  as readonly string[];
+    const alphaTotal = scores.filter((s) => alphaKeys.includes(s.agentKey)).reduce((acc, s) => acc + s.truth + s.evidence + s.depth + s.practicality + s.riskAwareness + s.originality + s.clarity + s.longTermValue, 0);
+    const betaTotal  = scores.filter((s) => betaKeys.includes(s.agentKey)).reduce((acc, s) => acc + s.truth + s.evidence + s.depth + s.practicality + s.riskAwareness + s.originality + s.clarity + s.longTermValue, 0);
+    const winningTeam   = alphaTotal >= betaTotal ? "Team Alpha (Evidence & Facts)" : "Team Beta (Law & Risk)";
+    const winningAnswer = alphaTotal >= betaTotal ? alphaFinal : betaFinal;
+
+    // ── Phase 5: Synthesis Agent produces the final Deep Wisdom Answer ──────
     await db.arenaSession.update({ where: { id: sessionId }, data: { status: "SYNTHESIZING" } });
+
     const scoresBlock = scores
       .map((s) => {
-        const agent = debaters.find((a) => a.key === s.agentKey)!;
+        const agent = allDebaters.find((a) => a.key === s.agentKey);
         const total = s.truth + s.evidence + s.depth + s.practicality + s.riskAwareness + s.originality + s.clarity + s.longTermValue;
-        return `${agent.name}: ${total}/80 — ${s.rationale}`;
+        return `${agent?.name ?? s.agentKey}: ${total}/80 — ${s.rationale}`;
       })
       .join("\n");
+
     const synthesisContent = await callAgent(
       synthesisAgent.systemPrompt,
-      `Question: ${question}\n\nLegal dictionary context for explanation only, not legal authority:\n${dictionaryContext}\n\nEvidence Vault context. Cite exact labels like [E1] only when using these sources:\n${evidenceContext}\n\nFinal answers from each agent:\n\n${answersBlock}\n\nArena Judge scores:\n${scoresBlock}\n\nProduce the strongest final answer and select the best-supported conclusion. Include source/fact-check notes where possible, evidence needed, risk limits, plain-English next steps, and commercial templates/workflows. Do not present legal theories as guaranteed law.${dictionarySources || evidencePanel ? `\n\nInclude these source labels in Sources / Fact-check notes:\n${[dictionarySources, evidencePanel].filter(Boolean).join("\n")}` : ""}`,
+      `Question: ${question}\n\n${context ? context + "\n\n" : ""}THE TEAM BATTLE:\n\nTeam Alpha final answer:\n${alphaFinal}\n\nTeam Beta final answer:\n${betaFinal}\n\nWinning team by judge score: ${winningTeam}\nWinning answer:\n${winningAnswer}\n\nAll agent scores:\n${scoresBlock}\n\nProduce the single most truthful, complete, honest answer possible. Draw on both teams' strongest points. Acknowledge where evidence is uncertain. Provide clear, practical next steps. Do not present legal theories as guaranteed law.${dictionarySources || evidencePanel ? `\n\nSources:\n${[dictionarySources, evidencePanel].filter(Boolean).join("\n")}` : ""}`,
       SYNTHESIS_MODEL,
       3000
     );
+
     await db.finalSynthesis.create({ data: { sessionId, content: synthesisContent } });
 
-    // Auto-save WisdomMemory using the synthesis as the distilled answer
-    const session = arenaOwner;
-    if (session?.userId) {
+    if (arenaOwner?.userId) {
       await db.wisdomMemory.upsert({
         where: { sessionId },
-        create: { sessionId, userId: session.userId, question, summary: synthesisContent.slice(0, 3000) },
+        create: { sessionId, userId: arenaOwner.userId, question, summary: synthesisContent.slice(0, 3000) },
         update: { summary: synthesisContent.slice(0, 3000) },
       });
     }
