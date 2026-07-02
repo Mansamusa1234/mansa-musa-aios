@@ -71,19 +71,25 @@ export default function BlogPostContent({ post, allPosts }: Props) {
             {post.excerpt}
           </motion.p>
 
-          {/* Article placeholder content */}
+          {/* Article content */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
             className="prose prose-gray max-w-none space-y-6 text-gray-600 leading-relaxed"
           >
+            {post.content ? (
+              <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            ) : (
+              <>
             <p>
               This is a growing article on <strong>{post.title}</strong>. Full content is coming soon as we continue to build out the MansaMusaAI blog.
             </p>
             <p>
               In the meantime, you can explore the platform to see these concepts in action — or reach out to our team with questions.
             </p>
+            </>
+            )}
 
             <div className="my-8 rounded-2xl border border-brand-100 bg-brand-50 p-6">
               <h3 className="font-bold text-brand-900 mb-2">Key takeaways</h3>

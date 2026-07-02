@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { AGENTS } from "@/data/agents";
 
 /* ── Inline SVG icon set ──────────────────────────────────── */
-type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics" | "gift" | "link" | "arena" | "settings" | "crm" | "receptionist" | "workforce" | "support" | "calendar" | "layers" | "compete" | "wisdom" | "trophy";
+type IK = "home" | "chart" | "store" | "bot" | "news" | "globe" | "chat" | "currency" | "users" | "user" | "card" | "shield" | "analytics" | "gift" | "link" | "arena" | "settings" | "crm" | "receptionist" | "workforce" | "support" | "calendar" | "layers" | "compete" | "wisdom" | "trophy" | "command";
 
 const ICONS: Record<IK, React.ReactNode> = {
   home: (
@@ -129,6 +129,12 @@ const ICONS: Record<IK, React.ReactNode> = {
       <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
     </svg>
   ),
+  command: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
+      <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      <path d="M7 8h.01M11 8h6"/>
+    </svg>
+  ),
   arena: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-[17px] h-[17px]">
       <path d="M4 4l16 16M20 4 4 20"/>
@@ -170,9 +176,10 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Overview",
     items: [
-      { href: "/dashboard",   label: "Dashboard",   icon: "home"       },
-      { href: "/workforce",   label: "Workforce OS", icon: "workforce", badge: "HQ" },
-      { href: "/analytics",   label: "Analytics",   icon: "analytics"  },
+      { href: "/dashboard",        label: "Dashboard",      icon: "home"       },
+      { href: "/command-centre",   label: "Command Centre", icon: "command", badge: "🔴" },
+      { href: "/workforce",        label: "Workforce OS",   icon: "workforce", badge: "HQ" },
+      { href: "/analytics",        label: "Analytics",      icon: "analytics"  },
     ],
   },
   {
