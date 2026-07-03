@@ -8,7 +8,7 @@ import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 const schema = z.object({ email: z.string().email() });
 
 export async function POST(req: Request) {
-  const limited = await checkRateLimit(limiters.forgotPassword, getIP(req));
+  const limited = await checkRateLimit(limiters.newsletter, getIP(req));
   if (limited) return limited;
 
   try {

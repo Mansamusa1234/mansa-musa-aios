@@ -3,6 +3,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import { sendEmail, bookingConfirmedGuestEmailHtml, newBookingOwnerEmailHtml } from "@/lib/email";
 import { triggerWorkflows } from "@/lib/email-automation";
+import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 
 const schema = z.object({
   guestName: z.string().min(1).max(100),
@@ -35,6 +36,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ userId:
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ userId: string }> }) {
+  const limited = await checkRateLimit(limiters.publicBook, getIP(req));
+  if (limited) return limited;
+
   const { userId } = await params;
 
   const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, email: true } });

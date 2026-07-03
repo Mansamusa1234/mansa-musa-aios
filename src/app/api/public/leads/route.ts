@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import { sendEmail, newLeadEmailHtml } from "@/lib/email";
 import { triggerWorkflows } from "@/lib/email-automation";
+import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 
 const schema = z.object({
   userId: z.string().min(1),
@@ -14,6 +15,9 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  const limited = await checkRateLimit(limiters.publicLead, getIP(req));
+  if (limited) return limited;
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid data" }, { status: 400 });

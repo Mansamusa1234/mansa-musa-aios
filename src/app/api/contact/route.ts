@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 
 const schema = z.object({
   name:    z.string().min(1).max(100),
@@ -9,6 +10,9 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  const limited = await checkRateLimit(limiters.contact, getIP(req));
+  if (limited) return limited;
+
   try {
     const body = await req.json();
     const data = schema.parse(body);

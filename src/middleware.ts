@@ -12,8 +12,41 @@ const protectedPaths = [
   "/onboarding", "/whatsapp", "/email-automation", "/agents",
 ];
 
+// Common scanner/bot user-agent fragments — block at the edge before they hit any route
+const BLOCKED_UA_PATTERNS = [
+  "sqlmap", "nikto", "nmap", "masscan", "zgrab", "nuclei",
+  "dirbuster", "gobuster", "wfuzz", "hydra", "metasploit",
+  "burpsuite", "burp suite", "acunetix", "nessus", "openvas",
+  "python-requests/0", // raw scripted scan baseline
+  "go-http-client/1", // common headless scanner
+];
+
+// Paths that scanners love to probe — return 404 immediately
+const SCANNER_PATHS = [
+  "/.env", "/.git", "/wp-admin", "/wp-login", "/phpmyadmin",
+  "/admin.php", "/config.php", "/xmlrpc.php", "/.htaccess",
+  "/etc/passwd", "/proc/self", "/.aws", "/.ssh",
+];
+
+function isScannerUA(ua: string | null): boolean {
+  if (!ua) return false;
+  const lower = ua.toLowerCase();
+  return BLOCKED_UA_PATTERNS.some((p) => lower.includes(p));
+}
+
+function isScannerPath(pathname: string): boolean {
+  const lower = pathname.toLowerCase();
+  return SCANNER_PATHS.some((p) => lower.startsWith(p));
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const ua = req.headers.get("user-agent");
+
+  // Block scanners at the edge — 404 so they get no information
+  if (isScannerPath(pathname) || isScannerUA(ua)) {
+    return new NextResponse(null, { status: 404 });
+  }
 
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
   if (!isProtected) return NextResponse.next();
@@ -36,5 +69,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)"],
 };
