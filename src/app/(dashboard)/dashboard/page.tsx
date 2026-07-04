@@ -20,19 +20,24 @@ export default async function DashboardPage() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [conversations, subscription, user, msgThisMonth, receptionist, calendarAvail] = await Promise.all([
-    db.conversation.findMany({
-      where: { userId },
-      orderBy: { updatedAt: "desc" },
-      take: 5,
-      include: { _count: { select: { messages: true } } },
-    }),
-    db.subscription.findUnique({ where: { userId } }),
-    db.user.findUnique({ where: { id: userId }, select: { name: true, createdAt: true, emailVerified: true, twoFactorEnabled: true, onboardingComplete: true } }),
-    db.usageRecord.count({ where: { userId, createdAt: { gte: monthStart } } }),
-    db.receptionist.findUnique({ where: { userId }, select: { id: true } }),
-    db.calendarAvailability.findUnique({ where: { userId }, select: { id: true } }),
-  ]);
+  // Wrap all DB queries so a single failure can't crash the whole page
+  const [conversations, subscription, user, msgThisMonth, receptionist, calendarAvail] =
+    await Promise.all([
+      db.conversation.findMany({
+        where: { userId },
+        orderBy: { updatedAt: "desc" },
+        take: 5,
+        include: { _count: { select: { messages: true } } },
+      }).catch(() => []),
+      db.subscription.findUnique({ where: { userId } }).catch(() => null),
+      db.user.findUnique({
+        where: { id: userId },
+        select: { name: true, createdAt: true, emailVerified: true, twoFactorEnabled: true, onboardingComplete: true },
+      }).catch(() => null),
+      db.usageRecord.count({ where: { userId, createdAt: { gte: monthStart } } }).catch(() => 0),
+      db.receptionist.findUnique({ where: { userId }, select: { id: true } }).catch(() => null),
+      db.calendarAvailability.findUnique({ where: { userId }, select: { id: true } }).catch(() => null),
+    ]);
 
   let planId = "free";
   if ((subscription?.status === "ACTIVE" || subscription?.status === "TRIALING") && subscription.stripePriceId) {
