@@ -44,7 +44,7 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
           if (d.ticket?.aiResponse) {
             clearInterval(poll);
             setTickets((p) => p.map((t) => t.id === ticketId ? { ...t, aiResponse: d.ticket.aiResponse } : t));
-            setSelected((s) => s?.id === ticketId ? { ...s, aiResponse: d.ticket.aiResponse } : s);
+            setSelected((s) => s && s.id === ticketId ? { ...s, aiResponse: d.ticket.aiResponse } : s);
           }
         } catch { /* continue polling */ }
       }, 2000);
@@ -98,20 +98,18 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
       </div>
       {showNew && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={(e) => { if (e.target === e.currentTarget) setShowNew(false); }}>
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg rounded-2xl border border-white/8 bg-[#0e0e1a] p-6">
-            <h2 className="text-lg font-bold text-white mb-4">Open a support ticket</h2>
-            <form onSubmit={submit} className="space-y-4">
-              <input required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Subject *" className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none" />
-              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Priority })} className="w-full rounded-xl border border-white/8 bg-[#0e0e1a] px-3 py-2.5 text-sm text-white outline-none"><option value="LOW">Low priority</option><option value="MEDIUM">Medium priority</option><option value="HIGH">High priority</option><option value="URGENT">Urgent</option></select>
-              <textarea required rows={5} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Describe your issue in detail..." className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none resize-none" />
-              <div className="flex gap-3">
-                <button type="submit" disabled={submitting} className="flex-1 rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">{submitting ? "Submitting..." : "Submit ticket"}</button>
-                <button type="button" onClick={() => setShowNew(false)} className="rounded-xl border border-white/8 px-4 py-2.5 text-sm text-gray-400">Cancel</button>
-              </div>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="rounded-2xl border border-white/8 bg-[#0e0e1a] p-6 w-full max-w-lg space-y-4">
+            <div className="flex items-center justify-between"><h2 className="text-base font-bold text-white">New support ticket</h2><button onClick={() => setShowNew(false)} className="text-gray-400 hover:text-gray-300 text-lg">×</button></div>
+            <form onSubmit={submit} className="space-y-3">
+              <div><label className="block text-xs font-medium text-gray-400 mb-1">Subject</label><input required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none" /></div>
+              <div><label className="block text-xs font-medium text-gray-400 mb-1">Priority</label><select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Priority })} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none"><option value="LOW">Low</option><option value="MEDIUM">Medium</option><option value="HIGH">High</option><option value="URGENT">Urgent</option></select></div>
+              <div><label className="block text-xs font-medium text-gray-400 mb-1">Describe your issue</label><textarea required value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} rows={4} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none resize-none" /></div>
+              <button type="submit" disabled={submitting} className="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">{submitting ? "Submitting..." : "Submit ticket"}</button>
             </form>
           </motion.div>
         </div>
       )}
+      <AnimatePresence />
     </motion.div>
   );
 }
