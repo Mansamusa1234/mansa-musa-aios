@@ -89,7 +89,7 @@ export default function SupportContent({ isAdmin, tickets: initial }: Props) {
       <div className="lg:col-span-2 space-y-6">
         {/* Submit form */}
         {!isAdmin && (
-          <motion.div {...scaleIn(0)} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <motion.div initial="hidden" animate="visible" variants={scaleIn} className="rounded-2xl border border-white/10 bg-white/5 p-6">
             <h2 className="text-lg font-semibold text-white mb-4">New support ticket</h2>
             <form onSubmit={submit} className="space-y-4">
               <div>
@@ -140,12 +140,12 @@ export default function SupportContent({ isAdmin, tickets: initial }: Props) {
 
         {/* Open tickets */}
         {open.length > 0 && (
-          <motion.div {...stagger(0.05)} className="space-y-2">
+          <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">Open</p>
-            {open.map((t, i) => (
+            {open.map((t) => (
               <motion.button
                 key={t.id}
-                {...fadeUp(i * 0.04)}
+                initial="hidden" animate="visible" variants={fadeUp}
                 onClick={() => setSelected(t)}
                 className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
                   selected?.id === t.id
@@ -165,12 +165,12 @@ export default function SupportContent({ isAdmin, tickets: initial }: Props) {
 
         {/* Closed tickets */}
         {closed.length > 0 && (
-          <motion.div {...stagger(0.05)} className="space-y-2">
+          <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">Resolved</p>
-            {closed.map((t, i) => (
+            {closed.map((t) => (
               <motion.button
                 key={t.id}
-                {...fadeUp(i * 0.04)}
+                initial="hidden" animate="visible" variants={fadeUp}
                 onClick={() => setSelected(t)}
                 className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
                   selected?.id === t.id

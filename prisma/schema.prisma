@@ -14,44 +14,35 @@ enum Role {
 
 enum SubscriptionStatus {
   ACTIVE
-  CANCELED
-  PAST_DUE
-  TRIALING
   INACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELLED
 }
 
 model User {
-  id                String    @id @default(cuid())
-  name              String?
-  email             String    @unique
-  emailVerified     DateTime?
-  image             String?
-  passwordHash      String?
-  role              Role      @default(USER)
-  referralCode      String?   @unique
-  referredByUserId  String?
-  failedLoginAttempts Int     @default(0)
-  lockedUntil       DateTime?
-  twoFactorSecret   String?
-  twoFactorEnabled  Boolean   @default(false)
-  twoFactorBackupCodes String? @db.Text
-  onboardingComplete Boolean  @default(false)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                       String    @id @default(cuid())
+  name                     String?
+  email                    String    @unique
+  emailVerified            DateTime?
+  image                    String?
+  password                 String?
+  role                     Role      @default(USER)
+  twoFactorEnabled         Boolean   @default(false)
+  twoFactorSecret          String?
+  onboardingComplete       Boolean   @default(false)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
-  accounts          Account[]
-  sessions          Session[]
-  subscription      Subscription?
-  conversations     Conversation[]
-  usageRecords      UsageRecord[]
-  agentMemories     AgentMemory[]
-  referralsMade     Referral[]    @relation("ReferralsMade")
-  referralReceived  Referral?     @relation("ReferralsReceived")
-  affiliate         Affiliate?
-  arenaSessions     ArenaSession[]
-  wisdomMemories    WisdomMemory[]
-  referredBy        User?              @relation("ReferredBy", fields: [referredByUserId], references: [id], onDelete: SetNull)
-  referredUsers     User[]             @relation("ReferredBy")
+  accounts                 Account[]
+  sessions                 Session[]
+  conversations            Conversation[]
+  subscription             Subscription?
+  usageRecords             UsageRecord[]
+  affiliate                Affiliate?
+  referredBy               String?
+  referralCode             String?   @unique
+  referralCommissions      Commission[] @relation("ReferrerCommissions")
   commissionLedger  CommissionLedger[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
@@ -82,6 +73,7 @@ model User {
   agentListings            AgentListing[]   @relation("AgentListingSeller")
   agentPurchases           AgentPurchase[]  @relation("AgentPurchaseBuyer")
   workforceChats           WorkforceChat[]
+  outreachCampaigns        OutreachCampaign[]
   activationNudge1SentAt   DateTime?
   activationNudge2SentAt   DateTime?
   activationNudge3SentAt   DateTime?
@@ -93,16 +85,16 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?
+  id_token          String?  @db.Text
   session_state     String?
-
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@id([provider, providerAccountId])
 }
 
@@ -110,6 +102,8 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -117,46 +111,84 @@ model VerificationToken {
   identifier String
   token      String
   expires    DateTime
-
   @@id([identifier, token])
+}
+
+model TrustedSession {
+  id         String   @id @default(cuid())
+  userId     String
+  deviceHash String
+  label      String?
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, deviceHash])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  metadata  Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Subscription {
   id                   String             @id @default(cuid())
   userId               String             @unique
-  stripeCustomerId     String             @unique
+  stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
   stripePriceId        String?
   status               SubscriptionStatus @default(INACTIVE)
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean            @default(false)
-  trialEndsAt              DateTime?
-  trialUsed                Boolean            @default(false)
-  trialEndingNotifiedAt    DateTime?
-  winBack1SentAt           DateTime?
-  winBack2SentAt           DateTime?
-  winBack3SentAt           DateTime?
-  trialUpsell1SentAt       DateTime?
-  trialUpsell2SentAt       DateTime?
-  trialUpsell3SentAt       DateTime?
-  planUpsellSentAt         DateTime?
+  trialEndsAt          DateTime?
+  trialUsed            Boolean            @default(false)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model UsageRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   @default("message")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Conversation {
   id        String    @id @default(cuid())
   userId    String
-  agentId   String?
   title     String    @default("New Conversation")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages Message[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
 }
 
 model Message {
@@ -164,1005 +196,463 @@ model Message {
   conversationId String
   role           String
   content        String       @db.Text
-  inputTokens    Int          @default(0)
-  outputTokens   Int          @default(0)
   createdAt      DateTime     @default(now())
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-}
-
-model UsageRecord {
-  id           String   @id @default(cuid())
-  userId       String
-  inputTokens  Int      @default(0)
-  outputTokens Int      @default(0)
-  model        String
-  provider     String   @default("anthropic")
-  costUsdMicro Int      @default(0)
-  createdAt    DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model UserModelPreference {
-  id       String @id @default(cuid())
-  userId   String @unique
-  mode     String @default("auto")
-  provider String @default("anthropic")
-  modelId  String @default("claude-haiku-4-5-20251001")
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model AgentMemory {
-  id        String   @id @default(cuid())
-  userId    String
-  agentId   String
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, agentId])
-}
-
-model EvidenceDocument {
-  id          String   @id @default(cuid())
-  userId      String
-  filename    String
-  mimeType    String
-  sizeBytes   Int
-  sourceType  String   @default("USER_UPLOAD")
-  status      String   @default("READY")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chunks EvidenceChunk[]
-
-  @@index([userId, createdAt])
-}
-
-model EvidenceChunk {
-  id           String   @id @default(cuid())
-  documentId   String
-  userId       String
-  text         String   @db.Text
-  pageNumber   Int?
-  sectionLabel String?
-  createdAt    DateTime @default(now())
-
-  document EvidenceDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([documentId])
-}
-
-model ExportedDocument {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  type      String
-  content   String   @db.Text
-  sources   String?  @db.Text
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-}
-
-model Referral {
-  id             String    @id @default(cuid())
-  referrerId     String
-  referredUserId String    @unique
-  status         String    @default("SIGNED_UP")
-  rewardCents    Int       @default(0)
-  createdAt      DateTime  @default(now())
-  convertedAt    DateTime?
-
-  referrer     User @relation("ReferralsMade", fields: [referrerId], references: [id], onDelete: Cascade)
-  referredUser User @relation("ReferralsReceived", fields: [referredUserId], references: [id], onDelete: Cascade)
-
-  ledgerEntry CommissionLedger?
-}
-
-enum AffiliateTier {
-  BRONZE
-  SILVER
-  GOLD
-  PLATINUM
-}
-
-enum PayoutRequestStatus {
-  PENDING
-  APPROVED
-  PAID
-  REJECTED
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }
 
 model Affiliate {
-  id               String        @id @default(cuid())
-  userId           String        @unique
-  code             String        @unique
-  status           String        @default("APPROVED")
-  tier             AffiliateTier @default(BRONZE)
-  commissionRate   Int           @default(20)
-  recurringRate    Int           @default(20)
-  clicks           Int           @default(0)
-  couponCode       String?       @unique
-  stripeCouponId   String?
-  socialHandle     String?
-  paypalEmail      String?
-  bankDetails      String?       @db.Text
-  parentAffiliateId String?
-  tier2Rate        Int           @default(5)
-  createdAt        DateTime      @default(now())
-
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversions     AffiliateConversion[]
-  clickLogs       AffiliateClick[]
-  payoutRequests  AffiliatePayoutRequest[]
-  childAffiliates Affiliate[]           @relation("AffiliateHierarchy")
-  parentAffiliate Affiliate?            @relation("AffiliateHierarchy", fields: [parentAffiliateId], references: [id])
-}
-
-model AffiliateClick {
-  id          String   @id @default(cuid())
-  affiliateId String
-  ip          String?
-  userAgent   String?
-  referrer    String?
-  country     String?
-  converted   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
-
-  @@index([affiliateId, createdAt])
-}
-
-model AffiliateConversion {
-  id                  String    @id @default(cuid())
-  affiliateId         String
-  referredUserId      String    @unique
-  status              String    @default("SIGNED_UP")
-  commissionCents     Int       @default(0)
-  recurringTotal      Int       @default(0)
-  stripeSubscriptionId String?
-  stripePriceId       String?
-  createdAt           DateTime  @default(now())
-  convertedAt         DateTime?
-  lastRenewalAt       DateTime?
-
-  affiliate   Affiliate              @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
-  ledgerEntry CommissionLedger?
-  renewals    AffiliateRenewal[]
-}
-
-model AffiliateRenewal {
   id              String   @id @default(cuid())
-  conversionId    String
-  amountCents     Int
-  commissionCents Int
-  invoiceId       String?  @unique
-  paidAt          DateTime @default(now())
-
-  conversion AffiliateConversion @relation(fields: [conversionId], references: [id], onDelete: Cascade)
+  userId          String   @unique
+  code            String   @unique
+  status          String   @default("pending")
+  commissionRate  Float    @default(0.20)
+  couponCode      String?
+  stripeCouponId  String?
+  paypalEmail     String?
+  totalEarned     Float    @default(0)
+  pendingPayout   Float    @default(0)
+  lastPayoutAt    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals       Commission[] @relation("AffiliateCommissions")
+  leaderboardEntries AffiliateLeaderboard[]
 }
 
-model AffiliatePayoutRequest {
-  id            String              @id @default(cuid())
-  affiliateId   String
-  amountCents   Int
-  status        PayoutRequestStatus @default(PENDING)
-  method        String              @default("bank")
-  notes         String?             @db.Text
-  adminNote     String?
-  processedAt   DateTime?
-  createdAt     DateTime            @default(now())
-
-  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
-}
-
-/* ── Commission ledger (admin-approval, manual payout) ──────── */
-
-enum LedgerStatus {
-  PENDING
-  APPROVED
-  PAID
-  REJECTED
-}
-
-enum LedgerSourceType {
-  REFERRAL
-  AFFILIATE
+model Commission {
+  id           String    @id @default(cuid())
+  affiliateId  String
+  referrerId   String
+  amount       Float
+  status       String    @default("pending")
+  stripePaymentId String?
+  paidAt       DateTime?
+  createdAt    DateTime  @default(now())
+  affiliate    Affiliate @relation("AffiliateCommissions", fields: [affiliateId], references: [id], onDelete: Cascade)
+  referrer     User      @relation("ReferrerCommissions", fields: [referrerId], references: [id], onDelete: Cascade)
 }
 
 model CommissionLedger {
-  id                    String           @id @default(cuid())
-  userId                String
-  sourceType            LedgerSourceType
-  referralId            String?          @unique
-  affiliateConversionId String?          @unique
-  amountCents           Int
-  status                LedgerStatus     @default(PENDING)
-  approvedAt            DateTime?
-  approvedByUserId      String?
-  paidAt                DateTime?
-  paidByUserId          String?
-  notes                 String?          @db.Text
-  createdAt             DateTime         @default(now())
-
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  referral            Referral?            @relation(fields: [referralId], references: [id])
-  affiliateConversion AffiliateConversion? @relation(fields: [affiliateConversionId], references: [id])
-}
-
-/* ── Wisdom Arena ─────────────────────────────────────────── */
-
-enum ArenaStatus {
-  RUNNING
-  DEBATING
-  CRITIQUING
-  IMPROVING
-  SCORING
-  SYNTHESIZING
-  DONE
-  FAILED
-}
-
-enum ResponseRound {
-  INITIAL
-  CRITIQUE
-  IMPROVED
-}
-
-model Agent {
-  id           String   @id @default(cuid())
-  key          String   @unique
-  name         String
-  role         String
-  description  String
-  systemPrompt String   @db.Text
-  sortOrder    Int      @default(0)
-  createdAt    DateTime @default(now())
-
-  responses AgentResponse[]
-  scores    AgentScore[]
-}
-
-model ArenaSession {
-  id          String      @id @default(cuid())
-  userId      String
-  question    String      @db.Text
-  status      ArenaStatus @default(RUNNING)
-  error       String?
-  createdAt   DateTime    @default(now())
-  completedAt DateTime?
-
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  responses AgentResponse[]
-  scores    AgentScore[]
-  synthesis FinalSynthesis?
-  memory    WisdomMemory?
-}
-
-model AgentResponse {
-  id        String        @id @default(cuid())
-  sessionId String
-  agentId   String
-  round     ResponseRound
-  content   String        @db.Text
-  createdAt DateTime      @default(now())
-
-  session ArenaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  agent   Agent        @relation(fields: [agentId], references: [id])
-
-  @@unique([sessionId, agentId, round])
-}
-
-model AgentScore {
-  id            String   @id @default(cuid())
-  sessionId     String
-  agentId       String
-  truth         Int
-  evidence      Int
-  depth         Int
-  practicality  Int
-  riskAwareness Int
-  originality   Int
-  clarity       Int
-  longTermValue Int
-  total         Int
-  rationale     String   @db.Text
-  createdAt     DateTime @default(now())
-
-  session ArenaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  agent   Agent        @relation(fields: [agentId], references: [id])
-
-  @@unique([sessionId, agentId])
-}
-
-model FinalSynthesis {
-  id        String   @id @default(cuid())
-  sessionId String   @unique
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-
-  session ArenaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-}
-
-model WisdomMemory {
-  id        String   @id @default(cuid())
-  userId    String
-  sessionId String   @unique
-  question  String   @db.Text
-  summary   String   @db.Text
-  savedAt   DateTime @default(now())
-
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  session ArenaSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-}
-
-/* ── Phase 6: Enterprise Authentication ──────────────────────── */
-
-model PasswordResetToken {
-  id        String    @id @default(cuid())
-  userId    String
-  token     String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model EmailVerificationToken {
-  id        String    @id @default(cuid())
-  userId    String
-  email     String
-  token     String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum AuditEventType {
-  LOGIN_SUCCESS
-  LOGIN_FAILURE
-  LOGOUT
-  ACCOUNT_LOCKED
-  SUSPICIOUS_LOGIN
-  PASSWORD_RESET_REQUESTED
-  PASSWORD_RESET_COMPLETED
-  PASSWORD_CHANGED
-  EMAIL_VERIFICATION_SENT
-  EMAIL_VERIFIED
-  EMAIL_CHANGED
-  SESSION_REVOKED
-}
-
-model AuditLog {
-  id        String         @id @default(cuid())
-  userId    String?
-  event     AuditEventType
-  ip        String?
-  userAgent String?
-  metadata  String?        @db.Text
-  createdAt DateTime       @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([userId, createdAt])
-}
-
-model TrustedSession {
-  id         String    @id @default(cuid())
+  id         String   @id @default(cuid())
   userId     String
-  tokenId    String    @unique
-  ip         String?
-  userAgent  String?
-  rememberMe Boolean   @default(false)
-  lastSeenAt DateTime  @default(now())
-  createdAt  DateTime  @default(now())
-  revokedAt  DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount     Float
+  type       String
+  note       String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-/* ── Growth Engine ────────────────────────────────────────── */
-
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String?
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum SubscriberStatus {
-  SUBSCRIBED
-  UNSUBSCRIBED
+model AffiliateLeaderboard {
+  id          String    @id @default(cuid())
+  affiliateId String    @unique
+  rank        Int
+  totalSales  Float     @default(0)
+  period      String
+  updatedAt   DateTime  @updatedAt
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
 }
 
 model NewsletterSubscriber {
-  id           String           @id @default(cuid())
-  email        String           @unique
-  userId       String?          @unique
-  status       SubscriberStatus @default(SUBSCRIBED)
-  unsubscribeToken String       @unique
-  subscribedAt DateTime         @default(now())
-  unsubscribedAt DateTime?
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-}
-
-model EmailCampaign {
-  id          String    @id @default(cuid())
-  subject     String
-  bodyHtml    String    @db.Text
-  status      String    @default("DRAFT")
-  recipientCount Int    @default(0)
-  sentCount   Int       @default(0)
-  failedCount Int       @default(0)
-  createdAt   DateTime  @default(now())
-  sentAt      DateTime?
-}
-
-/* ── CRM ──────────────────────────────────────────────────── */
-
-enum LeadStage {
-  NEW
-  CONTACTED
-  QUALIFIED
-  PROPOSAL
-  WON
-  LOST
+  id               String    @id @default(cuid())
+  email            String    @unique
+  userId           String?   @unique
+  status           String    @default("SUBSCRIBED")
+  subscribedAt     DateTime  @default(now())
+  unsubscribedAt   DateTime?
+  unsubscribeToken String    @unique
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Lead {
-  id          String     @id @default(cuid())
-  userId      String
-  name        String
-  email       String?
-  phone       String?
-  company     String?
-  source      String?
-  stage       LeadStage  @default(NEW)
-  value       Int        @default(0)
-  notes       String?    @db.Text
-  assignedTo  String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  activities  LeadActivity[]
-
-  @@index([userId, stage])
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  email        String?
+  phone        String?
+  company      String?
+  source       String   @default("website")
+  status       String   @default("new")
+  notes        String?  @db.Text
+  value        Float?
+  convertedAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  activities   LeadActivity[]
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model LeadActivity {
   id        String   @id @default(cuid())
   leadId    String
   type      String
-  note      String?  @db.Text
+  notes     String?  @db.Text
   createdAt DateTime @default(now())
-
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 }
 
-/* ── WhatsApp ─────────────────────────────────────────────── */
-
-enum WhatsAppDirection {
-  INBOUND
-  OUTBOUND
+enum ReceptionistStatus {
+  ACTIVE
+  INACTIVE
 }
-
-model WhatsAppMessage {
-  id          String             @id @default(cuid())
-  userId      String
-  from        String
-  to          String
-  body        String             @db.Text
-  direction   WhatsAppDirection
-  twilioSid   String?            @unique
-  status      String             @default("received")
-  mediaUrl    String?
-  createdAt   DateTime           @default(now())
-
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-}
-
-/* ── Email Automation ─────────────────────────────────────── */
-
-enum WorkflowTrigger {
-  LEAD_CREATED
-  BOOKING_CONFIRMED
-  BOOKING_CANCELLED
-  TRIAL_STARTED
-  TRIAL_ENDING
-  SUBSCRIPTION_ACTIVATED
-  SUBSCRIPTION_CANCELLED
-  MANUAL
-}
-
-model EmailWorkflow {
-  id          String           @id @default(cuid())
-  userId      String
-  name        String
-  trigger     WorkflowTrigger
-  isActive    Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  steps       EmailWorkflowStep[]
-  runs        EmailWorkflowRun[]
-}
-
-model EmailWorkflowStep {
-  id           String   @id @default(cuid())
-  workflowId   String
-  stepOrder    Int
-  delayHours   Int      @default(0)
-  subject      String
-  bodyHtml     String   @db.Text
-  createdAt    DateTime @default(now())
-
-  workflow     EmailWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-}
-
-enum WorkflowRunStatus {
-  PENDING
-  RUNNING
-  COMPLETED
-  FAILED
-}
-
-model EmailWorkflowRun {
-  id          String            @id @default(cuid())
-  workflowId  String
-  toEmail     String
-  toName      String?
-  status      WorkflowRunStatus @default(PENDING)
-  currentStep Int               @default(0)
-  startedAt   DateTime          @default(now())
-  completedAt DateTime?
-
-  workflow    EmailWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-}
-
-/* ── AI Receptionist ──────────────────────────────────────── */
 
 model Receptionist {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  name           String   @default("AI Assistant")
-  greeting       String   @default("Hello! How can I help you today?") @db.Text
-  persona        String   @default("professional, friendly, helpful") @db.Text
-  businessHours  String?
-  widgetColor    String   @default("#6366f1")
-  isActive       Boolean  @default(true)
-  totalChats     Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  twilioNumber   String?
-
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  chats          ReceptionistChat[]
-  voiceCalls     VoiceCall[]
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  name          String   @default("Aria")
+  greeting      String   @default("Hello! Thank you for calling. How can I help you today?")
+  persona       String   @default("Professional, friendly, and helpful") @db.Text
+  businessHours String?
+  isActive      Boolean  @default(true)
+  phoneNumber   String?
+  twilioSid     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  voiceCalls    VoiceCall[]
+  smsMessages   SmsMessage[]
 }
 
-model ReceptionistChat {
-  id              String   @id @default(cuid())
-  receptionistId  String
-  visitorName     String?
-  visitorEmail    String?
-  messages        String   @db.Text
-  createdAt       DateTime @default(now())
-
-  receptionist Receptionist @relation(fields: [receptionistId], references: [id], onDelete: Cascade)
+model VoiceCall {
+  id             String      @id @default(cuid())
+  receptionistId String
+  callSid        String      @unique
+  from           String
+  to             String
+  status         String      @default("answered")
+  transcript     String?     @db.Text
+  summary        String?     @db.Text
+  duration       Int?
+  recordingUrl   String?
+  createdAt      DateTime    @default(now())
+  receptionist   Receptionist @relation(fields: [receptionistId], references: [id], onDelete: Cascade)
 }
 
-/* ── Workforce OS ─────────────────────────────────────────── */
-
-enum TicketStatus {
-  OPEN
-  IN_PROGRESS
-  RESOLVED
-  CLOSED
-}
-
-enum TicketPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-model SupportTicket {
-  id          String         @id @default(cuid())
-  userId      String
-  subject     String
-  body        String         @db.Text
-  status      TicketStatus   @default(OPEN)
-  priority    TicketPriority @default(MEDIUM)
-  aiResponse  String?        @db.Text
-  resolvedAt  DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, status])
-}
-
-model CalendarBooking {
-  id              String   @id @default(cuid())
-  userId          String
-  guestName       String
-  guestEmail      String
-  guestPhone      String?
-  title           String
-  notes           String?  @db.Text
-  startAt         DateTime
-  endAt           DateTime
-  status          String   @default("CONFIRMED")
-  cancellationToken String @unique @default(cuid())
-  reminderSent    Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, startAt])
+model SmsMessage {
+  id             String      @id @default(cuid())
+  receptionistId String
+  from           String
+  to             String
+  body           String      @db.Text
+  direction      String
+  status         String      @default("received")
+  twilioSid      String?     @unique
+  createdAt      DateTime    @default(now())
+  receptionist   Receptionist @relation(fields: [receptionistId], references: [id], onDelete: Cascade)
 }
 
 model CalendarAvailability {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  timezone  String   @default("Europe/London")
-  slotMins  Int      @default(30)
-  bufferMins Int     @default(15)
-  monday    String?
-  tuesday   String?
-  wednesday String?
-  thursday  String?
-  friday    String?
-  saturday  String?
-  sunday    String?
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  timezone    String   @default("Europe/London")
+  workdays    Json     @default("[1,2,3,4,5]")
+  startTime   String   @default("09:00")
+  endTime     String   @default("17:00")
+  slotMins    Int      @default(30)
+  bufferMins  Int      @default(15)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
+model CalendarBooking {
+  id          String   @id @default(cuid())
+  userId      String
+  guestName   String
+  guestEmail  String?
+  title       String
+  notes       String?  @db.Text
+  startAt     DateTime
+  endAt       DateTime
+  status      String   @default("CONFIRMED")
+  cancelledAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  userId      String
+  subject     String
+  body        String   @db.Text
+  status      String   @default("OPEN")
+  priority    String   @default("MEDIUM")
+  aiResponse  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ApprovalRequest {
   id          String   @id @default(cuid())
   userId      String
-  agentId     String?
-  action      String
-  payload     String   @db.Text
+  type        String
+  payload     Json
   status      String   @default("PENDING")
-  reviewedBy  String?
-  reviewNote  String?
-  createdAt   DateTime @default(now())
   reviewedAt  DateTime?
-
+  createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, status])
 }
 
-/* ── Phase 6: AI Wisdom Economy ──────────────────────────────── */
-
-enum WisdomCategory {
-  NEWS
-  FINANCE
-  RESEARCH
-  CODING
-  MARKETING
-  SALES
-  STRATEGY
-  OPERATIONS
-}
-
-enum CompStatus {
-  RUNNING
-  SCORING
-  DONE
-  FAILED
-}
-
-model MarketplaceAgent {
-  id           String          @id @default(cuid())
-  name         String
-  slug         String          @unique
-  category     WisdomCategory
-  description  String          @db.Text
-  systemPrompt String          @db.Text
-  icon         String
-  color        String          @default("#6366f1")
-  planGate     String          @default("basic")
-  sortOrder    Int             @default(0)
-  createdAt    DateTime        @default(now())
-
-  stats       AgentMarketStats?
-  deployments AgentDeployment[]
-  entries     CompetitionEntry[]
-  ratings     AgentRating[]
-  assets      WisdomAsset[]
-  listing     AgentListing?
-}
-
-model AgentMarketStats {
-  id            String   @id @default(cuid())
-  agentId       String   @unique
-  wins          Int      @default(0)
-  losses        Int      @default(0)
-  totalSessions Int      @default(0)
-  winRate       Float    @default(0)
-  accuracyScore Float    @default(0)
-  avgRating     Float    @default(0)
-  ratingCount   Int      @default(0)
-  updatedAt     DateTime @updatedAt
-
-  agent MarketplaceAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+model UserModelPreference {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  modelId    String
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AgentDeployment {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  agentType   String
+  config      Json
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AgentMemory {
   id         String   @id @default(cuid())
-  userId     String
   agentId    String
-  isActive   Boolean  @default(true)
-  deployedAt DateTime @default(now())
-
-  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  agent MarketplaceAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, agentId])
+  key        String
+  value      String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@unique([agentId, key])
 }
 
 model AgentCompetition {
-  id          String         @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
-  prompt      String         @db.Text
-  category    WisdomCategory
-  status      CompStatus     @default(RUNNING)
-  error       String?
-  createdAt   DateTime       @default(now())
-  completedAt DateTime?
-
-  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entries CompetitionEntry[]
-  asset   WisdomAsset?
+  name        String
+  description String?  @db.Text
+  prize       String?
+  status      String   @default("ACTIVE")
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submissions AgentSubmission[]
 }
 
-model CompetitionEntry {
-  id            String   @id @default(cuid())
+model AgentSubmission {
+  id            String          @id @default(cuid())
   competitionId String
   agentId       String
-  response      String   @db.Text
-  score         Float    @default(0)
-  rank          Int      @default(0)
-  rationale     String   @db.Text @default("")
-
-  competition AgentCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  agent       MarketplaceAgent @relation(fields: [agentId], references: [id])
+  score         Float           @default(0)
+  rank          Int?
+  createdAt     DateTime        @default(now())
+  competition   AgentCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
 }
 
 model WisdomAsset {
-  id            String         @id @default(cuid())
-  competitionId String         @unique
-  agentId       String
-  userId        String
-  title         String
-  content       String         @db.Text
-  category      WisdomCategory
-  prompt        String         @db.Text
-  views         Int            @default(0)
-  saves         Int            @default(0)
-  avgRating     Float          @default(0)
-  ratingCount   Int            @default(0)
-  createdAt     DateTime       @default(now())
-
-  competition AgentCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  agent       MarketplaceAgent @relation(fields: [agentId], references: [id])
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?  @db.Text
+  type        String
+  url         String?
+  price       Float    @default(0)
+  tags        String[]
+  downloads   Int      @default(0)
+  rating      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   ratings     AssetRating[]
 }
 
 model AssetRating {
-  id      String @id @default(cuid())
-  assetId String
-  userId  String
-  rating  Int
+  id        String   @id @default(cuid())
+  userId    String
+  assetId   String
+  rating    Int
+  review    String?  @db.Text
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset     WisdomAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  @@unique([userId, assetId])
+}
 
-  asset WisdomAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+model AgentListing {
+  id          String   @id @default(cuid())
+  sellerId    String
+  name        String
+  description String?  @db.Text
+  price       Float    @default(0)
+  agentType   String
+  config      Json
+  downloads   Int      @default(0)
+  rating      Float    @default(0)
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  seller      User     @relation("AgentListingSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  purchases   AgentPurchase[]
+  ratings     AgentRating[]
+}
 
-  @@unique([assetId, userId])
+model AgentPurchase {
+  id        String   @id @default(cuid())
+  buyerId   String
+  listingId String
+  amount    Float
+  createdAt DateTime @default(now())
+  buyer     User        @relation("AgentPurchaseBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  listing   AgentListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 }
 
 model AgentRating {
   id        String   @id @default(cuid())
-  agentId   String
   userId    String
+  listingId String
   rating    Int
+  review    String?  @db.Text
   createdAt DateTime @default(now())
-
-  agent MarketplaceAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  user  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([agentId, userId])
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   AgentListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  @@unique([userId, listingId])
 }
 
-/* ── Team / Enterprise ────────────────────────────────────── */
+model EvidenceDocument {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  type        String
+  content     String   @db.Text
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks      EvidenceChunk[]
+}
 
-enum TeamRole {
-  OWNER
-  ADMIN
-  MEMBER
-  VIEWER
+model EvidenceChunk {
+  id         String   @id @default(cuid())
+  userId     String
+  documentId String
+  content    String   @db.Text
+  embedding  Float[]
+  createdAt  DateTime @default(now())
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   EvidenceDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model ExportedDocument {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  content     String   @db.Text
+  format      String   @default("pdf")
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppMessage {
+  id             String   @id @default(cuid())
+  userId         String
+  from           String
+  to             String
+  body           String   @db.Text
+  direction      String
+  status         String   @default("received")
+  twilioSid      String?  @unique
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailWorkflow {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  trigger     String
+  steps       Json
+  isActive    Boolean  @default(true)
+  lastRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Team {
   id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
   ownerId   String
-  plan      String   @default("starter")
-  logoUrl   String?
+  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  owner   User         @relation("TeamOwner", fields: [ownerId], references: [id])
-  members TeamMember[]
-  invites TeamInvite[]
+  owner     User     @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members   TeamMember[]
+  invites   TeamInvite[]
 }
 
 model TeamMember {
-  id       String   @id @default(cuid())
-  teamId   String
-  userId   String
-  role     TeamRole @default(MEMBER)
-  joinedAt DateTime @default(now())
-
-  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  role      String   @default("member")
+  joinedAt  DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([teamId, userId])
 }
 
 model TeamInvite {
-  id         String    @id @default(cuid())
-  teamId     String
-  email      String
-  role       TeamRole  @default(MEMBER)
-  token      String    @unique @default(cuid())
-  expiresAt  DateTime
-  acceptedAt DateTime?
-  createdAt  DateTime  @default(now())
-
-  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-
-  @@unique([teamId, email])
+  id        String   @id @default(cuid())
+  teamId    String
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
 }
 
 model ApiKey {
-  id         String    @id @default(cuid())
-  userId     String
-  name       String
-  keyHash    String    @unique
-  prefix     String
-  lastUsedAt DateTime?
-  expiresAt  DateTime?
-  createdAt  DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  keyHash   String   @unique
+  prefix    String
+  lastUsed  DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-/* ── Agent Marketplace ────────────────────────────────────── */
-
-model AgentListing {
-  id          String   @id @default(cuid())
-  agentId     String   @unique
-  sellerId    String
-  priceCents  Int
-  description String?  @db.Text
-  downloads   Int      @default(0)
-  revenue     Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-
-  agent     MarketplaceAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  seller    User             @relation("AgentListingSeller", fields: [sellerId], references: [id])
-  purchases AgentPurchase[]
-}
-
-model AgentPurchase {
-  id         String   @id @default(cuid())
-  listingId  String
-  buyerId    String
-  priceCents Int
-  createdAt  DateTime @default(now())
-
-  listing AgentListing @relation(fields: [listingId], references: [id])
-  buyer   User         @relation("AgentPurchaseBuyer", fields: [buyerId], references: [id])
-
-  @@unique([listingId, buyerId])
-}
-
-/* ── Workforce C-Suite Chat ───────────────────────────────── */
 
 model WorkforceChat {
   id        String   @id @default(cuid())
   userId    String
-  agentRole String
-  messages  String   @db.Text
+  messages  Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, agentRole])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-/* ── Voice Calls ──────────────────────────────────────────── */
-
-model VoiceCall {
-  id             String    @id @default(cuid())
-  receptionistId String
-  callSid        String    @unique
-  from           String
-  to             String
-  status         String    @default("initiated")
-  duration       Int?
-  transcript     String?   @db.Text
-  recordingUrl   String?
-  createdAt      DateTime  @default(now())
-  endedAt        DateTime?
-
-  receptionist Receptionist @relation(fields: [receptionistId], references: [id], onDelete: Cascade)
-}
-
-/* ── Agent Intelligence Reports ────────────────────────────── */
-
-model AgentIntelligenceReport {
-  id        String   @id @default(cuid())
-  agentRole String
-  date      String
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([agentRole, date])
-  @@index([date])
-}
-
-/* ── Outreach Campaigns ─────────────────────────────────────── */
+/* ── Outreach / Cold Email ───────────────────────────────────── */
 
 enum OutreachStatus {
   DRAFT
   PENDING_APPROVAL
-  APPROVED
   SENT
   FAILED
+  UNSUBSCRIBED
 }
 
 model OutreachCampaign {
   id          String   @id @default(cuid())
+  userId      String?
   name        String
   industry    String?
   subject     String
@@ -1173,6 +663,7 @@ model OutreachCampaign {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  user     User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
   contacts OutreachContact[]
 }
 
@@ -1187,7 +678,7 @@ model OutreachContact {
   status       OutreachStatus @default(DRAFT)
   sentAt       DateTime?
   openedAt     DateTime?
-  repliedAt    DateTime?
+  repliedAt    DateTime?  
   createdAt    DateTime       @default(now())
 
   campaign OutreachCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -1208,12 +699,96 @@ model ContentQueue {
   platform    String?        // "twitter" | "linkedin" | "instagram" | "email" etc
   title       String
   content     String         @db.Text
-  metadata    String?        @db.Text  // JSON extras (leadId, scheduledFor, etc)
+  metadata    Json?
   status      ApprovalStatus @default(PENDING)
-  approvedAt  DateTime?
-  rejectedAt  DateTime?
+  scheduledAt DateTime?
   sentAt      DateTime?
-  scheduledFor DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+}
+
+/* ── Legal Dictionary ───────────────────────────────────────── */
+
+model LegalTerm {
+  id          String   @id @default(cuid())
+  term        String   @unique
+  definition  String   @db.Text
+  category    String?
+  jurisdiction String?
+  source      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/* ── Coupon / Discounts ─────────────────────────────────────── */
+
+model Coupon {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  stripeCouponId  String?
+  discountPercent Int
+  maxRedemptions  Int?
+  redemptions     Int       @default(0)
+  expiresAt       DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+}
+
+/* ── Instagram Token ────────────────────────────────────────── */
+
+model InstagramToken {
+  id          String   @id @default(cuid())
+  accessToken String   @db.Text
+  expiresAt   DateTime
+  updatedAt   DateTime @updatedAt
+}
+
+/* ── Wisdom Leaderboard ─────────────────────────────────────── */
+
+model WisdomLeaderboard {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  score       Float    @default(0)
+  rank        Int?
+  updatedAt   DateTime @updatedAt
+}
+
+/* ── Arena Sessions ─────────────────────────────────────────── */
+
+model ArenaSession {
+  id          String   @id @default(cuid())
+  userId      String
+  model1      String
+  model2      String
+  prompt      String   @db.Text
+  response1   String?  @db.Text
+  response2   String?  @db.Text
+  winner      String?
+  savedAt     DateTime?
+  createdAt   DateTime @default(now())
+}
+
+/* ── Competition ────────────────────────────────────────────── */
+
+model Competition {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  prize       String?
+  status      String   @default("ACTIVE")
+  endsAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  entries     CompetitionEntry[]
+}
+
+model CompetitionEntry {
+  id            String      @id @default(cuid())
+  competitionId String
+  userId        String
+  content       String      @db.Text
+  score         Float       @default(0)
+  rank          Int?
+  createdAt     DateTime    @default(now())
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
 }

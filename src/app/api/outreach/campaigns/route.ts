@@ -7,6 +7,7 @@ export async function GET() {
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const campaigns = await db.outreachCampaign.findMany({
+    where: { userId: session.user.id },
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { contacts: true } } },
   });
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
   if (!name || !subject) return NextResponse.json({ error: "Name and subject required" }, { status: 400 });
 
   const campaign = await db.outreachCampaign.create({
-    data: { name, industry, subject },
+    data: { userId: session.user.id, name, industry, subject },
   });
 
   return NextResponse.json({ campaign });

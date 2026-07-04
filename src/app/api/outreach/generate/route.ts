@@ -19,7 +19,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Maximum 50 contacts per batch" }, { status: 400 });
   }
 
-  const campaign = await db.outreachCampaign.findUnique({ where: { id: campaignId } });
+  const campaign = await db.outreachCampaign.findUnique({
+    where: { id: campaignId },
+    select: { id: true, userId: true, subject: true },
+  });
   if (!campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
   if (campaign.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 

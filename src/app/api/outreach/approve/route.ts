@@ -14,17 +14,25 @@ export async function POST(req: Request) {
 
   if (!contactIds?.length) return NextResponse.json({ error: "contactIds required" }, { status: 400 });
 
+  // Only operate on contacts belonging to campaigns owned by the caller
+  const ownedContacts = await db.outreachContact.findMany({
+    where: { id: { in: contactIds }, campaign: { userId: session.user.id } },
+    select: { id: true },
+  });
+  const ownedIds = ownedContacts.map((c) => c.id);
+  if (!ownedIds.length) return NextResponse.json({ ok: true, action, count: 0 });
+
   if (action === "reject") {
     await db.outreachContact.updateMany({
-      where: { id: { in: contactIds }, campaign: { userId: session.user.id } },
+      where: { id: { in: ownedIds } },
       data: { status: "FAILED" },
     });
-    return NextResponse.json({ ok: true, action: "rejected", count: contactIds.length });
+    return NextResponse.json({ ok: true, action: "rejected", count: ownedIds.length });
   }
 
-  // Approve and send — only contacts belonging to the calling user
+  // Approve and send
   const contacts = await db.outreachContact.findMany({
-    where: { id: { in: contactIds }, status: "PENDING_APPROVAL", campaign: { userId: session.user.id } },
+    where: { id: { in: ownedIds }, status: "PENDING_APPROVAL" },
     include: { campaign: true },
   });
 
