@@ -19,34 +19,40 @@ const STATUS_COLORS: Record<Status, string> = {
   OPEN: "bg-blue-500/15 text-blue-400",
   IN_PROGRESS: "bg-amber-500/15 text-amber-400",
   RESOLVED: "bg-green-500/15 text-green-400",
-  CLOSED: "bg-gray-500/15 text-gray-500",
+  CLOSED: "bg-gray-500/15 text-gray-400",
 };
 
 const PRIORITY_COLORS: Record<Priority, string> = {
-  LOW: "text-gray-500", MEDIUM: "text-amber-400", HIGH: "text-orange-400", URGENT: "text-red-400",
+  LOW: "text-gray-400",
+  MEDIUM: "text-blue-400",
+  HIGH: "text-amber-400",
+  URGENT: "text-red-400",
 };
 
-export default function SupportContent({ isAdmin, tickets: initialTickets }: Props) {
-  const [tickets, setTickets] = useState(initialTickets);
+export default function SupportContent({ isAdmin, tickets: initial }: Props) {
+  const [tickets, setTickets] = useState<Ticket[]>(initial);
   const [selected, setSelected] = useState<Ticket | null>(null);
-  const [showNew, setShowNew] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [priority, setPriority] = useState<Priority>("MEDIUM");
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({ subject: "", body: "", priority: "MEDIUM" as Priority });
+  const [error, setError] = useState<string | null>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
+    setError(null);
     try {
-      const res = await fetch("/api/support/tickets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      if (!res.ok) return;
+      const res = await fetch("/api/support/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, body, priority }),
+      });
+      if (!res.ok) { setError("Failed to submit ticket."); return; }
       const data = await res.json();
-      const newTicket = { ...data.ticket, userName: null, userEmail: "" };
-      setTickets((p) => [newTicket, ...p]);
-      setShowNew(false);
-      setForm({ subject: "", body: "", priority: "MEDIUM" });
-      setSelected(newTicket);
+      setTickets((p) => [data.ticket, ...p]);
+      setSubject(""); setBody("");
 
-      // Poll until AI response arrives (up to 30s)
       const ticketId = data.ticket.id;
       let attempts = 0;
       const poll = setInterval(async () => {
@@ -59,7 +65,7 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
           if (d.ticket?.aiResponse) {
             clearInterval(poll);
             setTickets((p) => p.map((t) => t.id === ticketId ? { ...t, aiResponse: d.ticket.aiResponse } : t));
-            setSelected((s) => s?.id === ticketId ? { ...s, aiResponse: d.ticket.aiResponse } : s);
+            setSelected((s) => s?.id === ticketId ? ({ ...s, aiResponse: d.ticket.aiResponse } as Ticket) : s);
           }
         } catch { /* continue polling */ }
       }, 2000);
@@ -78,122 +84,178 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
   const closed = tickets.filter((t) => t.status === "RESOLVED" || t.status === "CLOSED");
 
   return (
-    <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-6 max-w-5xl">
-      <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· Support ·</p>
-          <h1 className="text-2xl font-extrabold text-white sm:text-3xl">AI Customer Support</h1>
-          <p className="mt-1 text-sm text-gray-500">AI-powered instant responses with human escalation.</p>
-        </div>
-        <button onClick={() => setShowNew(true)} className="rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 shrink-0">+ New ticket</button>
-      </motion.div>
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        {/* Ticket list */}
-        <div className="space-y-3">
-          {open.length > 0 && (
-            <div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Open / In progress ({open.length})</p>
-              {open.map((t) => (
-                <motion.div key={t.id} variants={scaleIn} onClick={() => setSelected(t)}
-                  className={`cursor-pointer rounded-2xl border p-4 transition-colors ${selected?.id === t.id ? "border-brand-500/40 bg-brand-500/5" : "border-white/8 bg-white/3 hover:border-brand-500/20"}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{t.subject}</p>
-                      {isAdmin && <p className="text-xs text-gray-400">{t.userName ?? t.userEmail}</p>}
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`text-[10px] font-bold ${PRIORITY_COLORS[t.priority]}`}>{t.priority}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[t.status]}`}>{t.status.replace("_", " ")}</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1.5 line-clamp-2">{t.body}</p>
-                  <p className="text-[10px] text-gray-500 mt-1">{new Date(t.createdAt).toLocaleDateString("en-GB")}</p>
-                </motion.div>
-              ))}
-            </div>
-          )}
-          {closed.length > 0 && (
-            <div>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 mt-4">Resolved / Closed ({closed.length})</p>
-              {closed.slice(0, 5).map((t) => (
-                <div key={t.id} onClick={() => setSelected(t)} className="cursor-pointer rounded-2xl border border-white/6 bg-white/2 p-3 hover:bg-white/4 transition-colors mb-2">
-                  <p className="text-xs text-gray-500 truncate">{t.subject}</p>
-                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${STATUS_COLORS[t.status]}`}>{t.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {tickets.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
-              <p className="text-3xl mb-3">🎧</p>
-              <p className="text-gray-400 font-medium">No support tickets yet</p>
-              <p className="text-sm text-gray-400 mt-1">When you submit a ticket, our AI responds in seconds.</p>
-            </div>
-          )}
-        </div>
-
-        {/* Detail panel */}
-        {selected && (
-          <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="rounded-2xl border border-white/8 bg-white/3 p-5 h-fit sticky top-4 space-y-4">
-            <div className="flex items-start justify-between gap-2">
-              <h2 className="text-sm font-bold text-white leading-snug">{selected.subject}</h2>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-300 text-lg leading-none">×</button>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_COLORS[selected.status]}`}>{selected.status.replace("_", " ")}</span>
-              <span className={`text-[10px] font-bold ${PRIORITY_COLORS[selected.priority]}`}>{selected.priority}</span>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-400 mb-1">Your message</p>
-              <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">{selected.body}</p>
-            </div>
-            {selected.aiResponse ? (
-              <div className="rounded-xl border border-brand-500/20 bg-brand-500/5 p-3">
-                <p className="text-xs font-bold text-brand-400 mb-1.5">AI Response</p>
-                <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">{selected.aiResponse}</p>
+    <div className="grid gap-8 lg:grid-cols-5">
+      {/* Left: ticket list + form */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Submit form */}
+        {!isAdmin && (
+          <motion.div {...scaleIn(0)} className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">New support ticket</h2>
+            <form onSubmit={submit} className="space-y-4">
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Subject</label>
+                <input
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  required
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  placeholder="Briefly describe your issue"
+                />
               </div>
-            ) : (
-              <div className="rounded-xl border border-white/8 bg-white/2 p-3 text-center">
-                <p className="text-xs text-gray-500">AI response generating...</p>
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Priority</label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as Priority)}
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
               </div>
-            )}
-            {isAdmin && (
-              <div className="flex gap-2 flex-wrap">
-                {(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as Status[]).map((s) => (
-                  <button key={s} onClick={() => updateStatus(selected.id, s)} disabled={selected.status === s}
-                    className={`rounded-lg px-2.5 py-1 text-[10px] font-bold border transition-colors ${selected.status === s ? "border-brand-500/40 bg-brand-500/10 text-brand-400" : "border-white/8 text-gray-500 hover:text-gray-300"}`}>
-                    {s.replace("_", " ")}
-                  </button>
-                ))}
+              <div>
+                <label className="text-xs text-gray-400 mb-1 block">Description</label>
+                <textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  required
+                  rows={4}
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                  placeholder="Describe the problem in detail"
+                />
               </div>
-            )}
+              {error && <p className="text-xs text-red-400">{error}</p>}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 px-4 py-2 text-sm font-semibold text-white transition-colors"
+              >
+                {submitting ? "Submitting…" : "Submit ticket"}
+              </button>
+            </form>
           </motion.div>
+        )}
+
+        {/* Open tickets */}
+        {open.length > 0 && (
+          <motion.div {...stagger(0.05)} className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">Open</p>
+            {open.map((t, i) => (
+              <motion.button
+                key={t.id}
+                {...fadeUp(i * 0.04)}
+                onClick={() => setSelected(t)}
+                className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
+                  selected?.id === t.id
+                    ? "border-brand-500/50 bg-brand-500/10"
+                    : "border-white/10 bg-white/5 hover:bg-white/10"
+                }`}
+              >
+                <p className="text-sm font-medium text-white truncate">{t.subject}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[t.status]}`}>{t.status.replace("_", " ")}</span>
+                  <span className={`text-xs ${PRIORITY_COLORS[t.priority]}`}>{t.priority}</span>
+                </div>
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Closed tickets */}
+        {closed.length > 0 && (
+          <motion.div {...stagger(0.05)} className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">Resolved</p>
+            {closed.map((t, i) => (
+              <motion.button
+                key={t.id}
+                {...fadeUp(i * 0.04)}
+                onClick={() => setSelected(t)}
+                className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
+                  selected?.id === t.id
+                    ? "border-brand-500/50 bg-brand-500/10"
+                    : "border-white/10 bg-white/5 hover:bg-white/10"
+                }`}
+              >
+                <p className="text-sm font-medium text-white/60 truncate">{t.subject}</p>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[t.status]}`}>{t.status.replace("_", " ")}</span>
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+
+        {tickets.length === 0 && (
+          <p className="text-sm text-gray-500 text-center py-8">No tickets yet.</p>
         )}
       </div>
 
-      {/* New ticket modal */}
-      {showNew && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={(e) => { if (e.target === e.currentTarget) setShowNew(false); }}>
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg rounded-2xl border border-white/8 bg-[#0e0e1a] p-6">
-            <h2 className="text-lg font-bold text-white mb-4">Open a support ticket</h2>
-            <form onSubmit={submit} className="space-y-4">
-              <input required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Subject *" className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none" />
-              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Priority })} className="w-full rounded-xl border border-white/8 bg-[#0e0e1a] px-3 py-2.5 text-sm text-white outline-none">
-                <option value="LOW">Low priority</option>
-                <option value="MEDIUM">Medium priority</option>
-                <option value="HIGH">High priority</option>
-                <option value="URGENT">Urgent</option>
-              </select>
-              <textarea required rows={5} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Describe your issue in detail..." className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none resize-none" />
-              <div className="flex gap-3">
-                <button type="submit" disabled={submitting} className="flex-1 rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">{submitting ? "Submitting..." : "Submit ticket"}</button>
-                <button type="button" onClick={() => setShowNew(false)} className="rounded-xl border border-white/8 px-4 py-2.5 text-sm text-gray-400">Cancel</button>
+      {/* Right: selected ticket */}
+      <div className="lg:col-span-3">
+        <AnimatePresence mode="wait">
+          {selected ? (
+            <motion.div
+              key={selected.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-5"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">{selected.subject}</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {new Date(selected.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                    {isAdmin && selected.userName ? ` · ${selected.userName}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[selected.status]}`}>{selected.status.replace("_", " ")}</span>
+                  <span className={`text-xs ${PRIORITY_COLORS[selected.priority]}`}>{selected.priority}</span>
+                </div>
               </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
-    </motion.div>
+
+              <div className="rounded-xl bg-white/5 p-4">
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{selected.body}</p>
+              </div>
+
+              {selected.aiResponse && (
+                <div className="rounded-xl border border-brand-500/20 bg-brand-500/5 p-4">
+                  <p className="text-xs font-semibold text-brand-400 mb-2">AI Response</p>
+                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{selected.aiResponse}</p>
+                </div>
+              )}
+
+              {isAdmin && (
+                <div className="flex flex-wrap gap-2">
+                  {(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as Status[]).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => updateStatus(selected.id, s)}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                        selected.status === s
+                          ? "border-brand-500 bg-brand-500/20 text-brand-300"
+                          : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10"
+                      }`}
+                    >
+                      {s.replace("_", " ")}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-white/5"
+            >
+              <p className="text-sm text-gray-500">Select a ticket to view details</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
