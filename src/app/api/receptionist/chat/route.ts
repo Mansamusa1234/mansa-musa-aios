@@ -2,26 +2,24 @@ import { anthropic } from "@/lib/anthropic";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { sendEmail, newLeadEmailHtml } from "@/lib/email";
-import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 import { z } from "zod";
+import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 
 const schema = z.object({
-  receptionistId: z.string().min(1).max(100),
+  receptionistId: z.string().min(1),
   messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(2000) })).max(20),
   visitorName: z.string().max(100).optional(),
-  visitorEmail: z.string().email().optional().or(z.literal("")),
+  visitorEmail: z.string().email().optional(),
 });
 
 export async function POST(req: Request) {
-  const ip = getIP(req);
-  const body = await req.json().catch(() => null);
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  const limited = await checkRateLimit(limiters.receptionistChat, getIP(req));
+  if (limited) return limited;
+
+  const parsed = schema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
 
   const { receptionistId, messages, visitorName, visitorEmail } = parsed.data;
-
-  const limited = await checkRateLimit(limiters.receptionistChat, `${ip}:${receptionistId}`);
-  if (limited) return limited;
 
   const rec = await db.receptionist.findUnique({ where: { id: receptionistId } });
   if (!rec || !rec.isActive) return NextResponse.json({ error: "Receptionist not found or inactive" }, { status: 404 });

@@ -52,6 +52,12 @@ export const limiters = {
   contact:            makeLimiter(5,  "1 h", "rl:contact"),
   /** 3 newsletter subscriptions / hour — keyed by IP */
   newsletter:         makeLimiter(3,  "1 h", "rl:newsletter"),
+  /** 60 messages / hour — authenticated workforce AI chat, keyed by user ID */
+  workforceChat:      makeLimiter(60, "1 h", "rl:workforce-chat"),
+  /** 10 model comparisons / hour — expensive multi-model calls, keyed by user ID */
+  modelCompare:       makeLimiter(10, "1 h", "rl:model-compare"),
+  /** 20 conversations / hour — authenticated agent chat, keyed by user ID */
+  agentChat:          makeLimiter(20, "1 h", "rl:agent-chat"),
 };
 
 /**

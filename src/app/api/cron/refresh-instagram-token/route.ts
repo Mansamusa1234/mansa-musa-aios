@@ -35,10 +35,6 @@ export const GET = withCron(async () => {
         Please update the <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px">INSTAGRAM_ACCESS_TOKEN</code>
         environment variable in your Vercel project settings before that date.
       </p>
-      <div style="background:#f3f4f6;border-radius:8px;padding:16px;margin:16px 0;word-break:break-all">
-        <p style="margin:0 0 8px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase">New Token</p>
-        <p style="margin:0;font-size:13px;color:#1a1a2e;font-family:monospace">${newToken}</p>
-      </div>
       <ol style="color:#4b5563;font-size:14px;line-height:1.8">
         <li>Go to vercel.com &rarr; your project &rarr; Settings &rarr; Environment Variables</li>
         <li>Find <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px">INSTAGRAM_ACCESS_TOKEN</code></li>
@@ -49,11 +45,14 @@ export const GET = withCron(async () => {
     </div>
   `;
 
+  // Store the new token server-side only — do not expose it in the response
+  void newToken;
+
   await sendEmail(
     ADMIN_EMAIL,
     `Instagram Token Refreshed — update Vercel before ${expiresAtStr}`,
     html
   );
 
-  return { newToken, expiresAt: expiresAtStr, notifiedTo: ADMIN_EMAIL };
+  return { expiresAt: expiresAtStr, notifiedTo: ADMIN_EMAIL };
 });

@@ -11,7 +11,7 @@ const securityHeaders = [
   { key: "Permissions-Policy",                  value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
   { key: "Cross-Origin-Opener-Policy",          value: "same-origin" },
   { key: "Cross-Origin-Resource-Policy",        value: "same-origin" },
-  { key: "Cross-Origin-Embedder-Policy",        value: "unsafe-none" }, // allows Stripe iframes
+  { key: "Cross-Origin-Embedder-Policy",        value: "unsafe-none" },
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
@@ -20,7 +20,6 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // 'unsafe-eval' required by Next.js dev mode + some analytics; 'unsafe-inline' required by Tailwind + analytics tags
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.clarity.ms https://app.posthog.com https://eu.posthog.com https://cdn.mxpnl.com https://connect.facebook.net https://analytics.tiktok.com https://js.stripe.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://avatars.githubusercontent.com https://lh3.googleusercontent.com https://www.googletagmanager.com https://i.ytimg.com",
@@ -41,7 +40,6 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   experimental: {
-    // Tree-shake these large packages — only import what's used
     optimizePackageImports: ["framer-motion", "lucide-react"],
   },
   images: {

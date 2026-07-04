@@ -17,8 +17,8 @@ const BLOCKED_UA_PATTERNS = [
   "sqlmap", "nikto", "nmap", "masscan", "zgrab", "nuclei",
   "dirbuster", "gobuster", "wfuzz", "hydra", "metasploit",
   "burpsuite", "burp suite", "acunetix", "nessus", "openvas",
-  "python-requests/0", // raw scripted scan baseline
-  "go-http-client/1", // common headless scanner
+  "python-requests/0",
+  "go-http-client/1",
 ];
 
 // Paths that scanners love to probe — return 404 immediately

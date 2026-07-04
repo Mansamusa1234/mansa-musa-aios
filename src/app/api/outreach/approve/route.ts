@@ -16,15 +16,15 @@ export async function POST(req: Request) {
 
   if (action === "reject") {
     await db.outreachContact.updateMany({
-      where: { id: { in: contactIds } },
+      where: { id: { in: contactIds }, campaign: { userId: session.user.id } },
       data: { status: "FAILED" },
     });
     return NextResponse.json({ ok: true, action: "rejected", count: contactIds.length });
   }
 
-  // Approve and send
+  // Approve and send — only contacts belonging to the calling user
   const contacts = await db.outreachContact.findMany({
-    where: { id: { in: contactIds }, status: "PENDING_APPROVAL" },
+    where: { id: { in: contactIds }, status: "PENDING_APPROVAL", campaign: { userId: session.user.id } },
     include: { campaign: true },
   });
 
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
     try {
       if (!contact.aiDraft) continue;
 
+      const unsubEmail = encodeURIComponent(contact.email);
       const htmlBody = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
   <p style="color:#1e293b;font-size:16px;line-height:1.7;white-space:pre-wrap">${contact.aiDraft}</p>
   <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">
   <p style="color:#64748b;font-size:13px">MansaMusaAI · <a href="https://mansamusainitiative.com" style="color:#7c3aed">mansamusainitiative.com</a></p>
+  <p style="color:#94a3b8;font-size:11px;margin-top:16px">You received this because your contact details were submitted as a potential business match. <a href="https://mansamusainitiative.com/unsubscribe?email=${unsubEmail}" style="color:#94a3b8">Unsubscribe</a></p>
 </div>
 </body></html>`;
 

@@ -66,7 +66,7 @@ export const GET = withCron(async () => {
     const users = await db.user.findMany({
       where: {
         createdAt: { gte: from, lte: to },
-        receptionists: { none: {} },
+        receptionist: { is: null },
         [`activationNudge${wave}SentAt`]: null,
       } as never,
       select: { id: true, email: true, name: true },

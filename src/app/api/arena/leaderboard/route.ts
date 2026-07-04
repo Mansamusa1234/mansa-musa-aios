@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   // Aggregate per-agent lifetime stats across all DONE sessions
   const rawScores = await db.agentScore.findMany({
     where: { session: { status: "DONE" } },

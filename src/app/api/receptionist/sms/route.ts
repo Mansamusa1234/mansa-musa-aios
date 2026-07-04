@@ -1,13 +1,26 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
+import { validateTwilioSignature } from "@/lib/twilio";
+import { headers } from "next/headers";
 
 // Twilio SMS webhook
 export async function POST(req: Request) {
+  const headersList = await headers();
+  const signature = headersList.get("x-twilio-signature") ?? "";
+  const url = req.url;
+
   const formData = await req.formData();
-  const from     = formData.get("From") as string;
-  const body     = formData.get("Body") as string;
-  const to       = formData.get("To") as string;
+  const params: Record<string, string> = {};
+  formData.forEach((val, key) => { params[key] = val.toString(); });
+
+  if (process.env.NODE_ENV === "production" && !validateTwilioSignature(signature, url, params)) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
+  }
+
+  const from     = params["From"] ?? "";
+  const body     = params["Body"] ?? "";
+  const to       = params["To"] ?? "";
 
   // Find receptionist by Twilio number
   const rec = await db.receptionist.findFirst({

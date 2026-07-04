@@ -15,9 +15,13 @@ export async function POST(req: Request) {
   if (!campaignId || !contacts?.length) {
     return NextResponse.json({ error: "campaignId and contacts required" }, { status: 400 });
   }
+  if (contacts.length > 50) {
+    return NextResponse.json({ error: "Maximum 50 contacts per batch" }, { status: 400 });
+  }
 
   const campaign = await db.outreachCampaign.findUnique({ where: { id: campaignId } });
   if (!campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+  if (campaign.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const results: { email: string; success: boolean }[] = [];
 
