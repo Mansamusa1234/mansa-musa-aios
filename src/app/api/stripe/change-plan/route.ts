@@ -59,7 +59,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[stripe/change-plan] error:", (err as Error)?.message);
-    return NextResponse.json({ error: "Could not change plan. Please try again." }, { status: 500 });
+    const msg = (err as Error)?.message ?? "Unknown error";
+    console.error("[stripe/change-plan] error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
