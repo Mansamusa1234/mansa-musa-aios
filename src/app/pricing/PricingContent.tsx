@@ -34,8 +34,8 @@ const faqs = [
   { q: "Can I change plans at any time?",         a: "Yes. Upgrade or downgrade instantly. We prorate any difference to the day." },
   { q: "How does the AI receptionist work?",      a: "You configure a name, greeting, and persona. It then answers enquiries on your website chat and WhatsApp (Professional+), books appointments into your calendar, and pushes leads into your CRM — automatically, 24/7." },
   { q: "What currencies do you accept?",          a: "We bill in GBP. All prices are shown per month and include VAT where applicable." },
-  { q: "Is there an annual discount?",            a: "Annual billing with a 20% discount is coming soon. Register to be notified." },
-  { q: "What's your refund policy?",              a: "7-day money-back guarantee on all paid plans. No questions asked." },
+  { q: "Is there an annual discount?",            a: "Yes — toggle to Annual billing at the top of this page to save 20% on any paid plan. That’s over 2 months free every year. The discount is applied automatically at checkout." },
+  { q: "What’s your refund policy?",              a: "7-day money-back guarantee on all paid plans. No questions asked." },
   { q: "Can I earn as an affiliate?",             a: "Yes. Professional and Enterprise users get access to our affiliate programme — earn 20% recurring commission on every business you refer, with no cap." },
 ];
 
@@ -59,7 +59,6 @@ export default function PricingContent({ plans }: Props) {
   async function handleCheckout(priceId: string, planId: string) {
     setCheckoutError(null);
     if (!priceId) {
-      // Free plan — logged-in users go to dashboard, others to register
       const res = await fetch("/api/auth/session");
       const s = await res.json().catch(() => null);
       window.location.href = s?.user ? "/dashboard" : "/register";
