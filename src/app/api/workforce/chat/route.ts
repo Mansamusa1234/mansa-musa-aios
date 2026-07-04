@@ -4,10 +4,14 @@ import { db } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
 import { CSUITE_BY_ROLE } from "@/lib/csuiteAgents";
 import type { CsuiteRole } from "@/lib/csuiteAgents";
+import { checkRateLimit, limiters } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limited = await checkRateLimit(limiters.workforceChat, session.user.id);
+  if (limited) return limited;
 
   const { role, messages } = await req.json() as {
     role: CsuiteRole;

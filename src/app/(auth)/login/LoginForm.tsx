@@ -77,10 +77,13 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     try {
       const challenge = new Uint8Array(32);
       crypto.getRandomValues(challenge);
-      await navigator.credentials.get({
+      const assertion = await navigator.credentials.get({
         publicKey: { challenge, userVerification: "required", rpId: window.location.hostname },
       });
-      router.push("/dashboard");
+      if (!assertion) throw new Error("No credential returned");
+      // Passkey assertion must be verified server-side — not yet implemented.
+      // Until WebAuthn server verification is wired up, fall back gracefully.
+      setError("Passkey sign-in is coming soon. Please use email and password or Google.");
     } catch {
       setError("Passkey sign-in failed. Please use your email and password.");
     } finally {
@@ -166,7 +169,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     return `${base} text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 active:scale-[0.98]`;
   }
 
-  // ── 2FA / TOTP phase ─────────────────────────────────────────────────────────
+  // ── 2FA / TOTP phase ────────────────────────────────────────────
   if (phase === "totp") {
     return (
       <div className="relative flex min-h-screen items-center justify-center bg-gray-50 dark:bg-[#070712] px-4 transition-colors">
@@ -304,7 +307,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     );
   }
 
-  // ── Credentials phase ─────────────────────────────────────────────────────────
+  // ── Credentials phase ────────────────────────────────────────────
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-[#04040f] px-4 overflow-hidden">
       {/* Animated background orbs */}

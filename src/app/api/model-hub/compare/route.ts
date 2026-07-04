@@ -4,10 +4,14 @@ import { SYSTEM_PROMPT } from "@/lib/anthropic";
 import { MODEL_CATALOG, routeMessage } from "@/lib/modelRouter";
 import { NextResponse } from "next/server";
 import { after } from "next/server";
+import { checkRateLimit, limiters } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limited = await checkRateLimit(limiters.modelCompare, session.user.id);
+  if (limited) return limited;
 
   const { prompt, modelKeys } = await req.json() as { prompt: string; modelKeys: string[] };
   if (!prompt || !Array.isArray(modelKeys) || modelKeys.length < 2) {
