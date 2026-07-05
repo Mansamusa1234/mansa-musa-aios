@@ -88,7 +88,6 @@ Be strict and differentiated — scores should spread across the range.`,
     console.error("[competition] judge error:", err);
   }
 
-  // Fallback: equal scores
   return entries.map((e) => ({ agentId: e.agentId, score: 50, rationale: "Fallback score — judge unavailable." }));
 }
 
@@ -117,7 +116,7 @@ export async function runCompetition(competitionId: string): Promise<void> {
   if (!comp) return;
 
   const agents = await db.marketplaceAgent.findMany({
-    where: { category: comp.category },
+    where: { category: comp.category ?? undefined },
     orderBy: { sortOrder: "asc" },
   });
 
@@ -130,31 +129,27 @@ export async function runCompetition(competitionId: string): Promise<void> {
   }
 
   try {
-    // Step 1 — all agents respond in parallel
     const responses = await Promise.all(
       agents.map(async (agent) => {
-        const response = await callAgent(agent.systemPrompt, comp.prompt);
-        await db.competitionEntry.create({
+            const response = await callAgent(agent.systemPrompt, comp.prompt ?? "");
+        await db.agentCompetitionEntry.create({
           data: { competitionId, agentId: agent.id, response, score: 0, rank: 0 },
         });
         return { agentId: agent.id, agentName: agent.name, response };
       }),
     );
 
-    // Step 2 — judge scores all responses
     await db.agentCompetition.update({ where: { id: competitionId }, data: { status: "SCORING" } });
-    const scores = await judgeEntries(comp.prompt, responses);
+    const scores = await judgeEntries(comp.prompt ?? "", responses);
 
-    // Step 3 — persist scores and ranks
     const sorted = [...scores].sort((a, b) => b.score - a.score);
     for (const [rank, scored] of sorted.entries()) {
-      await db.competitionEntry.updateMany({
+      await db.agentCompetitionEntry.updateMany({
         where: { competitionId, agentId: scored.agentId },
         data: { score: scored.score, rank: rank + 1, rationale: scored.rationale },
       });
     }
 
-    // Step 4 — update agent stats
     for (const [rank, scored] of sorted.entries()) {
       const isWin = rank === 0;
       await db.agentMarketStats.upsert({
@@ -171,12 +166,11 @@ export async function runCompetition(competitionId: string): Promise<void> {
           wins: { increment: isWin ? 1 : 0 },
           losses: { increment: isWin ? 0 : 1 },
           totalSessions: { increment: 1 },
-          accuracyScore: scored.score, // latest session score (simplification)
+          accuracyScore: scored.score,
         },
       });
     }
 
-    // Recalculate win rates in bulk
     for (const scored of sorted) {
       const stats = await db.agentMarketStats.findUnique({ where: { agentId: scored.agentId } });
       if (stats && stats.totalSessions > 0) {
@@ -187,20 +181,20 @@ export async function runCompetition(competitionId: string): Promise<void> {
       }
     }
 
-    // Step 5 — create Wisdom Asset from winner
     const winner = sorted[0];
     const winnerEntry = responses.find((r) => r.agentId === winner.agentId);
     if (winnerEntry) {
-      const title = await generateWisdomTitle(comp.prompt, winnerEntry.response);
+      const title = await generateWisdomTitle(comp.prompt ?? "", winnerEntry.response);
       await db.wisdomAsset.create({
         data: {
           competitionId,
           agentId: winner.agentId,
           userId: comp.userId,
           title,
+          type: "COMPETITION_WINNER",
           content: winnerEntry.response,
-          category: comp.category,
-          prompt: comp.prompt,
+          category: comp.category ?? undefined,
+          prompt: comp.prompt ?? undefined,
         },
       });
     }

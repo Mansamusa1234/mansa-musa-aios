@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { randomBytes } from "crypto";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -18,14 +19,12 @@ export async function POST(req: Request) {
   const team = await db.team.findUnique({ where: { id: teamId } });
   if (!team) return NextResponse.json({ error: "Team not found" }, { status: 404 });
 
-  // Check sender is owner or admin
   const senderMembership = await db.teamMember.findUnique({
     where: { teamId_userId: { teamId, userId: session.user.id } },
   });
   if (!senderMembership || (senderMembership.role !== "OWNER" && senderMembership.role !== "ADMIN"))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  // Check not already a member
   const existingUser = await db.user.findUnique({ where: { email } });
   if (existingUser) {
     const alreadyMember = await db.teamMember.findUnique({
@@ -38,7 +37,7 @@ export async function POST(req: Request) {
 
   const invite = await db.teamInvite.upsert({
     where: { teamId_email: { teamId, email } },
-    create: { teamId, email, role: role ?? "MEMBER", expiresAt },
+    create: { teamId, email, role: role ?? "MEMBER", expiresAt, token: randomBytes(32).toString("hex") },
     update: { role: role ?? "MEMBER", expiresAt, acceptedAt: null },
   });
 

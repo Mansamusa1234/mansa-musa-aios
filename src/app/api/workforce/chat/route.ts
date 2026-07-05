@@ -30,7 +30,6 @@ export async function POST(req: Request) {
 
   const reply = response.content[0].type === "text" ? response.content[0].text : "";
 
-  // Persist conversation (upsert by userId + role)
   const existing = await db.workforceChat.findFirst({
     where: { userId: session.user.id, agentRole: role },
   });
@@ -67,7 +66,7 @@ export async function GET(req: Request) {
     where: { userId: session.user.id, agentRole: role },
   });
 
-  const messages = chat ? (JSON.parse(chat.messages) as { role: string; content: string }[]) : [];
+  const messages = chat ? (Array.isArray(chat.messages) ? chat.messages : JSON.parse(String(chat.messages))) as { role: string; content: string }[] : [];
   return NextResponse.json({ messages });
 }
 

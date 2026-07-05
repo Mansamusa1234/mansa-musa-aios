@@ -13,10 +13,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     db.wisdomAsset.findUnique({
       where: { id },
       include: {
-        agent:  { select: { name: true, icon: true, color: true, slug: true } },
         user:   { select: { name: true } },
         ratings: { where: { userId: session.user.id }, select: { rating: true } },
-        competition: {
+        agentCompetition: {
           include: {
             entries: {
               orderBy: { rank: "asc" },
@@ -48,7 +47,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!body.success) return NextResponse.json({ error: "Invalid rating" }, { status: 400 });
 
   await db.assetRating.upsert({
-    where: { assetId_userId: { assetId: id, userId: session.user.id } },
+    where: { userId_assetId: { assetId: id, userId: session.user.id } },
     create: { assetId: id, userId: session.user.id, rating: body.data.rating },
     update: { rating: body.data.rating },
   });

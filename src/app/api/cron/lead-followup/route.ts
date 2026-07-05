@@ -20,7 +20,7 @@ export const GET = withCron(async () => {
   });
   const existingLeadIds = new Set(
     existingMeta.map((m) => {
-      try { return JSON.parse(m.metadata ?? "{}").leadId; } catch { return null; }
+      try { const v = m.metadata; return (typeof v === "object" && v !== null && !Array.isArray(v)) ? (v as Record<string, unknown>).leadId : null; } catch { return null; }
     }).filter(Boolean)
   );
 

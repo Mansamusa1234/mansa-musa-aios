@@ -16,7 +16,6 @@ async function publishContent(item: { id: string; type: string; platform: string
     return;
   }
 
-  // social_post — log for now; actual posting handled by social cron
   console.log(`[content-queue] social post approved for ${item.platform}:`, item.title);
 }
 
@@ -41,7 +40,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   if (action === "approve") {
-    await publishContent({ ...item, content: content ?? item.content });
+    await publishContent({ ...item, content: content ?? item.content, metadata: item.metadata != null ? JSON.stringify(item.metadata) : null });
     await db.contentQueue.update({ where: { id }, data: { status: "SENT", approvedAt: new Date(), sentAt: new Date(), ...(content ? { content } : {}) } });
     return NextResponse.json({ ok: true, status: "SENT" });
   }

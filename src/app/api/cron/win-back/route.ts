@@ -57,7 +57,7 @@ export const GET = withCron(async () => {
 
     const subs = await db.subscription.findMany({
       where: {
-        status: "CANCELED",
+        status: "CANCELLED",
         updatedAt: { gte: from, lte: to },
         [field]: null,
       },

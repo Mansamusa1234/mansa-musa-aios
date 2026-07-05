@@ -17,7 +17,6 @@ export async function GET(req: Request) {
     take: take + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
-      agent: { select: { name: true, icon: true, color: true, category: true } },
       user:  { select: { name: true } },
     },
   });

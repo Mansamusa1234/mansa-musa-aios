@@ -21,7 +21,7 @@ export async function logAuditEvent(params: {
         event: params.event as Prisma.AuditLogCreateInput["event"],
         ip: params.ip ?? null,
         userAgent: params.userAgent ?? null,
-        metadata: params.metadata ? JSON.stringify(params.metadata) : null,
+        metadata: params.metadata as import("@prisma/client").Prisma.InputJsonValue ?? undefined,
       },
     });
   } catch (err) {

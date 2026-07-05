@@ -65,7 +65,7 @@ export const GET = withCron(async () => {
   ] = await Promise.all([
     db.subscription.count({ where: { status: "ACTIVE" } }),
     db.subscription.count({ where: { status: "TRIALING" } }),
-    db.subscription.count({ where: { status: "CANCELED", updatedAt: { gte: thirtyDaysAgo } } }),
+    db.subscription.count({ where: { status: "CANCELLED", updatedAt: { gte: thirtyDaysAgo } } }),
   ]);
 
   const [

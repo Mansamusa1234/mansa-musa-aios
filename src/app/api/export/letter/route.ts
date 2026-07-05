@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         title: parsed.data.title,
         type: "LETTER_PACK",
         content,
-        sources: parsed.data.sources ? JSON.stringify(parsed.data.sources) : null,
+        sources: parsed.data.sources ?? undefined,
       },
     })
     .catch((err) => {

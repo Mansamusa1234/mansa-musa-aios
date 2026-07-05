@@ -18,17 +18,23 @@ export async function POST(req: Request) {
   const agent = await db.marketplaceAgent.findUnique({ where: { id: agentId } });
   if (!agent) return NextResponse.json({ error: "Agent not found" }, { status: 404 });
 
-  // Verify the user has deployed this agent (owns it)
   const deployment = await db.agentDeployment.findUnique({
     where: { userId_agentId: { userId: session.user.id, agentId } },
   });
   if (!deployment) return NextResponse.json({ error: "You must deploy this agent first" }, { status: 403 });
 
-  const listing = await db.agentListing.upsert({
-    where: { agentId },
-    create: { agentId, sellerId: session.user.id, priceCents, description: description ?? null },
-    update: { priceCents, description: description ?? null, isActive: true },
+  const existing = await db.agentListing.findFirst({
+    where: { agentId, sellerId: session.user.id },
   });
+
+  const listing = existing
+    ? await db.agentListing.update({
+        where: { id: existing.id },
+        data: { priceCents, description: description ?? null, isActive: true },
+      })
+    : await db.agentListing.create({
+        data: { agentId, agentType: agent.category, name: agent.name, sellerId: session.user.id, priceCents, description: description ?? null, config: {} },
+      });
 
   return NextResponse.json({ listing });
 }
@@ -52,7 +58,6 @@ export async function GET() {
   const listings = await db.agentListing.findMany({
     where: { isActive: true },
     include: {
-      agent: { select: { name: true, description: true, icon: true, color: true, category: true } },
       seller: { select: { name: true } },
       _count: { select: { purchases: true } },
     },
