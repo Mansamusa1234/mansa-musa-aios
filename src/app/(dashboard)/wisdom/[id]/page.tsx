@@ -19,10 +19,9 @@ export default async function WisdomAssetPage({ params }: { params: Promise<{ id
   const asset = await db.wisdomAsset.findUnique({
     where: { id },
     include: {
-      agent:  { select: { name: true, icon: true, color: true, slug: true } },
       user:   { select: { name: true } },
       ratings: { where: { userId: session.user.id }, select: { rating: true } },
-      competition: {
+      agentCompetition: {
         include: {
           entries: {
             orderBy: { rank: "asc" },
@@ -39,16 +38,16 @@ export default async function WisdomAssetPage({ params }: { params: Promise<{ id
   return (
     <WisdomAssetView
       asset={{
-        id: asset.id, title: asset.title, content: asset.content,
-        category: asset.category as string, prompt: asset.prompt,
-        agentName: asset.agent.name, agentIcon: asset.agent.icon, agentColor: asset.agent.color,
+        id: asset.id, title: asset.title, content: asset.content ?? "",
+        category: (asset.category ?? "GENERAL") as string, prompt: asset.prompt ?? "",
+        agentName: asset.agentName ?? "AI Agent", agentIcon: asset.agentKey ?? "🤖", agentColor: asset.agentRole ?? "indigo",
         views: asset.views + 1, saves: asset.saves,
         avgRating: asset.avgRating, ratingCount: asset.ratingCount,
         createdAt: asset.createdAt.toISOString(),
         userRating: asset.ratings[0]?.rating ?? null,
-        entries: asset.competition.entries.map((e) => ({
-          agentName: e.agent.name, agentIcon: e.agent.icon, agentColor: e.agent.color,
-          score: e.score, rank: e.rank, rationale: e.rationale, response: e.response,
+        entries: (asset.agentCompetition?.entries ?? []).map((e) => ({
+          agentName: e.agent?.name ?? "Agent", agentIcon: e.agent?.icon ?? "🤖", agentColor: e.agent?.color ?? "indigo",
+          score: e.score, rank: e.rank ?? 0, rationale: e.rationale ?? "", response: e.response,
         })),
       }}
     />

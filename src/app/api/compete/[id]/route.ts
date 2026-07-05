@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           agent: { select: { id: true, name: true, slug: true, icon: true, color: true, category: true } },
         },
       },
-      asset: { select: { id: true, title: true } },
+      asset: { select: { id: true, title: true }, take: 1 },
     },
   });
 

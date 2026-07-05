@@ -43,7 +43,7 @@ export default async function ModelHubPage() {
     <ModelHubContent
       catalog={catalog}
       plan={plan}
-      preference={pref ? { mode: pref.mode, provider: pref.provider, modelId: pref.modelId } : { mode: "auto", provider: "anthropic", modelId: "claude-haiku-4-5-20251001" }}
+      preference={pref ? { mode: pref.mode ?? "auto", provider: pref.provider ?? "anthropic", modelId: pref.modelId } : { mode: "auto", provider: "anthropic", modelId: "claude-haiku-4-5-20251001" }}
     />
   );
 }

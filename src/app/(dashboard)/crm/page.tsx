@@ -26,7 +26,7 @@ export default async function CRMPage() {
       name: l.name,
       email: l.email,
       company: l.company,
-      value: l.value,
+      value: l.value ?? 0,
       source: l.source,
       notes: l.notes,
       createdAt: l.createdAt,
@@ -34,9 +34,9 @@ export default async function CRMPage() {
     })),
   }));
 
-  const totalValue = leads.filter((l) => l.stage === "WON").reduce((s, l) => s + l.value, 0);
+  const totalValue = leads.filter((l) => l.stage === "WON").reduce((s, l) => s + (l.value ?? 0), 0);
   const wonCount = leads.filter((l) => l.stage === "WON").length;
-  const pipelineValue = leads.filter((l) => !["WON", "LOST"].includes(l.stage)).reduce((s, l) => s + l.value, 0);
+  const pipelineValue = leads.filter((l) => !["WON", "LOST"].includes(l.stage)).reduce((s, l) => s + (l.value ?? 0), 0);
 
   return <CRMContent pipeline={pipeline} totalLeads={leads.length} totalValue={totalValue} wonCount={wonCount} pipelineValue={pipelineValue} userId={session!.user.id} />;
 }

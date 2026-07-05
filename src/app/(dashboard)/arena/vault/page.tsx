@@ -14,7 +14,7 @@ export default async function VaultPage() {
   const session = await auth();
   const memories = await db.wisdomMemory.findMany({
     where: { userId: session!.user.id },
-    orderBy: { savedAt: "desc" },
+    orderBy: { createdAt: "desc" },
   });
 
   return (
@@ -24,7 +24,7 @@ export default async function VaultPage() {
         sessionId: m.sessionId,
         question: m.question,
         summary: m.summary,
-        savedAt: m.savedAt,
+        savedAt: m.createdAt,
       }))}
     />
   );

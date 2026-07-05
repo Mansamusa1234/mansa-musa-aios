@@ -20,13 +20,16 @@ export default async function ReferralsPage() {
     db.referral.findMany({
       where: { referrerId: userId },
       orderBy: { createdAt: "desc" },
-      include: {
-        referredUser: { select: { name: true, email: true, createdAt: true } },
-        ledgerEntry: { select: { status: true } },
-      },
     }),
     db.referral.groupBy({ by: ["referrerId"], where: { status: "CONVERTED" }, _count: { _all: true } }),
   ]);
+
+  const referredUserIds = referrals.map((r) => r.referredUserId).filter(Boolean);
+  const referredUsers = await db.user.findMany({
+    where: { id: { in: referredUserIds } },
+    select: { id: true, name: true, email: true, createdAt: true },
+  });
+  const referredUserMap = new Map(referredUsers.map((u) => [u.id, u]));
 
   const totalRewardCents = referrals.reduce((sum, r) => sum + r.rewardCents, 0);
   const convertedCount = referrals.filter((r) => r.status === "CONVERTED").length;
@@ -39,15 +42,18 @@ export default async function ReferralsPage() {
   return (
     <ReferralsContent
       code={code}
-      referrals={referrals.map((r) => ({
-        id: r.id,
-        name: r.referredUser.name,
-        email: r.referredUser.email,
-        joinedAt: r.referredUser.createdAt,
-        status: r.status,
-        rewardCents: r.rewardCents,
-        payoutStatus: r.ledgerEntry?.status ?? null,
-      }))}
+      referrals={referrals.map((r) => {
+        const ru = referredUserMap.get(r.referredUserId);
+        return {
+          id: r.id,
+          name: ru?.name ?? null,
+          email: ru?.email ?? "",
+          joinedAt: ru?.createdAt ?? r.createdAt,
+          status: r.status,
+          rewardCents: r.rewardCents,
+          payoutStatus: null,
+        };
+      })}
       totalRewardCents={totalRewardCents}
       convertedCount={convertedCount}
       rank={rank}

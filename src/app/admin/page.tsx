@@ -31,7 +31,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     db.user.count(),
     db.subscription.count({ where: { status: "ACTIVE" } }),
-    db.subscription.count({ where: { status: "CANCELED" } }),
+    db.subscription.count({ where: { status: "CANCELLED" } }),
     db.conversation.count(),
     db.message.count(),
     db.user.count({ where: { createdAt: { gte: startOfToday } } }),

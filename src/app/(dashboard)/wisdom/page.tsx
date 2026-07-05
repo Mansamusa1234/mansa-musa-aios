@@ -15,7 +15,6 @@ export default async function WisdomPage() {
     orderBy: { createdAt: "desc" },
     take: 30,
     include: {
-      agent: { select: { name: true, icon: true, color: true, category: true } },
       user:  { select: { name: true } },
     },
   });
@@ -26,12 +25,12 @@ export default async function WisdomPage() {
   const serialized = assets.map((a) => ({
     id:         a.id,
     title:      a.title,
-    category:   a.category as string,
-    prompt:     a.prompt,
-    content:    a.content.slice(0, 280),
-    agentName:  a.agent.name,
-    agentIcon:  a.agent.icon,
-    agentColor: a.agent.color,
+    category:   (a.category ?? "GENERAL") as string,
+    prompt:     a.prompt ?? "",
+    content:    (a.content ?? "").slice(0, 280),
+    agentName:  a.agentName ?? "AI Agent",
+    agentIcon:  a.agentKey ?? "🤖",
+    agentColor: a.agentRole ?? "indigo",
     views:      a.views,
     saves:      a.saves,
     avgRating:  a.avgRating,

@@ -44,7 +44,6 @@ export async function GET() {
   const recurringTotal  = affiliate.conversions.reduce((s, c) => s + c.recurringTotal, 0);
   const totalEarned     = oneTimeTotal + recurringTotal;
 
-  // Click chart — last 30 days grouped by day
   const clicksByDay: Record<string, number> = {};
   for (let i = 29; i >= 0; i--) {
     const d = new Date(now);
@@ -56,13 +55,12 @@ export async function GET() {
     if (day in clicksByDay) clicksByDay[day]++;
   }
 
-  // Renewal history
   const renewals = affiliate.conversions.flatMap((c) =>
     c.renewals.map((r) => ({
       id: r.id,
       amountCents: r.amountCents,
       commissionCents: r.commissionCents,
-      paidAt: r.paidAt,
+      paidAt: r.createdAt,
     }))
   ).sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
 

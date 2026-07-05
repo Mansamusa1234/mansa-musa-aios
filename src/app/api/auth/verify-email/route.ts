@@ -15,10 +15,11 @@ export async function POST(req: Request) {
     }
 
     const currentUser = await db.user.findUnique({ where: { id: verificationToken.userId } });
-    const isEmailChange = currentUser && currentUser.email !== verificationToken.email;
+    const tokenEmail = verificationToken.email ?? currentUser?.email;
+    const isEmailChange = currentUser && tokenEmail && currentUser.email !== tokenEmail;
 
-    if (isEmailChange) {
-      const conflict = await db.user.findUnique({ where: { email: verificationToken.email } });
+    if (isEmailChange && tokenEmail) {
+      const conflict = await db.user.findUnique({ where: { email: tokenEmail } });
       if (conflict) {
         return NextResponse.json({ error: "That email address is already in use." }, { status: 409 });
       }
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
     await db.$transaction([
       db.user.update({
         where: { id: verificationToken.userId },
-        data: { email: verificationToken.email, emailVerified: new Date() },
+        data: { ...(tokenEmail ? { email: tokenEmail } : {}), emailVerified: new Date() },
       }),
       db.emailVerificationToken.update({ where: { id: verificationToken.id }, data: { usedAt: new Date() } }),
     ]);

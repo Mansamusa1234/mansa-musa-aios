@@ -32,7 +32,7 @@ export default async function ReceptionistPage() {
 
   return (
     <ReceptionistContent
-      receptionist={rec ? { id: rec.id, name: rec.name, greeting: rec.greeting, persona: rec.persona, businessHours: rec.businessHours, widgetColor: rec.widgetColor, isActive: rec.isActive, totalChats: rec.totalChats } : null}
+      receptionist={rec ? { id: rec.id, name: rec.name, greeting: rec.greeting, persona: rec.persona, businessHours: rec.businessHours, widgetColor: rec.widgetColor ?? "", isActive: rec.isActive, totalChats: rec.totalChats } : null}
       recentChats={recentChats.map((c) => ({ id: c.id, visitorName: c.visitorName, visitorEmail: c.visitorEmail, createdAt: c.createdAt }))}
       stats={{ weeklyChats, leadsFromChats, totalChats: rec?.totalChats ?? 0 }}
     />

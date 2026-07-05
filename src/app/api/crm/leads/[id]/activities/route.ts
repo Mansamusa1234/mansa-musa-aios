@@ -34,10 +34,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0].message }, { status: 400 });
 
   const activity = await db.leadActivity.create({
-    data: { leadId: id, type: parsed.data.type, note: parsed.data.note },
+    data: { leadId: id, type: parsed.data.type, notes: parsed.data.note },
   });
 
-  // Update lead updatedAt
   await db.lead.update({ where: { id }, data: { updatedAt: new Date() } });
 
   return NextResponse.json({ activity }, { status: 201 });
