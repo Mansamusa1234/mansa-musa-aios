@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export default async function BillingPage({ searchParams }: { searchParams: Promise<{ success?: string; canceled?: string }> }) {
-  const { success, canceled } = await searchParams;
+export default async function BillingPage({ searchParams }: { searchParams: Promise<{ success?: string; canceled?: string; trial?: string }> }) {
+  const { success, canceled, trial } = await searchParams;
   const session = await auth();
   const [subscription, livePrices] = await Promise.all([
     db.subscription.findUnique({ where: { userId: session!.user.id } }),
@@ -46,6 +46,19 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
     <div className="mx-auto max-w-4xl">
       <h1 className="text-2xl font-bold text-white">Billing &amp; Plans</h1>
       <p className="mt-1 text-sm text-gray-400">Manage your subscription and payment details.</p>
+
+      {trial === "started" && (
+        <div className="mt-6 rounded-xl border border-green-500/30 bg-green-500/10 px-5 py-4">
+          <p className="text-sm font-semibold text-green-300">🎉 Your 14-day free trial is now active!</p>
+          <p className="text-xs text-gray-400 mt-0.5">Full Professional access. Upgrade any time to keep access after your trial ends.</p>
+        </div>
+      )}
+
+      {trial === "already_used" && (
+        <div className="mt-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-5 py-4">
+          <p className="text-sm font-semibold text-yellow-300">You&apos;ve already used your free trial. Upgrade to continue.</p>
+        </div>
+      )}
 
       {success === "true" && (
         <div className="mt-6 rounded-xl border border-green-500/30 bg-green-500/10 px-5 py-4">

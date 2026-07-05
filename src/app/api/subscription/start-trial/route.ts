@@ -10,18 +10,22 @@ const TRIAL_DAYS = 14;
 export async function POST() {
   const session = await auth();
   if (!session?.user?.id || !session.user.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.redirect(
+      new URL("/login", process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com"),
+      303
+    );
   }
 
   const userId = session.user.id;
   const email = session.user.email;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
   const existing = await db.subscription.findUnique({ where: { userId } });
   if (existing?.trialUsed) {
-    return NextResponse.json({ error: "Trial already used" }, { status: 409 });
+    return NextResponse.redirect(new URL("/billing?trial=already_used", appUrl), 303);
   }
   if (existing?.status === "ACTIVE") {
-    return NextResponse.json({ error: "Already subscribed" }, { status: 409 });
+    return NextResponse.redirect(new URL("/billing", appUrl), 303);
   }
 
   const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
@@ -61,7 +65,7 @@ export async function POST() {
   // Trigger TRIAL_STARTED automation workflows — fire and forget
   void triggerWorkflows(userId, "TRIAL_STARTED", { email, name: session.user.name ?? "" }).catch(() => {});
 
-  return NextResponse.json({ trialEndsAt }, { status: 201 });
+  return NextResponse.redirect(new URL("/billing?trial=started", appUrl), 303);
 }
 
 function trialStartedEmailHtml({ name, trialEndDate }: { name: string; trialEndDate: string }) {
