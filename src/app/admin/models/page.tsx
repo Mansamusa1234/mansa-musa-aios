@@ -13,7 +13,6 @@ export default async function AdminModelsPage() {
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const last7 = new Date(Date.now() - 7 * 86400000);
 
   const [usageByProvider, usageByModel, totalCost, recentUsage] = await Promise.all([
     db.usageRecord.groupBy({
@@ -65,7 +64,6 @@ export default async function AdminModelsPage() {
         <p className="mt-1 text-sm text-gray-500">API key status, cost tracking, and usage analytics.</p>
       </div>
 
-      {/* API Key Status */}
       <section>
         <h2 className="text-sm font-bold text-white mb-3">API Key Status</h2>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -80,7 +78,6 @@ export default async function AdminModelsPage() {
         <p className="text-[11px] text-gray-600 mt-2">Set API keys in Vercel Dashboard → Environment Variables.</p>
       </section>
 
-      {/* Cost summary */}
       <section>
         <h2 className="text-sm font-bold text-white mb-3">This month&apos;s costs</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -98,7 +95,6 @@ export default async function AdminModelsPage() {
         </div>
       </section>
 
-      {/* Usage by model */}
       <section>
         <h2 className="text-sm font-bold text-white mb-3">Usage by model (this month)</h2>
         <div className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
@@ -133,7 +129,6 @@ export default async function AdminModelsPage() {
         </div>
       </section>
 
-      {/* Recent calls */}
       <section>
         <h2 className="text-sm font-bold text-white mb-3">Recent model calls</h2>
         <div className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden">
@@ -151,7 +146,7 @@ export default async function AdminModelsPage() {
                 <tr key={r.id} className="border-b border-white/4 hover:bg-white/2">
                   <td className="py-2.5 pl-4 text-gray-300 font-mono">{r.model}</td>
                   <td className="py-2.5 px-3 text-gray-500 hidden sm:table-cell">{r.user.email}</td>
-                  <td className="py-2.5 px-3 text-right text-gray-500 hidden md:table-cell">{(r.inputTokens + r.outputTokens).toLocaleString()}</td>
+                  <td className="py-2.5 px-3 text-right text-gray-500 hidden md:table-cell">{((r.inputTokens ?? 0) + (r.outputTokens ?? 0)).toLocaleString()}</td>
                   <td className="py-2.5 pr-4 text-right text-gray-600">{new Date(r.createdAt).toLocaleString("en-GB", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
                 </tr>
               ))}
@@ -160,7 +155,6 @@ export default async function AdminModelsPage() {
         </div>
       </section>
 
-      {/* Model catalog */}
       <section>
         <h2 className="text-sm font-bold text-white mb-3">Available models ({MODEL_CATALOG.length})</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -60,7 +60,7 @@ const STATUS_STYLES: Record<string, string> = {
   ACTIVE:   "bg-green-500/15 text-green-400 border-green-500/25",
   TRIALING: "bg-blue-500/15 text-blue-400 border-blue-500/25",
   PAST_DUE: "bg-red-500/15 text-red-400 border-red-500/25",
-  CANCELED: "bg-gray-500/15 text-gray-400 border-gray-500/25",
+  CANCELLED: "bg-gray-500/15 text-gray-400 border-gray-500/25",
   INACTIVE: "bg-gray-500/10 text-gray-600 border-gray-500/15",
 };
 
@@ -103,7 +103,7 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
   const active   = subscriptions.filter((s) => s.status === "ACTIVE").length;
   const trialing = subscriptions.filter((s) => s.status === "TRIALING").length;
   const pastDue  = subscriptions.filter((s) => s.status === "PAST_DUE").length;
-  const canceled = subscriptions.filter((s) => s.status === "CANCELED").length;
+  const canceled = subscriptions.filter((s) => s.status === "CANCELLED").length;
   const mrr      = subscriptions.filter((s) => s.status === "ACTIVE").reduce((sum, s) => sum + s.planPrice, 0);
 
   const filtered = subscriptions.filter((s) => {
@@ -141,14 +141,12 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="visible" className="space-y-6">
-      {/* Header */}
       <motion.div variants={fadeUp}>
         <p className="text-xs font-bold uppercase tracking-widest text-red-400 mb-1">· Admin · Billing ·</p>
         <h1 className="text-2xl font-extrabold text-white">Billing Diagnostics</h1>
         <p className="mt-1 text-sm text-gray-500">Real-time Stripe data and subscription health</p>
       </motion.div>
 
-      {/* Mode banner */}
       {!envDiagnostics.liveMode && (
         <motion.div variants={fadeUp} className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex items-center gap-3">
           <span className="text-lg">⚠️</span>
@@ -162,7 +160,6 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
         </motion.div>
       )}
 
-      {/* KPI row */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         {[
           { label: "Active",   value: active,   color: "text-green-400"  },
@@ -178,7 +175,6 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
         ))}
       </motion.div>
 
-      {/* Tabs */}
       <div className="flex gap-1 rounded-xl border border-white/8 bg-white/3 p-1 w-fit">
         {tabs.map((t) => (
           <button
@@ -191,7 +187,6 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
         ))}
       </div>
 
-      {/* Subscriptions tab */}
       {tab === "subscriptions" && (
         <div className="space-y-3">
           <input
@@ -258,7 +253,6 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
         </div>
       )}
 
-      {/* Webhooks tab */}
       {tab === "webhooks" && (
         <div className="space-y-3">
           <div className="rounded-2xl border border-white/8 bg-white/3 overflow-x-auto">
@@ -298,10 +292,8 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
         </div>
       )}
 
-      {/* Config & Diagnostics tab */}
       {tab === "config" && (
         <div className="space-y-6">
-          {/* Env vars */}
           <div>
             <h2 className="text-sm font-bold text-white mb-3">Environment Variables</h2>
             <div className="rounded-2xl border border-white/8 bg-white/3 divide-y divide-white/5">
@@ -324,7 +316,6 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
             </div>
           </div>
 
-          {/* Plan configuration */}
           <div>
             <h2 className="text-sm font-bold text-white mb-3">Plan Configuration</h2>
             <div className="rounded-2xl border border-white/8 bg-white/3 divide-y divide-white/5">
@@ -341,7 +332,6 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
             </div>
           </div>
 
-          {/* Checkout test */}
           <div>
             <h2 className="text-sm font-bold text-white mb-1">Test Checkout Flow</h2>
             <p className="text-xs text-gray-600 mb-3">Opens a Stripe checkout session in a new tab using your admin account. Works in test mode only.</p>
@@ -365,7 +355,6 @@ export default function BillingDiagnosticsClient({ subscriptions, events, envDia
             </div>
           </div>
 
-          {/* Webhook endpoint reminder */}
           <div>
             <h2 className="text-sm font-bold text-white mb-3">Webhook Endpoint</h2>
             <div className="rounded-xl border border-white/8 bg-white/3 px-4 py-3 space-y-2">
