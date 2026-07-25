@@ -125,7 +125,7 @@ export default function ReferralsContent({ code, referrals, totalRewardCents, co
               <div key={r.id} className="flex items-center justify-between rounded-xl border border-white/8 bg-white/3 p-4">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-500/15 text-sm font-bold text-brand-300">
-                    {(r.name ?? r.email)[0].toUpperCase()}
+                    {(r.name || r.email || "?")[0].toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-white text-sm truncate">{r.name ?? r.email}</p>

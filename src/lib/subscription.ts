@@ -22,6 +22,7 @@ const FEATURE_GATES: Record<string, Plan> = {
   agent_marketplace: "free",
   receptionist: "starter",
   wisdom_arena: "starter",
+  quiver_intel: "starter",
 };
 
 export function planDisplayName(plan: Plan): string {

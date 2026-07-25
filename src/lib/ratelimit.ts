@@ -42,22 +42,8 @@ export const limiters = {
   forgotPassword:     makeLimiter(3, "1 h", "rl:forgot-password"),
   /** 3 requests / hour — keyed by user ID or IP */
   resendVerification: makeLimiter(3, "1 h", "rl:resend-verification"),
-  /** 20 messages / minute — public widget, keyed by IP+receptionist ID */
-  receptionistChat:   makeLimiter(20, "1 m", "rl:receptionist-chat"),
-  /** 10 submissions / hour — public lead capture, keyed by IP */
-  publicLead:         makeLimiter(10, "1 h", "rl:public-lead"),
-  /** 5 bookings / hour — public calendar booking, keyed by IP */
-  publicBook:         makeLimiter(5,  "1 h", "rl:public-book"),
-  /** 5 contact messages / hour — public contact form, keyed by IP */
-  contact:            makeLimiter(5,  "1 h", "rl:contact"),
-  /** 3 newsletter subscriptions / hour — keyed by IP */
-  newsletter:         makeLimiter(3,  "1 h", "rl:newsletter"),
-  /** 60 messages / hour — authenticated workforce AI chat, keyed by user ID */
-  workforceChat:      makeLimiter(60, "1 h", "rl:workforce-chat"),
-  /** 10 model comparisons / hour — expensive multi-model calls, keyed by user ID */
-  modelCompare:       makeLimiter(10, "1 h", "rl:model-compare"),
-  /** 20 conversations / hour — authenticated agent chat, keyed by user ID */
-  agentChat:          makeLimiter(20, "1 h", "rl:agent-chat"),
+  /** 20 requests / minute — authenticated, keyed by user ID (Quiver API rate limits) */
+  quiver: makeLimiter(20, "1 m", "rl:quiver"),
 };
 
 /**

@@ -251,7 +251,7 @@ export default function TeamContent({ teams: initial, currentUserId }: Props) {
                   }`}>
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/20 text-lg font-bold text-indigo-300">
-                      {team.name[0].toUpperCase()}
+                      {(team.name?.[0] ?? "?").toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-white truncate">{team.name}</div>
@@ -275,7 +275,7 @@ export default function TeamContent({ teams: initial, currentUserId }: Props) {
               <div className="rounded-xl border border-white/8 bg-white/2 p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/20 text-2xl font-bold text-indigo-300">
-                    {activeTeam.name[0].toUpperCase()}
+                    {(activeTeam.name?.[0] ?? "?").toUpperCase()}
                   </div>
                   <div className="flex-1">
                     <h2 className="text-lg font-bold text-white">{activeTeam.name}</h2>
