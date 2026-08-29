@@ -14,6 +14,9 @@ export async function POST(req: Request) {
 
   const { priceId } = await req.json() as { priceId?: string };
   if (!priceId) return NextResponse.json({ error: "Missing priceId" }, { status: 400 });
+  if (!priceId.startsWith("price_")) {
+    return NextResponse.json({ error: "Invalid price ID — check STRIPE_PRICE_* env vars in Vercel." }, { status: 400 });
+  }
 
   try {
     const stripe = requireStripe();
@@ -53,7 +56,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: checkoutSession.url });
   } catch (err) {
-    console.error("[stripe/create-checkout] error:", (err as Error)?.message);
-    return NextResponse.json({ error: "Could not create checkout session. Please try again." }, { status: 500 });
+    const msg = (err as Error)?.message ?? "Unknown error";
+    console.error("[stripe/create-checkout] error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

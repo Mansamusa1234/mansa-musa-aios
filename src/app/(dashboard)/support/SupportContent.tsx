@@ -44,7 +44,7 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
           if (d.ticket?.aiResponse) {
             clearInterval(poll);
             setTickets((p) => p.map((t) => t.id === ticketId ? { ...t, aiResponse: d.ticket.aiResponse } : t));
-            setSelected((s) => s?.id === ticketId ? { ...s, aiResponse: d.ticket.aiResponse } : s);
+            setSelected((s) => s && s.id === ticketId ? { ...s, aiResponse: d.ticket.aiResponse } : s);
           }
         } catch { /* continue polling */ }
       }, 2000);
@@ -112,6 +112,7 @@ export default function SupportContent({ isAdmin, tickets: initialTickets }: Pro
           </motion.div>
         </div>
       )}
+      <AnimatePresence />
     </motion.div>
   );
 }

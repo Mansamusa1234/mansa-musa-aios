@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { stagger, fadeUp, scaleIn } from "@/lib/motion";
+import { stagger, fadeUp } from "@/lib/motion";
 
 interface ReceptionistData {
   id: string;
@@ -124,7 +124,16 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1">Receptionist name</label>
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" />
+              <input
+                name="receptionist-name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="words"
+                spellCheck={false}
+                className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1">Widget colour</label>
@@ -136,19 +145,54 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Opening greeting</label>
-            <textarea value={form.greeting} onChange={(e) => setForm({ ...form, greeting: e.target.value })} rows={2} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none resize-none focus:border-brand-500/50" />
+            <textarea
+              name="receptionist-greeting"
+              value={form.greeting}
+              onChange={(e) => setForm({ ...form, greeting: e.target.value })}
+              rows={2}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none resize-none focus:border-brand-500/50"
+            />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Personality / tone (comma-separated traits)</label>
-            <input value={form.persona} onChange={(e) => setForm({ ...form, persona: e.target.value })} placeholder="professional, friendly, concise" className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" />
+            <input
+              name="receptionist-persona"
+              value={form.persona}
+              onChange={(e) => setForm({ ...form, persona: e.target.value })}
+              placeholder="professional, friendly, concise"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50"
+            />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Business hours (optional)</label>
-            <input value={form.businessHours ?? ""} onChange={(e) => setForm({ ...form, businessHours: e.target.value })} placeholder="Mon-Fri 9am-6pm GMT" className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50" />
+            <input
+              name="receptionist-hours"
+              value={form.businessHours ?? ""}
+              onChange={(e) => setForm({ ...form, businessHours: e.target.value })}
+              placeholder="Mon-Fri 9am-6pm GMT"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none focus:border-brand-500/50"
+            />
           </div>
           <div className="flex items-center gap-3">
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="sr-only peer" />
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                className="sr-only peer"
+                aria-label="Toggle receptionist active state"
+              />
               <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-500" />
             </label>
             <span className="text-sm text-gray-300">{form.isActive ? "Active — accepting chats" : "Paused"}</span>
@@ -181,7 +225,13 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
                   {previewing && <div className="flex justify-start"><div className="rounded-xl bg-white/8 px-3 py-2 text-xs text-gray-400">Typing...</div></div>}
                 </div>
                 <form onSubmit={sendPreview} className="p-3 border-t border-white/8 flex gap-2">
-                  <input value={previewInput} onChange={(e) => setPreviewInput(e.target.value)} placeholder="Type a message..." className="flex-1 rounded-lg border border-white/8 bg-white/4 px-2 py-1.5 text-xs text-white outline-none" />
+                  <input
+                    value={previewInput}
+                    onChange={(e) => setPreviewInput(e.target.value)}
+                    placeholder="Type a message..."
+                    autoComplete="off"
+                    className="flex-1 rounded-lg border border-white/8 bg-white/4 px-2 py-1.5 text-xs text-white outline-none"
+                  />
                   <button type="submit" style={{ background: form.widgetColor }} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white">Send</button>
                 </form>
               </div>
@@ -192,7 +242,7 @@ export default function ReceptionistContent({ receptionist: initial, recentChats
 
       {activeTab === "embed" && (
         <motion.div variants={fadeUp} className="rounded-2xl border border-white/8 bg-white/3 p-5 space-y-4">
-          <p className="text-sm text-gray-400">Add this snippet to your website's <code className="text-brand-400 text-xs">&lt;body&gt;</code> tag:</p>
+          <p className="text-sm text-gray-400">Add this snippet to your website’s <code className="text-brand-400 text-xs">&lt;body&gt;</code> tag:</p>
           <pre className="rounded-xl border border-white/8 bg-black/40 p-4 text-xs text-green-400 overflow-x-auto whitespace-pre-wrap break-all">{embedCode}</pre>
           <button onClick={copyEmbed} className={`rounded-xl border px-4 py-2 text-xs font-semibold transition-colors ${copied ? "border-green-500/40 text-green-400" : "border-white/8 text-gray-300 hover:text-white"}`}>
             {copied ? "✓ Copied!" : "Copy code"}
