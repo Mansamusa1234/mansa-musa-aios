@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { syncProviderCampaigns } from "@/lib/ads/providers";
 import { upsertCampaigns, listCampaigns } from "@/lib/ads/store";
 import { syncStripeAttribution } from "@/lib/ads/stripe-attribution";
+import { mirrorCampaignsToSupabase } from "@/lib/ads/supabase";
 
 export async function POST() {
   const session = await auth();
@@ -13,9 +14,17 @@ export async function POST() {
   const stripe = await syncStripeAttribution(session.user.id);
   const stored = await listCampaigns(session.user.id);
 
+  let supabase: { configured: boolean; mirrored?: number; error?: string } = { configured: false };
+  try {
+    supabase = await mirrorCampaignsToSupabase(session.user.id, stored);
+  } catch (error) {
+    supabase = { configured: true, error: error instanceof Error ? error.message : String(error) };
+  }
+
   return NextResponse.json({
     ok: true,
     results: [...results, stripe],
+    supabase,
     campaigns: stored,
   });
 }
