@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mansa Musa AI — Video Studio</title>
+<style>
+:root{--bg:#0e0c0a;--panel:#1a1612;--line:#2c251d;--gold:#c79a3b;--text:#efe7d8;--muted:#9b8f7a;--good:#5fae6b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif}
+main{max-width:900px;margin:auto;padding:24px 18px 60px}h1{margin:0 0 6px;font-size:26px}.sub{color:var(--muted);margin-bottom:20px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:14px 0}
+label{display:block;font-weight:650;margin:12px 0 6px}input,select,textarea{width:100%;border:1px solid var(--line);background:#0b0908;color:var(--text);padding:12px;border-radius:9px;font:inherit}textarea{min-height:82px;resize:vertical}
+.scene{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.row{display:grid;grid-template-columns:1fr 110px;gap:10px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}button,a.btn{border:1px solid var(--line);background:#211b15;color:var(--text);padding:11px 15px;border-radius:9px;font-weight:650;text-decoration:none;cursor:pointer}.primary{background:var(--gold);color:#111;border-color:var(--gold)}#status{color:var(--muted);margin-top:12px}.ok{color:var(--good)!important}video{width:100%;max-height:70vh;margin-top:14px;background:#000;border-radius:10px}.tiny{font-size:13px;color:var(--muted)}
+@media(max-width:600px){main{padding-top:max(18px,env(safe-area-inset-top))}.row{grid-template-columns:1fr 90px}}
+</style>
+</head>
+<body><main>
+<h1>Mansa Musa AI <span style="color:var(--gold)">Video Studio</span></h1>
+<div class="sub">Built-in video builder — no HeyGen subscription required.</div>
+<div class="actions"><a class="btn" href="/app/">← Command Center</a><button onclick="loadPreset()">Load The Poisoned Tree trailer</button></div>
+<div class="card">
+<label>Project title</label><input id="title" value="The Poisoned Tree — The Hidden Crown">
+<label>Format</label><select id="aspect"><option value="portrait">Vertical 9:16 — TikTok / Reels / Shorts</option><option value="landscape">Landscape 16:9 — YouTube</option><option value="square">Square 1:1 — social post</option></select>
+<div id="scenes"></div>
+<div class="actions"><button onclick="addScene()">+ Add scene</button><button class="primary" id="renderBtn" onclick="renderVideo()">Build MP4</button></div>
+<div id="status">Ready.</div><div class="tiny">The free renderer creates a clean cinematic text trailer locally with FFmpeg. AI images, voice and music can be added later as optional providers instead of locking the platform to one paid service.</div>
+<video id="preview" controls playsinline style="display:none"></video>
+</div>
+<script>
+function osKey(){return localStorage.getItem('osKey')||''}function headers(){const h={'Content-Type':'application/json'};const k=osKey();if(k)h['X-OS-Key']=k;return h}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+function addScene(text='',seconds=3){const d=document.createElement('div');d.className='scene';d.innerHTML=`<div class="row"><textarea class="sceneText" placeholder="Scene words">${esc(text)}</textarea><div><label>Seconds</label><input class="sceneSeconds" type="number" min="1" max="12" step="0.5" value="${seconds}"><button style="margin-top:8px" onclick="this.closest('.scene').remove()">Remove</button></div></div>`;document.getElementById('scenes').appendChild(d)}
+async function loadPreset(){const r=await fetch('/video/presets/the-poisoned-tree',{headers:headers()});if(r.status===401){const k=prompt('Dashboard password');if(k){localStorage.setItem('osKey',k);return loadPreset()}}const d=await r.json();document.getElementById('title').value=d.title;document.getElementById('aspect').value=d.aspect;document.getElementById('scenes').innerHTML='';d.scenes.forEach(s=>addScene(s.text,s.seconds));document.getElementById('status').textContent='Preset loaded.'}
+async function renderVideo(){const btn=document.getElementById('renderBtn'),st=document.getElementById('status');const scenes=[...document.querySelectorAll('.scene')].map(x=>({text:x.querySelector('.sceneText').value,seconds:Number(x.querySelector('.sceneSeconds').value)})).filter(x=>x.text.trim());if(!scenes.length){st.textContent='Add at least one scene.';return}btn.disabled=true;st.className='';st.textContent='Rendering MP4… this can take a little while on the free Render instance.';try{const r=await fetch('/video/render',{method:'POST',headers:headers(),body:JSON.stringify({title:document.getElementById('title').value,aspect:document.getElementById('aspect').value,scenes})});if(r.status===401){const k=prompt('Dashboard password');if(k){localStorage.setItem('osKey',k);btn.disabled=false;return renderVideo()}}if(!r.ok){let e={};try{e=await r.json()}catch{}throw new Error(e.detail||('HTTP '+r.status))}const blob=await r.blob(),url=URL.createObjectURL(blob),v=document.getElementById('preview');v.src=url;v.style.display='block';st.className='ok';st.innerHTML='Video ready. <a class="btn" id="dl">Save MP4</a>';const a=document.getElementById('dl');a.href=url;a.download='the-poisoned-tree-trailer.mp4';}catch(e){st.textContent='Render failed: '+e.message}finally{btn.disabled=false}}
+loadPreset();
+</script></main></body></html>
