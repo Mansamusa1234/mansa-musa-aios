@@ -5,6 +5,11 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
+# Free local video rendering engine + font used by the Video Studio.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install deps first for layer caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
