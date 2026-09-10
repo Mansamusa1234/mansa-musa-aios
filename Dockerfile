@@ -15,10 +15,9 @@ COPY config ./config
 COPY scheduler ./scheduler
 COPY db ./db
 
-# Public frontend. The optional command-center dashboard is mounted by the
-# backend only when a dashboard directory is present, so do not make the
-# production image fail when that optional directory is absent from the repo.
+# Public frontend and command-center dashboard
 COPY site ./site
+COPY dashboard ./dashboard
 
 EXPOSE 8000
 
