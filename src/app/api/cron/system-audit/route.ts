@@ -12,6 +12,21 @@ interface CheckResult {
   autoFixed?: boolean;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function providerMessage(status: number, provider: string): string {
+  if (status === 401 || status === 403) return `${provider} credentials rejected (HTTP ${status}) — re-authorise the integration`;
+  if (status === 429) return `${provider} API reachable but rate limited (HTTP 429)`;
+  return `${provider} API returned HTTP ${status}`;
+}
+
 async function checkDatabase(): Promise<CheckResult> {
   try {
     const t = Date.now();
@@ -67,12 +82,15 @@ async function checkResendEmail(): Promise<CheckResult> {
 
 async function checkInstagram(): Promise<CheckResult> {
   const token = process.env.INSTAGRAM_ACCESS_TOKEN;
-  if (!token) return { name: "Instagram", ok: false, message: "Token not configured", critical: false };
+  if (!token) return { name: "Instagram", ok: false, message: "Not configured — set INSTAGRAM_ACCESS_TOKEN", critical: false };
   try {
-    const res = await fetch(`https://graph.facebook.com/v19.0/me?access_token=${token}`);
-    const data = await res.json() as { id?: string; error?: { message: string } };
-    if (data.error) return { name: "Instagram", ok: false, message: data.error.message, critical: false };
-    return { name: "Instagram", ok: true, message: "Token valid", critical: false };
+    const res = await fetch(`https://graph.facebook.com/v19.0/me?access_token=${encodeURIComponent(token)}`, { cache: "no-store" });
+    const data = await res.json().catch(() => ({})) as { id?: string; error?: { message?: string; code?: number } };
+    if (!res.ok || data.error) {
+      const detail = data.error?.message ? `: ${data.error.message}` : "";
+      return { name: "Instagram", ok: false, message: `Access token invalid or expired (HTTP ${res.status})${detail}`, critical: false };
+    }
+    return { name: "Instagram", ok: true, message: "Access token valid", critical: false };
   } catch {
     return { name: "Instagram", ok: false, message: "Network error", critical: false };
   }
@@ -80,12 +98,19 @@ async function checkInstagram(): Promise<CheckResult> {
 
 async function checkPinterest(): Promise<CheckResult> {
   const token = process.env.PINTEREST_ACCESS_TOKEN;
-  if (!token) return { name: "Pinterest", ok: false, message: "Token not configured", critical: false };
+  if (!token) return { name: "Pinterest", ok: false, message: "Not configured — set PINTEREST_ACCESS_TOKEN", critical: false };
   try {
     const res = await fetch("https://api.pinterest.com/v5/user_account", {
       headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
     });
-    return { name: "Pinterest", ok: res.ok, message: res.ok ? "Token valid" : `Token expired (HTTP ${res.status}) — regenerate at developers.pinterest.com`, critical: false };
+    const reachable = res.ok || res.status === 429;
+    return {
+      name: "Pinterest",
+      ok: reachable,
+      message: res.ok ? "Access token valid" : providerMessage(res.status, "Pinterest"),
+      critical: false,
+    };
   } catch {
     return { name: "Pinterest", ok: false, message: "Network error", critical: false };
   }
@@ -93,12 +118,19 @@ async function checkPinterest(): Promise<CheckResult> {
 
 async function checkLinkedIn(): Promise<CheckResult> {
   const token = process.env.LINKEDIN_ACCESS_TOKEN;
-  if (!token) return { name: "LinkedIn", ok: false, message: "Token not configured", critical: false };
+  if (!token) return { name: "LinkedIn", ok: false, message: "Not configured — set LINKEDIN_ACCESS_TOKEN", critical: false };
   try {
     const res = await fetch("https://api.linkedin.com/v2/userinfo", {
       headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
     });
-    return { name: "LinkedIn", ok: res.ok, message: res.ok ? "Token valid" : `HTTP ${res.status}`, critical: false };
+    const reachable = res.ok || res.status === 429;
+    return {
+      name: "LinkedIn",
+      ok: reachable,
+      message: res.ok ? "Access token valid" : providerMessage(res.status, "LinkedIn"),
+      critical: false,
+    };
   } catch {
     return { name: "LinkedIn", ok: false, message: "Network error", critical: false };
   }
@@ -106,19 +138,32 @@ async function checkLinkedIn(): Promise<CheckResult> {
 
 async function checkTwitter(): Promise<CheckResult> {
   const token = process.env.TWITTER_ACCESS_TOKEN;
+  const tokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET;
   const key = process.env.TWITTER_API_KEY;
-  if (!token || !key) return { name: "Twitter/X", ok: false, message: "Tokens not configured", critical: false };
-  return { name: "Twitter/X", ok: true, message: "Credentials present", critical: false };
+  const secret = process.env.TWITTER_API_SECRET;
+  if (!token || !tokenSecret || !key || !secret) {
+    return { name: "Twitter/X", ok: false, message: "OAuth 1.0a credentials incomplete", critical: false };
+  }
+  return { name: "Twitter/X", ok: true, message: "OAuth credentials present", critical: false };
 }
 
 async function checkHeyGen(): Promise<CheckResult> {
   const key = process.env.HEYGEN_API_KEY;
-  if (!key) return { name: "HeyGen Video", ok: false, message: "HEYGEN_API_KEY not set — text-only mode active", critical: false };
+  if (!key) return { name: "HeyGen Video", ok: false, message: "Not configured — text-only mode active", critical: false };
   try {
-    const res = await fetch("https://api.heygen.com/v1/user/remaining_quota", {
-      headers: { "X-Api-Key": key },
+    // v1/user/remaining_quota is obsolete and returns 404. The v3 voices
+    // endpoint is a safe, read-only API-key probe and does not create content.
+    const res = await fetch("https://api.heygen.com/v3/voices?limit=1", {
+      headers: { "x-api-key": key },
+      cache: "no-store",
     });
-    return { name: "HeyGen Video", ok: res.ok, message: res.ok ? "Video generation available" : `HTTP ${res.status}`, critical: false };
+    const reachable = res.ok || res.status === 429;
+    return {
+      name: "HeyGen Video",
+      ok: reachable,
+      message: res.ok ? "Video API reachable" : providerMessage(res.status, "HeyGen"),
+      critical: false,
+    };
   } catch {
     return { name: "HeyGen Video", ok: false, message: "Network error", critical: false };
   }
@@ -167,8 +212,15 @@ async function checkOpenSupportTickets(): Promise<CheckResult> {
   }
 }
 
-function statusIcon(ok: boolean) {
-  return ok ? "✅" : "❌";
+function statusIcon(check: CheckResult) {
+  if (check.ok) return "✅";
+  return check.critical ? "🚨" : "⚠️";
+}
+
+function statusBadge(check: CheckResult): string {
+  if (check.ok) return '<span style="color:#22c55e;font-size:11px;font-weight:700">OK</span>';
+  if (check.critical) return '<span style="color:#ef4444;font-size:11px;font-weight:700">CRITICAL</span>';
+  return '<span style="color:#f59e0b;font-size:11px;font-weight:700">WARNING</span>';
 }
 
 function buildEmailHtml(checks: CheckResult[], criticalFail: boolean, now: Date): string {
@@ -182,16 +234,16 @@ function buildEmailHtml(checks: CheckResult[], criticalFail: boolean, now: Date)
 
   const checkRows = checks.map((c) => `
     <tr>
-      <td style="padding:10px 16px;color:#94a3b8;font-size:14px;border-bottom:1px solid #1e293b">${statusIcon(c.ok)} ${c.name}${c.critical ? ' <span style="color:#ef4444;font-size:11px">CRITICAL</span>' : ""}</td>
-      <td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #1e293b;color:${c.ok ? "#86efac" : "#fca5a5"}">${c.message}</td>
+      <td style="padding:10px 16px;color:#94a3b8;font-size:14px;border-bottom:1px solid #1e293b">${statusIcon(c)} ${escapeHtml(c.name)} ${statusBadge(c)}</td>
+      <td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #1e293b;color:${c.ok ? "#86efac" : c.critical ? "#fca5a5" : "#fcd34d"}">${escapeHtml(c.message)}</td>
     </tr>`).join("");
 
   const fixSection = [...criticalFails, ...warnings].length > 0 ? `
-    <div style="background:#1e1e2e;border-left:4px solid #ef4444;border-radius:4px;padding:16px;margin:24px 0">
-      <p style="margin:0 0 8px;font-weight:700;color:#f87171;font-size:14px">Action Required</p>
+    <div style="background:#1e1e2e;border-left:4px solid ${criticalFail ? "#ef4444" : "#f59e0b"};border-radius:4px;padding:16px;margin:24px 0">
+      <p style="margin:0 0 8px;font-weight:700;color:${criticalFail ? "#f87171" : "#fbbf24"};font-size:14px">Action Required</p>
       <ul style="margin:0;padding-left:20px;color:#94a3b8;font-size:13px;line-height:1.8">
-        ${criticalFails.map((c) => `<li><strong style="color:#f87171">[CRITICAL] ${c.name}:</strong> ${c.message}</li>`).join("")}
-        ${warnings.map((c) => `<li><strong style="color:#fbbf24">[WARNING] ${c.name}:</strong> ${c.message}</li>`).join("")}
+        ${criticalFails.map((c) => `<li><strong style="color:#f87171">[CRITICAL] ${escapeHtml(c.name)}:</strong> ${escapeHtml(c.message)}</li>`).join("")}
+        ${warnings.map((c) => `<li><strong style="color:#fbbf24">[WARNING] ${escapeHtml(c.name)}:</strong> ${escapeHtml(c.message)}</li>`).join("")}
       </ul>
     </div>` : "";
 
@@ -202,7 +254,7 @@ function buildEmailHtml(checks: CheckResult[], criticalFail: boolean, now: Date)
   <div style="max-width:640px;margin:0 auto;padding:32px 16px">
     <div style="text-align:center;margin-bottom:24px">
       <h1 style="margin:0;font-size:22px;font-weight:800;color:#f1f5f9">MansaMusaAI</h1>
-      <p style="margin:4px 0 0;color:#64748b;font-size:13px">Hourly System Audit — ${now.toLocaleString("en-GB", { timeZone: "Europe/London" })} GMT</p>
+      <p style="margin:4px 0 0;color:#64748b;font-size:13px">Hourly System Audit — ${escapeHtml(now.toLocaleString("en-GB", { timeZone: "Europe/London", timeZoneName: "short" }))}</p>
     </div>
     <div style="background:${statusColor}20;border:1px solid ${statusColor}40;border-radius:12px;padding:20px;margin-bottom:24px;text-align:center">
       <p style="margin:0;color:${statusColor};font-size:22px;font-weight:800">${statusText}</p>
@@ -262,7 +314,12 @@ export const GET = withCron(async () => {
     status: criticalFail ? "critical" : anyFail ? "degraded" : "healthy",
     passed: checks.filter((c) => c.ok).length,
     failed: checks.filter((c) => !c.ok).length,
-    checks: checks.map((c) => ({ name: c.name, ok: c.ok, message: c.message })),
+    checks: checks.map((c) => ({
+      name: c.name,
+      ok: c.ok,
+      severity: c.ok ? "ok" : c.critical ? "critical" : "warning",
+      message: c.message,
+    })),
     emailSent: anyFail,
   };
 });
