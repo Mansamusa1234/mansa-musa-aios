@@ -18,8 +18,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 from . import orchestrator, store, connectors, automation, datasource
 from .connectors import whatsapp
+from .video_studio import router as video_router
 
 app = FastAPI(title="Mansa Musa AI OS")
+app.include_router(video_router)
 # Allowed browser origins. Add/remove domains here as you grow.
 ALLOWED_ORIGINS = [
     "https://mansamusainitiative.co.uk",        # canonical site (Kings Heath, Birmingham)
