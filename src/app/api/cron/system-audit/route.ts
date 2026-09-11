@@ -228,30 +228,6 @@ async function checkOpenSupportTickets(): Promise<CheckResult> {
   }
 }
 
-// Deduplicates social warning emails — only sends when warnings change or once per day.
-// Falls back gracefully if the SystemConfig table doesn't exist.
-async function shouldSendSocialWarningEmail(warningKey: string): Promise<boolean> {
-  try {
-    const row = await (db as Record<string, unknown> & { systemConfig?: { findUnique: (args: unknown) => Promise<{ value: string; updatedAt: Date } | null>; upsert: (args: unknown) => Promise<unknown> } }).systemConfig?.findUnique({
-      where: { key: "audit_last_social_warning_key" },
-    });
-    const lastKey = row?.value ?? "";
-    const lastSent = row?.updatedAt ? new Date(row.updatedAt) : null;
-    const hoursSince = lastSent ? (Date.now() - lastSent.getTime()) / 3600000 : Infinity;
-    if (lastKey !== warningKey || hoursSince >= 23) {
-      await (db as Record<string, unknown> & { systemConfig?: { upsert: (args: unknown) => Promise<unknown> } }).systemConfig?.upsert({
-        where: { key: "audit_last_social_warning_key" },
-        update: { value: warningKey, updatedAt: new Date() },
-        create: { key: "audit_last_social_warning_key", value: warningKey },
-      });
-      return true;
-    }
-    return false;
-  } catch {
-    return true;
-  }
-}
-
 function statusIcon(ok: boolean) {
   return ok ? "✅" : "❌";
 }
@@ -337,33 +313,22 @@ export const GET = withCron(async () => {
   ]);
 
   const criticalFail = checks.some((c) => !c.ok && c.critical);
-  const criticalFails = checks.filter((c) => !c.ok && c.critical);
-  const socialWarnings = checks.filter((c) => !c.ok && !c.critical);
+  const anyFail = checks.some((c) => !c.ok);
 
-  let emailSent = false;
-
-  if (criticalFail) {
+  if (anyFail) {
     const html = buildEmailHtml(checks, criticalFail, now);
-    const subject = `🚨 CRITICAL: MansaMusaAI system failure — ${criticalFails.map((c) => c.name).join(", ")} — ${now.toLocaleTimeString("en-GB")}`;
+    const subject = criticalFail
+      ? `🚨 CRITICAL: MansaMusaAI system failure — ${checks.filter((c) => !c.ok && c.critical).map((c) => c.name).join(", ")} — ${now.toLocaleTimeString("en-GB")}`
+      : `⚠️ ACTION NEEDED: Reconnect social accounts — ${checks.filter((c) => !c.ok).map((c) => c.name).join(", ")}`;
     await sendEmail(ADMIN_EMAIL, subject, html);
-    emailSent = true;
-  } else if (socialWarnings.length > 0) {
-    const warningKey = socialWarnings.map((c) => c.name).sort().join("|");
-    const shouldSend = await shouldSendSocialWarningEmail(warningKey);
-    if (shouldSend) {
-      const html = buildEmailHtml(checks, false, now);
-      const subject = `⚠️ ACTION NEEDED: Reconnect social accounts — ${socialWarnings.map((c) => c.name).join(", ")}`;
-      await sendEmail(ADMIN_EMAIL, subject, html);
-      emailSent = true;
-    }
   }
 
   return {
     timestamp: now.toISOString(),
-    status: criticalFail ? "critical" : socialWarnings.length > 0 ? "degraded" : "healthy",
+    status: criticalFail ? "critical" : anyFail ? "degraded" : "healthy",
     passed: checks.filter((c) => c.ok).length,
     failed: checks.filter((c) => !c.ok).length,
     checks: checks.map((c) => ({ name: c.name, ok: c.ok, message: c.message })),
-    emailSent,
+    emailSent: anyFail,
   };
 });
