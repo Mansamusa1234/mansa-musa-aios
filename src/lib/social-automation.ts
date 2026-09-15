@@ -6,6 +6,8 @@
 import { createHmac } from "crypto";
 import { db } from "@/lib/db";
 
+const INSTAGRAM_GRAPH_BASE = "https://graph.instagram.com/v25.0";
+
 export interface VideoScript {
   title: string;
   script: string;
@@ -357,7 +359,7 @@ export async function postToInstagram(videoUrl: string, script: VideoScript): Pr
 
   const caption = `${script.caption}\n\n${script.hashtags.join(" ")}`;
 
-  const containerRes = await fetch(`https://graph.facebook.com/v19.0/${igUserId}/media`, {
+  const containerRes = await fetch(`${INSTAGRAM_GRAPH_BASE}/${igUserId}/media`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ media_type: "REELS", video_url: videoUrl, caption, access_token: token }),
@@ -372,7 +374,7 @@ export async function postToInstagram(videoUrl: string, script: VideoScript): Pr
   let ready = false;
   for (let attempt = 0; attempt < 12; attempt++) {
     await new Promise(resolve => setTimeout(resolve, 5000));
-    const statusRes = await fetch(`https://graph.facebook.com/v19.0/${container.id}?fields=status_code,status&access_token=${encodeURIComponent(token)}`);
+    const statusRes = await fetch(`${INSTAGRAM_GRAPH_BASE}/${container.id}?fields=status_code,status&access_token=${encodeURIComponent(token)}`);
     const status = await statusRes.json();
     if (status?.status_code === "FINISHED") { ready = true; break; }
     if (status?.status_code === "ERROR" || status?.status_code === "EXPIRED") {
@@ -385,7 +387,7 @@ export async function postToInstagram(videoUrl: string, script: VideoScript): Pr
     return false;
   }
 
-  const publishRes = await fetch(`https://graph.facebook.com/v19.0/${igUserId}/media_publish`, {
+  const publishRes = await fetch(`${INSTAGRAM_GRAPH_BASE}/${igUserId}/media_publish`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ creation_id: container.id, access_token: token }),

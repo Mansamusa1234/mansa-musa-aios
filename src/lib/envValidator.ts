@@ -43,6 +43,7 @@ const ENV_MANIFEST: EnvVar[] = [
   { key: "LINKEDIN_ACCESS_TOKEN",      required: false, description: "LinkedIn access token",           group: "Social" },
   { key: "LINKEDIN_PERSON_ID",         required: false, description: "LinkedIn person URN for posting", group: "Social" },
   { key: "INSTAGRAM_ACCESS_TOKEN",     required: false, description: "Instagram access token",          group: "Social" },
+  { key: "INSTAGRAM_APP_SECRET",       required: false, description: "Instagram app secret for token exchange", group: "Social" },
   { key: "FACEBOOK_PAGE_ACCESS_TOKEN", required: false, description: "Facebook page access token",      group: "Social" },
   { key: "FACEBOOK_PAGE_ID",           required: false, description: "Facebook page ID",                group: "Social" },
   { key: "TIKTOK_ACCESS_TOKEN",        required: false, description: "TikTok access token",             group: "Social" },

@@ -4,6 +4,13 @@ import { db } from "@/lib/db";
 
 const ADMIN_EMAIL = process.env.REPORT_EMAIL ?? "ai@mansamusainitiative.com";
 
+type InstagramTokenResponse = {
+  access_token?: string;
+  token_type?: string;
+  expires_in?: number;
+  error?: unknown;
+};
+
 export const GET = withCron(async () => {
   const igUserId = process.env.INSTAGRAM_USER_ID;
   const storedAccount = igUserId
@@ -20,13 +27,32 @@ export const GET = withCron(async () => {
     return { skipped: true, reason: "INSTAGRAM_USER_ID not configured" };
   }
 
-  const url = `https://graph.facebook.com/v19.0/oauth/access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(currentToken)}`;
-
-  const res = await fetch(url);
-  const data = await res.json() as { access_token?: string; token_type?: string; expires_in?: number };
+  // Instagram Login tokens use graph.instagram.com, not graph.facebook.com.
+  // A long-lived token can be refreshed after it is 24 hours old. A newly
+  // generated short-lived token must first be exchanged using the app secret.
+  let operation: "refreshed" | "exchanged" = "refreshed";
+  let res = await fetch(
+    `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(currentToken)}`,
+  );
+  let data = await res.json() as InstagramTokenResponse;
 
   if (!res.ok || !data.access_token) {
-    throw new Error(`Instagram API error: ${JSON.stringify(data)}`);
+    const appSecret = process.env.INSTAGRAM_APP_SECRET;
+    if (!appSecret) {
+      throw new Error(
+        `Instagram refresh failed and INSTAGRAM_APP_SECRET is not configured: ${JSON.stringify(data)}`,
+      );
+    }
+
+    operation = "exchanged";
+    res = await fetch(
+      `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${encodeURIComponent(appSecret)}&access_token=${encodeURIComponent(currentToken)}`,
+    );
+    data = await res.json() as InstagramTokenResponse;
+  }
+
+  if (!res.ok || !data.access_token) {
+    throw new Error(`Instagram token ${operation} failed: ${JSON.stringify(data)}`);
   }
 
   const newToken = data.access_token;
@@ -80,5 +106,5 @@ export const GET = withCron(async () => {
     html
   );
 
-  return { refreshed: true, expiresAt: expiresAtStr, notifiedTo: ADMIN_EMAIL };
+  return { refreshed: operation === "refreshed", exchanged: operation === "exchanged", expiresAt: expiresAtStr, notifiedTo: ADMIN_EMAIL };
 });
