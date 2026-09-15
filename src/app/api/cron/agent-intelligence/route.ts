@@ -1,6 +1,7 @@
 import { anthropic } from "@/lib/anthropic";
 import { db } from "@/lib/db";
-import { withCron } from "@/lib/cronUtils";
+import { withCron, withRetry } from "@/lib/cronUtils";
+import { recordHospitalFailure } from "@/lib/hospital";
 
 const DAILY_TASKS = [
   {
@@ -70,31 +71,40 @@ export const GET = withCron(async () => {
 
   for (const task of DAILY_TASKS) {
     try {
-      const response = await anthropic.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
-        messages: [{ role: "user", content: task.task }],
-      });
+      await withRetry(async () => {
+        const response = await anthropic.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 600,
+          messages: [{ role: "user", content: task.task }],
+        });
 
-      const content = response.content[0].type === "text" ? response.content[0].text : "";
+        const content = response.content[0].type === "text" ? response.content[0].text : "";
 
-      await db.agentIntelligenceReport.upsert({
-        where: {
-          agentRole_date: {
+        await db.agentIntelligenceReport.upsert({
+          where: {
+            agentRole_date: {
+              agentRole: task.role,
+              date: new Date().toISOString().split("T")[0],
+            },
+          },
+          update: { content, updatedAt: new Date() },
+          create: {
             agentRole: task.role,
             date: new Date().toISOString().split("T")[0],
+            content,
           },
-        },
-        update: { content, updatedAt: new Date() },
-        create: {
-          agentRole: task.role,
-          date: new Date().toISOString().split("T")[0],
-          content,
-        },
-      });
+        });
+      }, 2, 500);
 
       results.push({ role: task.role, success: true });
     } catch (err) {
+      await recordHospitalFailure({
+        source: "agent-intelligence",
+        operation: `/api/cron/agent-intelligence#${task.role}`,
+        error: err,
+        severity: "warning",
+        retriable: false,
+      });
       results.push({ role: task.role, success: false, error: String(err) });
     }
   }

@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { anthropic } from "./anthropic";
 import { ensureMarketplaceAgentsSeeded } from "./wisdomAgents";
+import { recordHospitalFailure } from "./hospital";
 
 const DEBATER_MODEL = "claude-haiku-4-5-20251001";
 const JUDGE_MODEL   = "claude-sonnet-4-6";
@@ -211,6 +212,13 @@ export async function runCompetition(competitionId: string): Promise<void> {
     });
   } catch (err) {
     console.error("[competition] pipeline failed:", err);
+    await recordHospitalFailure({
+      source: "competition",
+      operation: `competition:${competitionId}`,
+      error: err,
+      severity: "warning",
+      retriable: false,
+    });
     await db.agentCompetition.update({
       where: { id: competitionId },
       data: { status: "FAILED", error: String(err instanceof Error ? err.message : err).slice(0, 500) },

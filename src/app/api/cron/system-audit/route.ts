@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { withCron } from "@/lib/cronUtils";
+import { recoverHospitalIncidents } from "@/lib/hospital";
 
 const ADMIN_EMAIL = process.env.REPORT_EMAIL ?? "ai@mansamusainitiative.com";
 
@@ -283,6 +284,9 @@ function buildEmailHtml(checks: CheckResult[], criticalFail: boolean, now: Date)
 export const GET = withCron(async () => {
   const now = new Date();
 
+  // One bounded recovery per day keeps Hobby usage and third-party API costs predictable.
+  const recovery = await recoverHospitalIncidents(1);
+
   const checks = await Promise.all([
     checkDatabase(),
     checkAnthropicAPI(),
@@ -321,5 +325,6 @@ export const GET = withCron(async () => {
       message: c.message,
     })),
     emailSent: anyFail,
+    hospital: recovery,
   };
 });

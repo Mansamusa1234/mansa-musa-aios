@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordHospitalFailure } from "@/lib/hospital";
 
 /** Validates the cron secret and wraps the handler in a try/catch. Returns JSON on all outcomes. */
 export function withCron(
@@ -15,6 +16,15 @@ export function withCron(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`[cron] unhandled error:`, message, err);
+      if (!req.headers.get("x-hospital-incident")) {
+        const pathname = new URL(req.url).pathname;
+        await recordHospitalFailure({
+          source: "cron",
+          operation: pathname,
+          error: err,
+          severity: "critical",
+        });
+      }
       return NextResponse.json({ ok: false, error: message, timestamp: new Date().toISOString() }, { status: 500 });
     }
   };

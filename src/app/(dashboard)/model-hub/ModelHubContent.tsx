@@ -46,7 +46,8 @@ export default function ModelHubContent({ catalog, plan, preference: initPref }:
   const [compareModels, setCompareModels] = useState<string[]>([]);
   const [comparePrompt, setComparePrompt] = useState("");
   const [comparing, setComparing] = useState(false);
-  const [compareResults, setCompareResults] = useState<{ key: string; displayName: string; provider: string; text: string; error?: boolean }[]>([]);
+  const [compareResults, setCompareResults] = useState<{ key: string; displayName: string; provider: string; text: string; error?: boolean; score?: number; rationale?: string }[]>([]);
+  const [winnerKey, setWinnerKey] = useState<string | null>(null);
 
   const providers = Array.from(new Set(catalog.map((m) => m.provider))) as Provider[];
 
@@ -69,6 +70,7 @@ export default function ModelHubContent({ catalog, plan, preference: initPref }:
     if (!comparePrompt.trim() || compareModels.length < 2) return;
     setComparing(true);
     setCompareResults([]);
+    setWinnerKey(null);
     const res = await fetch("/api/model-hub/compare", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -76,6 +78,7 @@ export default function ModelHubContent({ catalog, plan, preference: initPref }:
     });
     const data = await res.json();
     setCompareResults(data.results ?? []);
+    setWinnerKey(data.winnerKey ?? null);
     setComparing(false);
   }
 
@@ -233,14 +236,17 @@ export default function ModelHubContent({ catalog, plan, preference: initPref }:
                   const provider = r.provider as Provider;
                   const meta = PROVIDER_META[provider];
                   return (
-                    <div key={r.key} className={`rounded-2xl border p-4 space-y-2 ${meta.bg}`}>
+                    <div key={r.key} className={`rounded-2xl border p-4 space-y-2 ${r.key === winnerKey ? "ring-2 ring-brand-400" : ""} ${meta.bg}`}>
                       <div className="flex items-center gap-2">
                         <span className={`text-lg ${meta.color}`}>{meta.logo}</span>
-                        <div>
+                        <div className="flex-1">
                           <p className="text-sm font-bold text-white">{r.displayName}</p>
                           <p className={`text-[10px] ${meta.color}`}>{meta.name}</p>
                         </div>
+                        {r.key === winnerKey && <span className="rounded-full bg-brand-500/20 px-2 py-1 text-[9px] font-bold text-brand-300">BEST RESULT</span>}
+                        {typeof r.score === "number" && <span className="text-lg font-extrabold text-white">{r.score}</span>}
                       </div>
+                      {r.rationale && <p className="rounded-lg bg-black/15 px-2 py-1.5 text-[10px] text-gray-400">Judge: {r.rationale}</p>}
                       <p className={`text-xs leading-relaxed ${r.error ? "text-red-400" : "text-gray-300"} whitespace-pre-wrap`}>{r.text}</p>
                     </div>
                   );
