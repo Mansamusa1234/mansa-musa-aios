@@ -23,11 +23,9 @@ export async function GET() {
   };
 
   checks.auth = {
-    ok: !!process.env.NEXTAUTH_SECRET && !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+    ok: !!process.env.NEXTAUTH_SECRET,
     message: [
       !process.env.NEXTAUTH_SECRET && "NEXTAUTH_SECRET missing",
-      !process.env.GOOGLE_CLIENT_ID && "GOOGLE_CLIENT_ID missing",
-      !process.env.GOOGLE_CLIENT_SECRET && "GOOGLE_CLIENT_SECRET missing",
     ].filter(Boolean).join(", ") || "OK",
   };
 
@@ -63,7 +61,7 @@ export async function GET() {
   };
 
   const allOk = Object.values(checks).every((c) => c.ok);
-  const critical = checks.database.ok && checks.auth.ok && checks.ai.ok;
+  const critical = checks.database.ok && checks.auth.ok;
 
   return NextResponse.json(
     {

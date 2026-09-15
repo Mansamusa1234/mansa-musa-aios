@@ -16,6 +16,26 @@ import { microsoftEntraIdProvider, appleProvider } from "./auth.providers";
 import { verifyChallengeToken } from "./authChallenge";
 import { verifyTotp, verifyBackupCode } from "./twoFactor";
 
+const githubProvider =
+  process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+    ? [
+        GitHub({
+          clientId: process.env.GITHUB_CLIENT_ID,
+          clientSecret: process.env.GITHUB_CLIENT_SECRET,
+        }),
+      ]
+    : [];
+
+const googleProvider =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? [
+        Google({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        }),
+      ]
+    : [];
+
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -30,14 +50,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
   providers: [
-    GitHub({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    }),
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
+    ...githubProvider,
+    ...googleProvider,
     ...microsoftEntraIdProvider,
     ...appleProvider,
     Credentials({

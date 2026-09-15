@@ -13,19 +13,19 @@ interface EnvVar {
 
 const ENV_MANIFEST: EnvVar[] = [
   { key: "NEXTAUTH_SECRET",      required: true,  description: "NextAuth JWT encryption secret",         group: "Auth" },
-  { key: "GOOGLE_CLIENT_ID",     required: true,  description: "Google OAuth client ID",                 group: "Auth" },
-  { key: "GOOGLE_CLIENT_SECRET", required: true,  description: "Google OAuth client secret",             group: "Auth" },
+  { key: "GOOGLE_CLIENT_ID",     required: false, description: "Google OAuth client ID",                 group: "Auth" },
+  { key: "GOOGLE_CLIENT_SECRET", required: false, description: "Google OAuth client secret",             group: "Auth" },
 
   { key: "DATABASE_URL",         required: true,  description: "PostgreSQL connection string",           group: "Database" },
 
-  { key: "STRIPE_SECRET_KEY",         required: true,  description: "Stripe secret API key",                  group: "Stripe" },
-  { key: "STRIPE_WEBHOOK_SECRET",     required: true,  description: "Stripe webhook signing secret",          group: "Stripe" },
+  { key: "STRIPE_SECRET_KEY",         required: false, description: "Stripe secret API key",                  group: "Stripe" },
+  { key: "STRIPE_WEBHOOK_SECRET",     required: false, description: "Stripe webhook signing secret",          group: "Stripe" },
   { key: "STRIPE_PRICE_STARTER",      required: false, description: "Stripe price ID for Starter plan",       group: "Stripe" },
   { key: "STRIPE_PRICE_PRO",          required: false, description: "Stripe price ID for Pro plan",           group: "Stripe" },
   { key: "STRIPE_PRICE_PROFESSIONAL", required: false, description: "Stripe price ID for Professional plan",  group: "Stripe" },
   { key: "STRIPE_PRICE_ENTERPRISE",   required: false, description: "Stripe price ID for Enterprise plan",    group: "Stripe" },
 
-  { key: "ANTHROPIC_API_KEY",    required: true,  description: "Anthropic Claude API key",               group: "AI" },
+  { key: "ANTHROPIC_API_KEY",    required: false, description: "Anthropic Claude API key",               group: "AI" },
   { key: "OPENAI_API_KEY",       required: false, description: "OpenAI API key for GPT models",          group: "AI" },
   { key: "XAI_API_KEY",          required: false, description: "xAI Grok API key",                       group: "AI" },
   { key: "GOOGLE_AI_API_KEY",    required: false, description: "Google Gemini API key",                  group: "AI" },
