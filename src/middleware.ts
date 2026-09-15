@@ -15,7 +15,7 @@ const protectedPaths = [
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   if (!isProtected) return NextResponse.next();
 
   const token = await getToken({
