@@ -16,7 +16,7 @@
     },
     {
       "path": "/api/cron/social-post?campaign=intro",
-      "schedule": "31 7 15 9 *"
+      "schedule": "44 7 15 9 *"
     },
     {
       "path": "/api/cron/refresh-instagram-token",
