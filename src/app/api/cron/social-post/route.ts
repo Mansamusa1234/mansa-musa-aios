@@ -28,16 +28,25 @@ export const GET = withCron(async (request) => {
   let videoUrl: string | null = null;
 
   if (process.env.HEYGEN_API_KEY && avatarId && voiceId) {
-    const videoId = await createHeyGenVideo(script, avatarId, voiceId);
-    if (videoId) {
-      // Keep polling comfortably inside Vercel's 300-second function limit so
-      // there is still time to publish (or fall back to text) before timeout.
-      for (let i = 0; i < 8; i++) {
-        await new Promise(r => setTimeout(r, 15000));
-        videoUrl = await getHeyGenVideoUrl(videoId);
-        if (videoUrl) break;
+    try {
+      const videoId = await createHeyGenVideo(script, avatarId, voiceId);
+      if (videoId) {
+        // Keep polling comfortably inside Vercel's 300-second function limit so
+        // there is still time to publish (or fall back to text) before timeout.
+        for (let i = 0; i < 8; i++) {
+          await new Promise(r => setTimeout(r, 15000));
+          videoUrl = await getHeyGenVideoUrl(videoId);
+          if (videoUrl) break;
+        }
       }
+    } catch (error) {
+      console.warn("[social:heygen] using campaign fallback video", error instanceof Error ? error.message : String(error));
     }
+  }
+
+  if (!videoUrl && campaign === "intro") {
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://mansamusainitiative.com").replace(/\/$/, "");
+    videoUrl = `${appUrl}/media/mansamusa-intro.mp4`;
   }
 
   let posted: Record<string, boolean>;

@@ -203,8 +203,13 @@ export async function getHeyGenVideoUrl(videoId: string): Promise<string | null>
   });
 
   const data = await res.json();
-  if (!res.ok || data?.data?.status === "failed") {
+  if (!res.ok) {
     console.error("[social:heygen] video status failed", res.status, JSON.stringify(data).slice(0, 1200));
+  }
+  if (data?.data?.status === "failed") {
+    const code = data?.data?.error?.code ?? "UNKNOWN";
+    const message = data?.data?.error?.message ?? "Video generation failed";
+    throw new Error(`HeyGen ${code}: ${message}`);
   }
   return data?.data?.status === "completed" ? data.data.video_url : null;
 }
