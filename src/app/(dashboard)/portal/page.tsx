@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { PLANS } from "@/lib/stripe";
+import { PLANS, findPlanByPriceId } from "@/lib/stripe";
 import PortalContent from "./PortalContent";
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default async function PortalPage() {
     db.conversation.count({ where: { userId } }),
   ]);
 
-  const currentPlan = PLANS.find((p) => p.priceId === subscription?.stripePriceId) ?? PLANS[0];
+  const currentPlan = findPlanByPriceId(subscription?.stripePriceId) ?? PLANS[0];
 
   const messagesThisMonth = await db.message.count({
     where: {

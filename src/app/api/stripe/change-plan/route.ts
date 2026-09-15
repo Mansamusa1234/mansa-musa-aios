@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { requireStripe, PLANS } from "@/lib/stripe";
+import { requireStripe, getConfiguredPriceIds } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing priceId" }, { status: 400 });
   }
 
-  const validPriceIds = PLANS.map((p) => p.priceId).filter(Boolean);
+  const validPriceIds = getConfiguredPriceIds();
   if (!validPriceIds.includes(priceId)) {
     return NextResponse.json({ error: "Invalid priceId" }, { status: 400 });
   }

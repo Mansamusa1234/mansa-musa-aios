@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { requireStripe, getOrCreateStripeCustomer } from "@/lib/stripe";
+import { requireStripe, getOrCreateStripeCustomer, findPlanByPriceId } from "@/lib/stripe";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
@@ -17,6 +17,10 @@ export async function POST(req: Request) {
   if (!priceId.startsWith("price_")) {
     return NextResponse.json({ error: "Invalid price ID — check STRIPE_PRICE_* env vars in Vercel." }, { status: 400 });
   }
+  const plan = findPlanByPriceId(priceId);
+  if (!plan) {
+    return NextResponse.json({ error: "This price is not configured for sale." }, { status: 400 });
+  }
 
   try {
     const stripe = requireStripe();
@@ -25,7 +29,11 @@ export async function POST(req: Request) {
     // Read 90-day affiliate tracking cookie
     const cookieStore = await cookies();
     const affCode = cookieStore.get("mm_aff")?.value ?? null;
-    const metadata: Record<string, string> = { userId: session.user.id };
+    const metadata: Record<string, string> = {
+      userId: session.user.id,
+      planId: plan.id,
+      billingInterval: plan.annualPriceId === priceId ? "annual" : "monthly",
+    };
     if (affCode) metadata.affiliateCode = affCode;
 
     // Apply affiliate discount coupon if the code matches

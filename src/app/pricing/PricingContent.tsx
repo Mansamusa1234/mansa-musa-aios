@@ -56,12 +56,16 @@ export default function PricingContent({ plans }: Props) {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [annual, setAnnual] = useState(false);
 
-  async function handleCheckout(priceId: string, planId: string) {
+  async function handleCheckout(priceId: string, planId: string, paidPlan: boolean) {
     setCheckoutError(null);
     if (!priceId) {
-      const res = await fetch("/api/auth/session");
-      const s = await res.json().catch(() => null);
-      window.location.href = s?.user ? "/dashboard" : "/register";
+      if (paidPlan) {
+        window.location.href = `/contact?offering=${encodeURIComponent(`${planId} billing`)}`;
+      } else {
+        const res = await fetch("/api/auth/session");
+        const s = await res.json().catch(() => null);
+        window.location.href = s?.user ? "/dashboard" : "/register";
+      }
       return;
     }
     setCheckoutLoading(planId);
@@ -93,7 +97,7 @@ export default function PricingContent({ plans }: Props) {
 
   const planNames = plans.map((p) => p.name);
 
-  const annualMultiplier = annual ? 0.8 : 1;
+  const annualAvailable = plans.some((plan) => Boolean(plan.annualPriceId));
 
   return (
     <div className="min-h-screen bg-white">
@@ -119,7 +123,13 @@ export default function PricingContent({ plans }: Props) {
             ))}
           </motion.div>
           <motion.div variants={fadeUp} className="mt-8">
-            <AnnualToggle annual={annual} onChange={setAnnual} />
+            {annualAvailable ? (
+              <AnnualToggle annual={annual} onChange={setAnnual} />
+            ) : (
+              <Link href="/contact?offering=annual%20billing" className="text-sm font-semibold text-green-400 hover:text-green-300">
+                Ask about annual billing and save 20% →
+              </Link>
+            )}
           </motion.div>
           <motion.p variants={fadeUp} className="mt-4 text-sm text-gray-500">
             14-day free trial · No credit card required · Cancel anytime
@@ -143,11 +153,13 @@ export default function PricingContent({ plans }: Props) {
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
           >
             {plans.map((plan) => {
-              const displayPrice = Math.round(plan.price * annualMultiplier);
+              const hasAnnualPrice = Boolean(plan.annualPriceId && plan.annualPrice);
+              const displayPrice = annual && hasAnnualPrice ? (plan.annualPrice ?? 0) / 12 : plan.price;
+              const selectedPriceId = annual && plan.price > 0 ? (plan.annualPriceId ?? "") : plan.priceId;
               const price =
                 plan.price === 0
                   ? "Free"
-                  : new Intl.NumberFormat("en-GB", { style: "currency", currency: plan.currency.toUpperCase(), minimumFractionDigits: 0 }).format(displayPrice);
+                  : new Intl.NumberFormat("en-GB", { style: "currency", currency: plan.currency.toUpperCase(), minimumFractionDigits: Number.isInteger(displayPrice) ? 0 : 2 }).format(displayPrice);
 
               const isLoading = checkoutLoading === plan.id;
 
@@ -172,10 +184,13 @@ export default function PricingContent({ plans }: Props) {
                     <span className="text-4xl font-extrabold">{price}</span>
                     {plan.price > 0 && <span className={`mb-1 text-sm ${plan.highlighted ? "text-brand-100" : "text-gray-400"}`}>/mo</span>}
                   </div>
-                  {annual && plan.price > 0 && (
+                  {annual && hasAnnualPrice && (
                     <p className="mt-1 text-xs text-green-400 font-semibold">
-                      Billed annually · Save £{Math.round(plan.price * 0.2 * 12)}/yr
+                      £{plan.annualPrice?.toFixed(2)} billed annually · Save £{(plan.price * 12 - (plan.annualPrice ?? 0)).toFixed(2)}/yr
                     </p>
+                  )}
+                  {annual && plan.price > 0 && !hasAnnualPrice && (
+                    <p className="mt-1 text-xs text-amber-300 font-semibold">Contact sales for annual billing</p>
                   )}
                   <p className={`mt-2 text-sm ${plan.highlighted ? "text-brand-100" : "text-gray-400"}`}>{plan.description}</p>
                   <ul className="mt-5 flex-1 space-y-2">
@@ -187,7 +202,7 @@ export default function PricingContent({ plans }: Props) {
                     ))}
                   </ul>
                   <button
-                    onClick={() => handleCheckout(plan.priceId, plan.id)}
+                    onClick={() => handleCheckout(selectedPriceId, plan.id, plan.price > 0)}
                     disabled={isLoading}
                     className={`mt-6 block w-full rounded-xl py-2.5 text-center text-sm font-semibold transition-all disabled:opacity-60 ${
                       plan.highlighted
@@ -197,7 +212,7 @@ export default function PricingContent({ plans }: Props) {
                         : "border border-brand-500 text-brand-400 hover:bg-brand-500 hover:text-white"
                     }`}
                   >
-                    {isLoading ? "Loading…" : plan.price === 0 ? "Start free" : "Start 14-day trial"}
+                    {isLoading ? "Loading…" : plan.price === 0 ? "Start free" : annual && !hasAnnualPrice ? "Contact sales" : "Start 14-day trial"}
                   </button>
                 </motion.div>
               );

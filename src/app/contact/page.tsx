@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ContactPage() {
-  return <ContactContent />;
+export default async function ContactPage({ searchParams }: { searchParams: Promise<{ offering?: string }> }) {
+  const { offering = "" } = await searchParams;
+  return <ContactContent initialOffering={offering} />;
 }

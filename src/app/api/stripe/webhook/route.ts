@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { getStripe } from "@/lib/stripe";
-import { PLANS } from "@/lib/stripe";
+import { findPlanByPriceId } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { recordConversion } from "@/lib/referrals";
 import { triggerWorkflows } from "@/lib/email-automation";
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
           });
           if (user) {
             const priceItem = sub.items.data[0];
-            const planName = PLANS.find((p) => p.priceId === priceItem?.price.id)?.name ?? "paid";
+            const planName = findPlanByPriceId(priceItem?.price.id)?.name ?? "paid";
             await sendEmail(
               user.email,
               `Your ${planName} plan is now active`,
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
       if (event.type === "customer.subscription.deleted" && existingSub?.user) {
         after(async () => {
           try {
-            const planName = PLANS.find((p) => p.priceId === existingSub.stripePriceId)?.name ?? "paid";
+            const planName = findPlanByPriceId(existingSub.stripePriceId)?.name ?? "paid";
             await sendEmail(
               existingSub.user.email,
               "Your MansaMusaAI subscription has been cancelled",
@@ -224,7 +224,7 @@ export async function POST(req: Request) {
             include: { user: { select: { email: true, name: true } } },
           });
           if (sub?.user) {
-            const planName = PLANS.find((p) => p.priceId === sub.stripePriceId)?.name ?? "your plan";
+            const planName = findPlanByPriceId(sub.stripePriceId)?.name ?? "your plan";
             await sendEmail(
               sub.user.email,
               "Payment failed — update your payment method",

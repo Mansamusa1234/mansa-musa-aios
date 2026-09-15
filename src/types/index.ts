@@ -6,6 +6,8 @@ export interface PricingPlan {
   price: number;
   currency: string;
   priceId: string;
+  annualPriceId?: string;
+  annualPrice?: number;
   description: string;
   features: string[];
   highlighted: boolean;

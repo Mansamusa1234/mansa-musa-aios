@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { PLANS } from "@/lib/stripe";
+import { findPlanByPriceId } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +71,7 @@ export async function GET() {
   ]);
 
   const mrr = activeSubs.reduce((sum, sub) => {
-    const plan = PLANS.find((p) => p.priceId === sub.stripePriceId);
+    const plan = findPlanByPriceId(sub.stripePriceId);
     return sum + (plan?.price ?? 0);
   }, 0);
 

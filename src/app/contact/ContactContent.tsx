@@ -10,11 +10,12 @@ const faqs = [
   { q: "How quickly do you respond?", a: "We aim to respond to all enquiries within 24 hours on business days." },
   { q: "Do you offer enterprise contracts?", a: "Yes — custom SLAs, invoicing, and dedicated onboarding are available on Enterprise plans." },
   { q: "Can I get a demo?", a: "Absolutely. Use the form to request a live demo and we'll arrange a call." },
-  { q: "Do you have a reseller programme?", a: "We're building an affiliate and reseller programme. Express your interest via the contact form." },
+  { q: "Do you have a reseller programme?", a: "Yes. We offer affiliate referrals and custom white-label arrangements. Use the form to discuss the right model." },
 ];
 
-export default function ContactContent() {
-  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+export default function ContactContent({ initialOffering = "" }: { initialOffering?: string }) {
+  const initialSubject = initialOffering ? `Enquiry: ${initialOffering}` : "";
+  const [form, setForm] = useState({ name: "", email: "", subject: initialSubject, message: "", offering: initialOffering });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -28,7 +29,7 @@ export default function ContactContent() {
       });
       if (!res.ok) throw new Error();
       setStatus("sent");
-      setForm({ name: "", email: "", subject: "", message: "" });
+      setForm({ name: "", email: "", subject: initialSubject, message: "", offering: initialOffering });
     } catch {
       setStatus("error");
     }

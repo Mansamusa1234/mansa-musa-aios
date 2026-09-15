@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { stagger, scaleIn, fadeUp } from "@/lib/motion";
 import CountUp from "@/components/ui/CountUp";
+import Link from "next/link";
 
 interface Props {
   totalConversations: number;
@@ -125,6 +126,16 @@ export default function AnalyticsContent({ totalConversations, totalMessages, to
             </div>
           )}
         </div>
+      </div>
+      <div className="rounded-2xl border border-brand-500/25 bg-gradient-to-r from-brand-500/10 to-indigo-500/10 p-5 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-brand-400">Turn analytics into revenue</p>
+          <h2 className="mt-1 text-lg font-bold text-white">Benchmark reports, secure exports and analytics API access</h2>
+          <p className="mt-1 text-xs text-gray-400">Use privacy-safe operational insights to improve decisions or package a paid report for your organisation.</p>
+        </div>
+        <Link href="/revenue-intelligence" className="mt-4 inline-flex shrink-0 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 sm:ml-6 sm:mt-0">
+          Explore revenue options
+        </Link>
       </div>
     </div>
   );

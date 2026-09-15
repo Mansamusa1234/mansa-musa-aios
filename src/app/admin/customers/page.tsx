@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { PLANS } from "@/lib/stripe";
+import { findPlanByPriceId } from "@/lib/stripe";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +53,7 @@ export default async function AdminCustomersPage() {
   const usageMap = Object.fromEntries(usageThisMonth.map((u) => [u.userId, u._count.id]));
 
   const rows = subs.map((sub) => {
-    const plan = PLANS.find((p) => p.priceId === sub.stripePriceId);
+    const plan = findPlanByPriceId(sub.stripePriceId);
     const messagesThisMonth = usageMap[sub.userId] ?? 0;
     const risk = churnRisk({
       status: sub.status,

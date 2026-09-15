@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { db } from "@/lib/db";
-import { PLANS } from "@/lib/stripe";
+import { findPlanByPriceId } from "@/lib/stripe";
 import { sendEmail, referralConvertedEmailHtml, affiliateConversionEmailHtml } from "@/lib/email";
 
 const REFERRAL_REWARD_PERCENT = 20;
@@ -72,7 +72,7 @@ export async function recordConversion(
   affiliateCode?: string | null,
 ): Promise<void> {
   try {
-    const planPrice = PLANS.find((p) => p.priceId === priceId)?.price ?? 0;
+    const planPrice = findPlanByPriceId(priceId)?.price ?? 0;
     if (planPrice <= 0) return;
     const priceCents = Math.round(planPrice * 100);
 

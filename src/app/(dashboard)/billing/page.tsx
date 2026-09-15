@@ -22,7 +22,12 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
 
   const plans = PLANS.map((plan) => {
     const live = plan.priceId ? livePrices[plan.priceId] : null;
-    return live ? { ...plan, price: live.amount, currency: live.currency } : plan;
+    const annual = plan.annualPriceId ? livePrices[plan.annualPriceId] : null;
+    return {
+      ...plan,
+      ...(live ? { price: live.amount, currency: live.currency } : {}),
+      ...(annual ? { annualPrice: annual.amount } : {}),
+    };
   });
 
   const isTrialing = subscription?.status === "TRIALING";
@@ -35,7 +40,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
     ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
     : null;
 
-  const currentPlan = plans.find((p) => p.priceId === subscription?.stripePriceId);
+  const currentPlan = plans.find((p) => p.priceId === subscription?.stripePriceId || p.annualPriceId === subscription?.stripePriceId);
   const currentPrice = currentPlan?.price ?? 0;
 
   const endsAtFormatted = currentPeriodEnd

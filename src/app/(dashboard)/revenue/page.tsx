@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { PLANS } from "@/lib/stripe";
+import { PLANS, findPlanByPriceId } from "@/lib/stripe";
 import RevenueContent from "./RevenueContent";
 
 export const metadata: Metadata = {
@@ -51,14 +51,14 @@ export default async function RevenuePage() {
   ]);
 
   const mrr = activeSubs_raw.reduce((sum, sub) => {
-    const plan = PLANS.find((p) => p.priceId === sub.stripePriceId);
+    const plan = findPlanByPriceId(sub.stripePriceId);
     return sum + (plan?.price ?? 0);
   }, 0);
 
   const mrrHistory = months.map((m, i) => ({
     month: m.label,
     mrr: (monthlySubsArrays[i] as { stripePriceId: string | null }[]).reduce((sum, sub) => {
-      const plan = PLANS.find((p) => p.priceId === sub.stripePriceId);
+      const plan = findPlanByPriceId(sub.stripePriceId);
       return sum + (plan?.price ?? 0);
     }, 0),
   }));
@@ -66,8 +66,8 @@ export default async function RevenuePage() {
   const planBreakdown = PLANS.filter((p) => p.price > 0).map((p) => ({
     name: p.name,
     price: p.price,
-    count: activeSubs_raw.filter((s) => s.stripePriceId === p.priceId).length,
-    revenue: activeSubs_raw.filter((s) => s.stripePriceId === p.priceId).length * p.price,
+    count: activeSubs_raw.filter((s) => findPlanByPriceId(s.stripePriceId)?.id === p.id).length,
+    revenue: activeSubs_raw.filter((s) => findPlanByPriceId(s.stripePriceId)?.id === p.id).length * p.price,
   }));
 
   const growthRate = newLastMonth > 0

@@ -50,6 +50,8 @@ export const PLANS: PricingPlan[] = [
     price: 49,
     currency: "gbp",
     priceId: process.env.STRIPE_PRICE_STARTER ?? process.env.STRIPE_PRICE_BASIC ?? "",
+    annualPriceId: process.env.STRIPE_PRICE_STARTER_ANNUAL ?? "",
+    annualPrice: 470.4,
     description: "For small businesses",
     features: [
       "1 AI receptionist",
@@ -67,6 +69,8 @@ export const PLANS: PricingPlan[] = [
     price: 149,
     currency: "gbp",
     priceId: process.env.STRIPE_PRICE_PROFESSIONAL ?? process.env.STRIPE_PRICE_PRO ?? "",
+    annualPriceId: process.env.STRIPE_PRICE_PROFESSIONAL_ANNUAL ?? "",
+    annualPrice: 1430.4,
     description: "For growing businesses",
     features: [
       "3 AI receptionists",
@@ -85,6 +89,8 @@ export const PLANS: PricingPlan[] = [
     price: 499,
     currency: "gbp",
     priceId: process.env.STRIPE_PRICE_ENTERPRISE ?? "",
+    annualPriceId: process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL ?? "",
+    annualPrice: 4790.4,
     description: "For larger teams",
     features: [
       "Unlimited AI receptionists",
@@ -100,15 +106,24 @@ export const PLANS: PricingPlan[] = [
   },
 ];
 
-/** Fetch live unit_amount + currency from Stripe for all paid plans. */
+export function findPlanByPriceId(priceId: string | null | undefined): PricingPlan | undefined {
+  if (!priceId) return undefined;
+  return PLANS.find((plan) => plan.priceId === priceId || plan.annualPriceId === priceId);
+}
+
+export function getConfiguredPriceIds(): string[] {
+  return PLANS.flatMap((plan) => [plan.priceId, plan.annualPriceId ?? ""]).filter(Boolean);
+}
+
+/** Fetch live unit_amount + currency from Stripe for every configured monthly and annual price. */
 export async function getLivePrices(): Promise<Record<string, { amount: number; currency: string }>> {
   const stripe = getStripe();
   if (!stripe) return {};
 
-  const paid = PLANS.filter((p) => p.priceId);
-  const results = await Promise.all(paid.map((p) => stripe.prices.retrieve(p.priceId)));
+  const priceIds = getConfiguredPriceIds();
+  const results = await Promise.all(priceIds.map((priceId) => stripe.prices.retrieve(priceId)));
   return Object.fromEntries(
-    results.map((p) => [p.id, { amount: (p.unit_amount ?? 0) / 100, currency: p.currency }])
+    results.map((price) => [price.id, { amount: (price.unit_amount ?? 0) / 100, currency: price.currency }])
   );
 }
 

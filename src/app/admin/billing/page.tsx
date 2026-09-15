@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { PLANS, getStripe } from "@/lib/stripe";
+import { PLANS, findPlanByPriceId, getStripe } from "@/lib/stripe";
 import BillingDiagnosticsClient from "./BillingDiagnosticsClient";
 
 export const dynamic = "force-dynamic";
@@ -25,8 +25,6 @@ export default async function AdminBillingPage() {
     }).catch(() => ({ data: [], has_more: false })) : Promise.resolve({ data: [], has_more: false }),
   ]);
 
-  const planMap = Object.fromEntries(PLANS.map((p) => [p.priceId, p]));
-
   const subs = subscriptions.map((s) => ({
     id: s.id,
     userId: s.userId,
@@ -36,8 +34,8 @@ export default async function AdminBillingPage() {
     stripePriceId: s.stripePriceId,
     stripeCustomerId: s.stripeCustomerId,
     stripeSubscriptionId: s.stripeSubscriptionId,
-    planName: s.stripePriceId ? (planMap[s.stripePriceId]?.name ?? "Unknown") : "Free",
-    planPrice: s.stripePriceId ? (planMap[s.stripePriceId]?.price ?? 0) : 0,
+    planName: s.stripePriceId ? (findPlanByPriceId(s.stripePriceId)?.name ?? "Unknown") : "Free",
+    planPrice: s.stripePriceId ? (findPlanByPriceId(s.stripePriceId)?.price ?? 0) : 0,
     currentPeriodEnd: s.currentPeriodEnd?.toISOString() ?? null,
     cancelAtPeriodEnd: s.cancelAtPeriodEnd,
     trialEndsAt: s.trialEndsAt?.toISOString() ?? null,

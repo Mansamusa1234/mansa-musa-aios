@@ -10,6 +10,7 @@ const links = [
   { href: "/agents",          label: "Agents",       badge: false },
   { href: "/ai-receptionist", label: "Receptionist", badge: false },
   { href: "/pricing",         label: "Pricing",      badge: false },
+  { href: "/revenue-intelligence", label: "Revenue", badge: false },
   { href: "/affiliate",       label: "Affiliate",    badge: false },
   { href: "/blog",            label: "Blog",         badge: false },
   { href: "/free-audit",      label: "Free Audit",   badge: true  },

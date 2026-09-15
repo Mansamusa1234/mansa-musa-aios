@@ -2,9 +2,9 @@ import { db } from "@/lib/db";
 
 export type Plan = "free" | "starter" | "pro" | "enterprise";
 
-const ENTERPRISE_IDS = [process.env.STRIPE_PRICE_ENTERPRISE].filter(Boolean) as string[];
-const PRO_IDS = [process.env.STRIPE_PRICE_PROFESSIONAL, process.env.STRIPE_PRICE_PRO].filter(Boolean) as string[];
-const STARTER_IDS = [process.env.STRIPE_PRICE_STARTER, process.env.STRIPE_PRICE_BASIC].filter(Boolean) as string[];
+const ENTERPRISE_IDS = [process.env.STRIPE_PRICE_ENTERPRISE, process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL].filter(Boolean) as string[];
+const PRO_IDS = [process.env.STRIPE_PRICE_PROFESSIONAL, process.env.STRIPE_PRICE_PRO, process.env.STRIPE_PRICE_PROFESSIONAL_ANNUAL].filter(Boolean) as string[];
+const STARTER_IDS = [process.env.STRIPE_PRICE_STARTER, process.env.STRIPE_PRICE_BASIC, process.env.STRIPE_PRICE_STARTER_ANNUAL].filter(Boolean) as string[];
 
 const PLAN_ORDER: Plan[] = ["free", "starter", "pro", "enterprise"];
 

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { PLANS } from "@/lib/stripe";
+import { findPlanByPriceId } from "@/lib/stripe";
 import AdminClient from "@/components/admin/AdminClient";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +54,7 @@ export default async function AdminPage() {
   ]);
 
   const mrr = activeSubs.reduce((sum, sub) => {
-    const plan = PLANS.find((p) => p.priceId === sub.stripePriceId);
+    const plan = findPlanByPriceId(sub.stripePriceId);
     return sum + (plan?.price ?? 0);
   }, 0);
 

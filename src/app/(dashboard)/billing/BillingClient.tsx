@@ -29,7 +29,9 @@ export default function BillingClient({
   const [cancelled, setCancelled] = useState(cancelAtPeriodEnd);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  const isCurrent = plan.priceId ? currentPriceId === plan.priceId : !currentPriceId;
+  const isCurrent = plan.priceId
+    ? currentPriceId === plan.priceId || currentPriceId === plan.annualPriceId
+    : !currentPriceId;
   const isUpgrade = plan.price > currentPrice;
   const isDowngrade = plan.price < currentPrice && plan.price > 0;
   const hasActiveSub = !!subscriptionId && currentPriceId !== null;

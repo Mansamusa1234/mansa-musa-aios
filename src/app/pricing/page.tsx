@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PLANS } from "@/lib/stripe";
+import { PLANS, getLivePrices } from "@/lib/stripe";
 import PricingContent from "./PricingContent";
 
 export const metadata: Metadata = {
@@ -13,6 +13,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function PricingPage() {
-  return <PricingContent plans={PLANS} />;
+export const dynamic = "force-dynamic";
+
+export default async function PricingPage() {
+  const livePrices = await getLivePrices().catch(
+    () => ({} as Record<string, { amount: number; currency: string }>),
+  );
+  const plans = PLANS.map((plan) => ({
+    ...plan,
+    price: plan.priceId && livePrices[plan.priceId] ? livePrices[plan.priceId].amount : plan.price,
+    currency: plan.priceId && livePrices[plan.priceId] ? livePrices[plan.priceId].currency : plan.currency,
+    annualPrice: plan.annualPriceId && livePrices[plan.annualPriceId]
+      ? livePrices[plan.annualPriceId].amount
+      : plan.annualPrice,
+  }));
+  return <PricingContent plans={plans} />;
 }

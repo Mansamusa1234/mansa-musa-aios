@@ -32,13 +32,17 @@ export default function EnterpriseContent() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, company, size, message: `Enterprise enquiry — ${size} employees. ${message}`, subject: "Enterprise Enquiry" }),
-    });
-    setSubmitted(true);
-    setLoading(false);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, company, size, message: `Enterprise enquiry — ${size || "unspecified"} employees. ${message || "Please contact me about Enterprise."}`, subject: "Enterprise Enquiry", offering: "enterprise" }),
+      });
+      if (!response.ok) throw new Error("Unable to send enquiry");
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
