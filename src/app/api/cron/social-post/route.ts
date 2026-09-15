@@ -1,5 +1,6 @@
 import {
   getTodaysScript,
+  MANSA_INTRO_SCRIPT,
   createHeyGenVideo,
   getHeyGenVideoUrl,
   postToLinkedIn,
@@ -16,10 +17,13 @@ import {
 } from "@/lib/social-automation";
 import { withCron } from "@/lib/cronUtils";
 
-export const GET = withCron(async () => {
+export const maxDuration = 300;
+
+export const GET = withCron(async (request) => {
   const avatarId = process.env.HEYGEN_AVATAR_ID ?? "";
   const voiceId = process.env.HEYGEN_VOICE_ID ?? "";
-  const script = getTodaysScript();
+  const campaign = new URL(request.url).searchParams.get("campaign");
+  const script = campaign === "intro" ? MANSA_INTRO_SCRIPT : getTodaysScript();
 
   let videoUrl: string | null = null;
 
@@ -28,8 +32,8 @@ export const GET = withCron(async () => {
     if (videoId) {
       // Keep polling comfortably inside Vercel's 300-second function limit so
       // there is still time to publish (or fall back to text) before timeout.
-      for (let i = 0; i < 6; i++) {
-        await new Promise(r => setTimeout(r, 20000));
+      for (let i = 0; i < 8; i++) {
+        await new Promise(r => setTimeout(r, 15000));
         videoUrl = await getHeyGenVideoUrl(videoId);
         if (videoUrl) break;
       }
