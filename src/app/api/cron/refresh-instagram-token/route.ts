@@ -62,9 +62,12 @@ export const GET = withCron(async () => {
 
   const owner = storedAccount?.userId
     ? { id: storedAccount.userId }
-    : await db.user.findFirst({ where: { role: "ADMIN" }, select: { id: true } });
+    : await db.user.findFirst({
+        orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+        select: { id: true },
+      });
   if (!owner) {
-    throw new Error("No administrator account is available to store the Instagram token");
+    throw new Error("No user account is available to store the Instagram token");
   }
 
   await db.account.upsert({

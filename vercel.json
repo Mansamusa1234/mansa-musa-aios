@@ -20,7 +20,7 @@
     },
     {
       "path": "/api/cron/refresh-instagram-token",
-      "schedule": "15 17 15 9 *"
+      "schedule": "20 17 15 9 *"
     },
     {
       "path": "/api/cron/refresh-pinterest-token",
