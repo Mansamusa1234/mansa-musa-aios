@@ -48,6 +48,16 @@ export const GET = withCron(async () => {
 
   if (!draftRes.ok) {
     const errText = await draftRes.text();
+    // Substack does not provide a supported public publishing API and its
+    // private endpoint can disappear. Treat a missing endpoint as unavailable
+    // instead of repeatedly crashing the entire scheduled-job run.
+    if (draftRes.status === 404) {
+      console.warn("[cron/substack-post] publishing endpoint unavailable (404)");
+      return {
+        skipped: true,
+        reason: "Substack publishing endpoint unavailable",
+      };
+    }
     throw new Error(`Substack draft creation failed ${draftRes.status}: ${errText.slice(0, 200)}`);
   }
 
