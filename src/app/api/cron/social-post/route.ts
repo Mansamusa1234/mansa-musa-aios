@@ -26,8 +26,10 @@ export const GET = withCron(async () => {
   if (process.env.HEYGEN_API_KEY && avatarId && voiceId) {
     const videoId = await createHeyGenVideo(script, avatarId, voiceId);
     if (videoId) {
-      for (let i = 0; i < 20; i++) {
-        await new Promise(r => setTimeout(r, 30000));
+      // Keep polling comfortably inside Vercel's 300-second function limit so
+      // there is still time to publish (or fall back to text) before timeout.
+      for (let i = 0; i < 6; i++) {
+        await new Promise(r => setTimeout(r, 20000));
         videoUrl = await getHeyGenVideoUrl(videoId);
         if (videoUrl) break;
       }
