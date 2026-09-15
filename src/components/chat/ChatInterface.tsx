@@ -22,9 +22,12 @@ export default function ChatInterface({ conversationId, initialMessages, initial
   const [memoryLoaded, setMemoryLoaded] = useState(false);
   const [memorySaving, setMemorySaving] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const voiceEnabledRef = useRef(false);
 
   function stopGeneration() {
     abortRef.current?.abort();
@@ -35,6 +38,33 @@ export default function ChatInterface({ conversationId, initialMessages, initial
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
     });
+  }
+
+  function speakReply(content: string) {
+    if (!voiceEnabledRef.current || !("speechSynthesis" in window)) return;
+
+    const spokenText = content
+      .split("\n\nSources Used\n")[0]
+      .replace(/[`*_#>~]/g, "")
+      .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+      .trim();
+
+    if (!spokenText) return;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(spokenText);
+    utterance.lang = "en-GB";
+    utterance.rate = 1;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function toggleVoice() {
+    if (!voiceSupported) return;
+    const next = !voiceEnabledRef.current;
+    voiceEnabledRef.current = next;
+    setVoiceEnabled(next);
+    localStorage.setItem("mansamusaai-voice-enabled", String(next));
+    if (!next) window.speechSynthesis.cancel();
   }
 
   const agent = agentId ? AGENTS.find((a) => a.id === agentId) ?? null : null;
@@ -85,6 +115,20 @@ export default function ChatInterface({ conversationId, initialMessages, initial
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    const supported = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+    setVoiceSupported(supported);
+    if (supported) {
+      const saved = localStorage.getItem("mansamusaai-voice-enabled") === "true";
+      voiceEnabledRef.current = saved;
+      setVoiceEnabled(saved);
+    }
+
+    return () => {
+      if (supported) window.speechSynthesis.cancel();
+    };
+  }, []);
+
   async function handleSend() {
     const content = input.trim();
     if (!content || streaming) return;
@@ -128,17 +172,21 @@ export default function ChatInterface({ conversationId, initialMessages, initial
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      let completedReply = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value);
+        const chunk = decoder.decode(value, { stream: true });
+        completedReply += chunk;
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMsg.id ? { ...m, content: m.content + chunk } : m
           )
         );
       }
+      completedReply += decoder.decode();
+      speakReply(completedReply);
     } catch (err) {
       const aborted = err instanceof Error && err.name === "AbortError";
       if (!aborted) {
@@ -194,6 +242,21 @@ export default function ChatInterface({ conversationId, initialMessages, initial
             🧠 Memory
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={toggleVoice}
+          disabled={!voiceSupported}
+          aria-pressed={voiceEnabled}
+          title={voiceSupported ? "Read new AI replies aloud" : "Voice playback is not supported by this browser"}
+          className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            voiceEnabled
+              ? "border-brand-500 bg-brand-50 text-brand-700"
+              : "border-gray-200 bg-white text-gray-500 hover:text-brand-600"
+          }`}
+        >
+          {voiceEnabled ? "🔊 Voice on" : "🔇 Voice off"}
+        </button>
       </div>
 
       {showMemory && agent && (
