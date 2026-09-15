@@ -146,6 +146,24 @@ Start free at mansamusainitiative.com`,
   },
 ];
 
+export const MANSA_INTRO_SCRIPT: VideoScript = {
+  title: "Meet MansaMusaAI — Your AI Workforce",
+  script: `Meet MansaMusaAI — the AI workforce built to help your business grow.
+One platform gives you specialist AI agents for sales, customer service, marketing, finance, operations and more.
+Your AI receptionist answers calls around the clock, captures leads, books appointments and follows up automatically.
+Whether you run a restaurant, salon, trade business, clinic, property company or online brand, MansaMusaAI helps you do more without hiring a full department.
+Start free today at mansamusainitiative.com.`,
+  caption: "Meet MansaMusaAI — your complete AI workforce. Answer calls, capture leads, book appointments and run your business 24/7. Start free at mansamusainitiative.com",
+  hashtags: ["#MansaMusaAI", "#AIWorkforce", "#AIReceptionist", "#BusinessAutomation", "#UKBusiness"],
+  platform: "youtube",
+};
+
+async function reportProviderFailure(provider: string, response: Response): Promise<void> {
+  if (response.ok) return;
+  const detail = await response.text().catch(() => "");
+  console.error(`[social:${provider}] HTTP ${response.status}`, detail.slice(0, 1200));
+}
+
 export function getTodaysScript(platform?: VideoScript["platform"]): VideoScript {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const filtered = platform ? MANSA_SCRIPTS.filter(s => s.platform === platform) : MANSA_SCRIPTS;
@@ -170,6 +188,9 @@ export async function createHeyGenVideo(script: VideoScript, avatarId: string, v
   });
 
   const data = await res.json();
+  if (!res.ok || !data?.data?.video_id) {
+    console.error("[social:heygen] video generation failed", res.status, JSON.stringify(data).slice(0, 1200));
+  }
   return data?.data?.video_id ?? null;
 }
 
@@ -182,6 +203,9 @@ export async function getHeyGenVideoUrl(videoId: string): Promise<string | null>
   });
 
   const data = await res.json();
+  if (!res.ok || data?.data?.status === "failed") {
+    console.error("[social:heygen] video status failed", res.status, JSON.stringify(data).slice(0, 1200));
+  }
   return data?.data?.status === "completed" ? data.data.video_url : null;
 }
 
@@ -213,6 +237,9 @@ export async function postToTikTok(videoUrl: string, script: VideoScript): Promi
   });
 
   const initData = await initRes.json();
+  if (!initRes.ok || !initData?.data?.publish_id) {
+    console.error("[social:tiktok] publish failed", initRes.status, JSON.stringify(initData).slice(0, 1200));
+  }
   return !!initData?.data?.publish_id;
 }
 
@@ -221,8 +248,54 @@ export async function postToLinkedIn(videoUrl: string, script: VideoScript): Pro
   const personId = process.env.LINKEDIN_PERSON_ID;
   if (!token || !personId) return false;
 
-  const caption = `${script.caption}\n\n${script.hashtags.join(" ")}`;
+  const owner = `urn:li:person:${personId}`;
+  const registerRes = await fetch("https://api.linkedin.com/v2/assets?action=registerUpload", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-Restli-Protocol-Version": "2.0.0",
+    },
+    body: JSON.stringify({
+      registerUploadRequest: {
+        recipes: ["urn:li:digitalmediaRecipe:feedshare-video"],
+        owner,
+        serviceRelationships: [{
+          relationshipType: "OWNER",
+          identifier: "urn:li:userGeneratedContent",
+        }],
+      },
+    }),
+  });
+  if (!registerRes.ok) {
+    await reportProviderFailure("linkedin-register", registerRes);
+    return false;
+  }
+  const registerData = await registerRes.json();
+  const value = registerData?.value;
+  const uploadUrl = value?.uploadMechanism?.["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]?.uploadUrl;
+  const asset = value?.asset;
+  if (!uploadUrl || !asset) {
+    console.error("[social:linkedin-register] upload URL or asset missing");
+    return false;
+  }
 
+  const videoRes = await fetch(videoUrl);
+  if (!videoRes.ok) {
+    await reportProviderFailure("linkedin-video-download", videoRes);
+    return false;
+  }
+  const uploadRes = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "video/mp4" },
+    body: await videoRes.arrayBuffer(),
+  });
+  if (!uploadRes.ok) {
+    await reportProviderFailure("linkedin-upload", uploadRes);
+    return false;
+  }
+
+  const caption = `${script.caption}\n\n${script.hashtags.join(" ")}`;
   const res = await fetch("https://api.linkedin.com/v2/ugcPosts", {
     method: "POST",
     headers: {
@@ -231,19 +304,19 @@ export async function postToLinkedIn(videoUrl: string, script: VideoScript): Pro
       "X-Restli-Protocol-Version": "2.0.0",
     },
     body: JSON.stringify({
-      author: `urn:li:person:${personId}`,
+      author: owner,
       lifecycleState: "PUBLISHED",
       specificContent: {
         "com.linkedin.ugc.ShareContent": {
           shareCommentary: { text: caption },
           shareMediaCategory: "VIDEO",
-          media: [{ status: "READY", media: videoUrl, title: { text: script.title } }],
+          media: [{ status: "READY", media: asset, title: { text: script.title } }],
         },
       },
       visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
     }),
   });
-
+  await reportProviderFailure("linkedin-publish", res);
   return res.ok;
 }
 
@@ -261,7 +334,26 @@ export async function postToInstagram(videoUrl: string, script: VideoScript): Pr
   });
 
   const container = await containerRes.json();
-  if (!container.id) return false;
+  if (!containerRes.ok || !container.id) {
+    console.error("[social:instagram-container] failed", containerRes.status, JSON.stringify(container).slice(0, 1200));
+    return false;
+  }
+
+  let ready = false;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    const statusRes = await fetch(`https://graph.facebook.com/v19.0/${container.id}?fields=status_code,status&access_token=${encodeURIComponent(token)}`);
+    const status = await statusRes.json();
+    if (status?.status_code === "FINISHED") { ready = true; break; }
+    if (status?.status_code === "ERROR" || status?.status_code === "EXPIRED") {
+      console.error("[social:instagram-status] processing failed", JSON.stringify(status).slice(0, 1200));
+      return false;
+    }
+  }
+  if (!ready) {
+    console.error("[social:instagram-status] video was not ready before timeout");
+    return false;
+  }
 
   const publishRes = await fetch(`https://graph.facebook.com/v19.0/${igUserId}/media_publish`, {
     method: "POST",
@@ -269,6 +361,7 @@ export async function postToInstagram(videoUrl: string, script: VideoScript): Pr
     body: JSON.stringify({ creation_id: container.id, access_token: token }),
   });
 
+  await reportProviderFailure("instagram-publish", publishRes);
   return publishRes.ok;
 }
 
@@ -320,6 +413,7 @@ export async function postToTwitter(videoUrl: string, script: VideoScript): Prom
     body: JSON.stringify({ text: caption }),
   });
 
+  await reportProviderFailure("twitter", res);
   return res.ok;
 }
 
@@ -336,6 +430,7 @@ export async function postToFacebook(videoUrl: string, script: VideoScript): Pro
     body: JSON.stringify({ file_url: videoUrl, description, access_token: token }),
   });
 
+  await reportProviderFailure("facebook", res);
   return res.ok;
 }
 
@@ -369,6 +464,56 @@ export async function postToPinterest(videoUrl: string, script: VideoScript): Pr
   const boardId = process.env.PINTEREST_BOARD_ID;
   if (!token || !boardId) return false;
 
+  const registerRes = await fetch("https://api.pinterest.com/v5/media", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ media_type: "video" }),
+  });
+  if (!registerRes.ok) {
+    await reportProviderFailure("pinterest-register", registerRes);
+    return false;
+  }
+  const registration = await registerRes.json();
+  const mediaId = registration.media_id;
+  const uploadUrl = registration.upload_url;
+  const uploadParameters = registration.upload_parameters;
+  if (!mediaId || !uploadUrl || !uploadParameters) {
+    console.error("[social:pinterest-register] incomplete upload registration");
+    return false;
+  }
+
+  const videoRes = await fetch(videoUrl);
+  if (!videoRes.ok) {
+    await reportProviderFailure("pinterest-video-download", videoRes);
+    return false;
+  }
+  const form = new FormData();
+  for (const [key, value] of Object.entries(uploadParameters)) form.append(key, String(value));
+  form.append("file", new Blob([await videoRes.arrayBuffer()], { type: "video/mp4" }), "mansa-musa-ai.mp4");
+  const uploadRes = await fetch(uploadUrl, { method: "POST", body: form });
+  if (!uploadRes.ok) {
+    await reportProviderFailure("pinterest-upload", uploadRes);
+    return false;
+  }
+
+  let ready = false;
+  for (let attempt = 0; attempt < 12; attempt++) {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    const statusRes = await fetch(`https://api.pinterest.com/v5/media/${mediaId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const status = await statusRes.json();
+    if (status.status === "succeeded") { ready = true; break; }
+    if (status.status === "failed") {
+      console.error("[social:pinterest-status] processing failed", JSON.stringify(status).slice(0, 1200));
+      return false;
+    }
+  }
+  if (!ready) {
+    console.error("[social:pinterest-status] video was not ready before timeout");
+    return false;
+  }
+
   const res = await fetch("https://api.pinterest.com/v5/pins", {
     method: "POST",
     headers: {
@@ -379,11 +524,11 @@ export async function postToPinterest(videoUrl: string, script: VideoScript): Pr
       board_id: boardId,
       title: script.title,
       description: `${script.caption}\n\n${script.hashtags.join(" ")}`,
-      media_source: { source_type: "video_url", url: videoUrl },
+      media_source: { source_type: "video_id", media_id: mediaId },
       link: "https://mansamusainitiative.com",
     }),
   });
-
+  await reportProviderFailure("pinterest-publish", res);
   return res.ok;
 }
 
@@ -405,7 +550,10 @@ export async function postToYouTube(videoUrl: string, script: VideoScript): Prom
   });
   const tokenData = await tokenRes.json();
   const accessToken = tokenData.access_token;
-  if (!accessToken) return false;
+  if (!tokenRes.ok || !accessToken) {
+    console.error("[social:youtube-token] refresh failed", tokenRes.status, JSON.stringify(tokenData).slice(0, 1200));
+    return false;
+  }
 
   const videoRes = await fetch(videoUrl);
   const videoBuffer = await videoRes.arrayBuffer();
@@ -453,6 +601,7 @@ export async function postToYouTube(videoUrl: string, script: VideoScript): Prom
     }
   );
 
+  await reportProviderFailure("youtube-upload", uploadRes);
   return uploadRes.ok;
 }
 
