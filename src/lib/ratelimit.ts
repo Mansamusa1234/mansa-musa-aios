@@ -42,6 +42,10 @@ export const limiters = {
   forgotPassword:     makeLimiter(3, "1 h", "rl:forgot-password"),
   /** 3 requests / hour — keyed by user ID or IP */
   resendVerification: makeLimiter(3, "1 h", "rl:resend-verification"),
+  /** 20 public form submissions / hour per IP. */
+  publicWrite:        makeLimiter(20, "1 h", "rl:public-write"),
+  /** 15 public AI responses / 5 minutes per IP to contain model spend abuse. */
+  publicAI:           makeLimiter(15, "5 m", "rl:public-ai"),
 };
 
 /**

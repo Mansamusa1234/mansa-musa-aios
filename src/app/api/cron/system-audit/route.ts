@@ -2,8 +2,10 @@ import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { withCron } from "@/lib/cronUtils";
 import { recoverHospitalIncidents } from "@/lib/hospital";
+import { Redis } from "@upstash/redis";
 
 const ADMIN_EMAIL = process.env.REPORT_EMAIL ?? "ai@mansamusainitiative.com";
+const AUDIT_ALERT_KEY = "monitor:full-audit:last-alert";
 
 interface CheckResult {
   name: string;
@@ -11,6 +13,23 @@ interface CheckResult {
   message: string;
   critical: boolean;
   autoFixed?: boolean;
+}
+
+async function shouldSendAlert(checks: CheckResult[], now: Date): Promise<boolean> {
+  const fingerprint = checks
+    .filter((check) => !check.ok)
+    .map((check) => `${check.name}:${check.message}`)
+    .sort()
+    .join("|");
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return now.getUTCHours() === 8;
+
+  const redis = new Redis({ url, token });
+  const previous = await redis.get<string>(AUDIT_ALERT_KEY).catch(() => null);
+  if (previous === fingerprint) return false;
+  await redis.set(AUDIT_ALERT_KEY, fingerprint, { ex: 24 * 60 * 60 }).catch(() => null);
+  return true;
 }
 
 function escapeHtml(value: string): string {
@@ -274,7 +293,7 @@ function buildEmailHtml(checks: CheckResult[], criticalFail: boolean, now: Date)
       </table>
     </div>
     <div style="text-align:center;padding-top:16px;border-top:1px solid #1e293b">
-      <p style="margin:0;color:#334155;font-size:12px">MansaMusaAI Autonomous Monitoring · Runs every hour · mansamusainitiative.com</p>
+      <p style="margin:0;color:#334155;font-size:12px">MansaMusaAI Monitoring · Core health every minute · Full audit every hour · mansamusainitiative.com</p>
     </div>
   </div>
 </body>
@@ -305,7 +324,8 @@ export const GET = withCron(async () => {
   const criticalFail = checks.some((c) => !c.ok && c.critical);
   const anyFail = checks.some((c) => !c.ok);
 
-  if (anyFail) {
+  const sendAlert = anyFail && await shouldSendAlert(checks, now);
+  if (sendAlert) {
     const html = buildEmailHtml(checks, criticalFail, now);
     const subject = criticalFail
       ? `🚨 CRITICAL: MansaMusaAI system failure detected — ${now.toLocaleTimeString("en-GB")}`
@@ -324,7 +344,7 @@ export const GET = withCron(async () => {
       severity: c.ok ? "ok" : c.critical ? "critical" : "warning",
       message: c.message,
     })),
-    emailSent: anyFail,
+    emailSent: sendAlert,
     hospital: recovery,
   };
 });

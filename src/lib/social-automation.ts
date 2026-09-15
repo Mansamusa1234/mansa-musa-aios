@@ -4,6 +4,7 @@
  */
 
 import { createHmac } from "crypto";
+import { db } from "@/lib/db";
 
 export interface VideoScript {
   title: string;
@@ -164,6 +165,22 @@ async function reportProviderFailure(provider: string, response: Response): Prom
   console.error(`[social:${provider}] HTTP ${response.status}`, detail.slice(0, 1200));
 }
 
+async function getLinkedInCredentials(): Promise<{ token: string; personId: string } | null> {
+  if (process.env.LINKEDIN_ACCESS_TOKEN && process.env.LINKEDIN_PERSON_ID) {
+    return { token: process.env.LINKEDIN_ACCESS_TOKEN, personId: process.env.LINKEDIN_PERSON_ID };
+  }
+  const account = await db.account.findFirst({
+    where: { provider: "linkedin-social", access_token: { not: null } },
+    select: { access_token: true, providerAccountId: true, expires_at: true },
+  });
+  if (!account?.access_token) return null;
+  if (account.expires_at && account.expires_at <= Math.floor(Date.now() / 1000)) {
+    console.error("[social:linkedin] stored access token has expired");
+    return null;
+  }
+  return { token: account.access_token, personId: account.providerAccountId };
+}
+
 export function getTodaysScript(platform?: VideoScript["platform"]): VideoScript {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const filtered = platform ? MANSA_SCRIPTS.filter(s => s.platform === platform) : MANSA_SCRIPTS;
@@ -249,9 +266,9 @@ export async function postToTikTok(videoUrl: string, script: VideoScript): Promi
 }
 
 export async function postToLinkedIn(videoUrl: string, script: VideoScript): Promise<boolean> {
-  const token = process.env.LINKEDIN_ACCESS_TOKEN;
-  const personId = process.env.LINKEDIN_PERSON_ID;
-  if (!token || !personId) return false;
+  const credentials = await getLinkedInCredentials();
+  if (!credentials) return false;
+  const { token, personId } = credentials;
 
   const owner = `urn:li:person:${personId}`;
   const registerRes = await fetch("https://api.linkedin.com/v2/assets?action=registerUpload", {
@@ -326,8 +343,16 @@ export async function postToLinkedIn(videoUrl: string, script: VideoScript): Pro
 }
 
 export async function postToInstagram(videoUrl: string, script: VideoScript): Promise<boolean> {
-  const token = process.env.INSTAGRAM_ACCESS_TOKEN;
   const igUserId = process.env.INSTAGRAM_USER_ID;
+  const storedAccount = igUserId
+    ? await db.account.findUnique({
+        where: { provider_providerAccountId: { provider: "instagram-social", providerAccountId: igUserId } },
+        select: { access_token: true, expires_at: true },
+      })
+    : null;
+  const storedTokenValid = storedAccount?.access_token
+    && (!storedAccount.expires_at || storedAccount.expires_at > Math.floor(Date.now() / 1000));
+  const token = storedTokenValid ? storedAccount.access_token : process.env.INSTAGRAM_ACCESS_TOKEN;
   if (!token || !igUserId) return false;
 
   const caption = `${script.caption}\n\n${script.hashtags.join(" ")}`;
@@ -613,9 +638,9 @@ export async function postToYouTube(videoUrl: string, script: VideoScript): Prom
 // ── Text-only fallbacks (no video required) ──────────────────────────────────
 
 export async function postToLinkedInText(script: VideoScript): Promise<boolean> {
-  const token = process.env.LINKEDIN_ACCESS_TOKEN;
-  const personId = process.env.LINKEDIN_PERSON_ID;
-  if (!token || !personId) return false;
+  const credentials = await getLinkedInCredentials();
+  if (!credentials) return false;
+  const { token, personId } = credentials;
 
   const caption = `${script.script}\n\n${script.hashtags.join(" ")}\n\nhttps://mansamusainitiative.com`;
 

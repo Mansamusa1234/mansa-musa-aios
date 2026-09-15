@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 
 const schema = z.object({
   name:    z.string().min(1).max(100),
@@ -9,10 +10,13 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  const limited = await checkRateLimit(limiters.publicWrite, getIP(req));
+  if (limited) return limited;
+
   try {
     const body = await req.json();
     const data = schema.parse(body);
-    console.info("[contact]", data.name, data.email, data.subject ?? "(no subject)");
+    console.info(JSON.stringify({ level: "info", message: "contact_form_received", hasSubject: !!data.subject }));
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
     if (err instanceof z.ZodError) {

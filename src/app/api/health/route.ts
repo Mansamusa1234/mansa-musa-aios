@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { checkEnv } from "@/lib/envValidator";
 import { hospitalIsConfigured } from "@/lib/hospital";
 
-export async function GET() {
+export async function GET(req: Request) {
   const start = Date.now();
   const checks: Record<string, { ok: boolean; message?: string; ms?: number }> = {};
 
@@ -71,16 +71,25 @@ export async function GET() {
   const allOk = Object.values(checks).every((c) => c.ok);
   const critical = checks.database.ok && checks.auth.ok;
 
+  const status = allOk ? "ok" : critical ? "degraded" : "error";
+  const authorized = !!process.env.CRON_SECRET &&
+    req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
+
   return NextResponse.json(
+    authorized
+      ? {
+          status,
+          critical,
+          checks,
+          missingEnvVars: envResult.missing,
+          optionalMissingEnvVars: envResult.optional,
+          totalMs: Date.now() - start,
+          timestamp: new Date().toISOString(),
+        }
+      : { status, timestamp: new Date().toISOString() },
     {
-      status: allOk ? "ok" : critical ? "degraded" : "error",
-      critical,
-      checks,
-      missingEnvVars: envResult.missing,
-      optionalMissingEnvVars: envResult.optional,
-      totalMs: Date.now() - start,
-      timestamp: new Date().toISOString(),
-    },
-    { status: allOk ? 200 : critical ? 207 : 503 }
+      status: critical ? 200 : 503,
+      headers: { "Cache-Control": "no-store" },
+    }
   );
 }

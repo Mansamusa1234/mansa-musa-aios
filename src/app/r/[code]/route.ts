@@ -7,7 +7,8 @@ const COOKIE_DAYS = 90;
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  const dest = req.nextUrl.searchParams.get("dest") ?? "/";
+  const requestedDest = req.nextUrl.searchParams.get("dest") ?? "/";
+  const dest = requestedDest.startsWith("/") && !requestedDest.startsWith("//") ? requestedDest : "/";
 
   const affiliate = await db.affiliate.findUnique({
     where: { code, status: "APPROVED" },

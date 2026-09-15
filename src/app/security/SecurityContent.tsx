@@ -9,55 +9,55 @@ import { fadeUp, stagger } from "@/lib/motion";
 const PILLARS = [
   {
     icon: "🔐",
-    title: "Encryption at rest & in transit",
-    body: "All data is encrypted with AES-256 at rest. Every connection uses TLS 1.3. Your data is never transmitted in plaintext.",
+    title: "Encryption in transit and at rest",
+    body: "HTTPS protects traffic in transit. Our hosting and database providers apply encryption at rest to the infrastructure they manage.",
   },
   {
     icon: "🛡️",
-    title: "Zero-trust architecture",
-    body: "Every API request is authenticated and authorized independently. No implicit trust — even inside our own infrastructure.",
+    title: "Access controls",
+    body: "Protected routes require authenticated sessions, sensitive administration routes require an administrator role, and records are scoped to their owner where applicable.",
   },
   {
     icon: "🔒",
-    title: "SOC 2 Type II-ready",
-    body: "Our infrastructure, access controls, and audit logging are aligned with SOC 2 Type II requirements for security, availability, and confidentiality.",
+    title: "Security-focused infrastructure",
+    body: "The service runs on managed infrastructure with platform DDoS protection, isolated deployments, encrypted transport, and controlled environment variables. MansaMusaAI does not currently claim its own SOC 2 certification.",
   },
   {
     icon: "🌍",
-    title: "GDPR & data residency",
-    body: "We process EU data on EU infrastructure (Frankfurt). Full data export and deletion on request. DPA available for enterprise customers.",
+    title: "Privacy and UK GDPR",
+    body: "Our controls are designed to support UK GDPR responsibilities. Customers remain responsible for lawful collection, notices, consent, and their own use of personal data.",
   },
   {
     icon: "🧪",
-    title: "Penetration testing",
-    body: "Regular third-party penetration tests. We run a responsible disclosure programme and patch critical vulnerabilities within 24 hours.",
+    title: "Vulnerability management",
+    body: "We scan dependencies, review exposed routes, monitor production errors, and provide a channel for responsible vulnerability reports. Findings are prioritised by severity and impact.",
   },
   {
     icon: "📋",
-    title: "Audit logs",
-    body: "Immutable audit logs for every action: logins, data access, agent runs, admin changes. Exportable for compliance reporting.",
+    title: "Security audit records",
+    body: "The application records important account-security events such as successful and failed logins, lockouts, password changes, email changes, and session revocation.",
   },
   {
     icon: "🔑",
     title: "Multi-factor authentication",
-    body: "TOTP 2FA built into every account. Enterprise customers can enforce MFA policy across their entire organisation.",
+    body: "Accounts can enable TOTP two-factor authentication and receive backup codes. Login throttling, lockouts, breached-password checks, and session revocation add further protection.",
   },
   {
     icon: "🏗️",
-    title: "Isolated infrastructure",
-    body: "Enterprise customers get dedicated database instances. Your data is never co-mingled with other customers' data.",
+    title: "Tenant separation",
+    body: "Application queries enforce user, team, or administrator ownership rules. We continue to test these boundaries as new features are added.",
   },
 ];
 
 const PRACTICES = [
-  "Annual third-party security audits",
-  "Automated dependency vulnerability scanning",
-  "Secret scanning on every git commit",
-  "Least-privilege IAM across all services",
-  "Automated security patching within 48 hours",
-  "Private VPC with no public database exposure",
-  "Rate limiting and DDoS protection on all APIs",
-  "OWASP Top 10 mitigations throughout the codebase",
+  "Dependency vulnerability review and patching",
+  "Signed Stripe and Twilio webhook verification",
+  "Secrets kept in server-side environment variables",
+  "Role and record-ownership checks on sensitive routes",
+  "Rate limits on login, registration, AI, and public-write endpoints",
+  "Vercel platform-level DDoS protection",
+  "Security headers and strict request validation",
+  "Production error monitoring and audit records",
 ];
 
 export default function SecurityContent() {
@@ -81,10 +81,10 @@ export default function SecurityContent() {
                 </span>
               </motion.h1>
               <motion.p variants={fadeUp} className="mt-5 text-lg text-gray-400 max-w-2xl mx-auto">
-                Enterprise-grade protection built into every layer. Your data, your agents, and your customers are protected by industry-leading security practices.
+                Practical, layered safeguards for accounts, customer data, payments, integrations, and production operations.
               </motion.p>
               <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-4 text-sm text-gray-400">
-                {["256-bit TLS", "AES-256 at rest", "GDPR compliant", "SOC 2-ready", "Zero trust"].map((badge) => (
+                {["HTTPS", "2FA", "Signed webhooks", "Rate limiting", "DDoS protection"].map((badge) => (
                   <span key={badge} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
                     {badge}
@@ -129,7 +129,7 @@ export default function SecurityContent() {
                 <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-4">Our practices</p>
                 <h2 className="text-3xl font-bold text-gray-900">What we do every day to keep you safe</h2>
                 <p className="mt-4 text-gray-500">
-                  Security isn&apos;t a one-time checklist. It&apos;s an ongoing commitment woven into our engineering culture, tooling, and processes.
+                  Security is ongoing work. These are the controls currently implemented and maintained in the service.
                 </p>
               </div>
               <ul className="space-y-3">
@@ -153,7 +153,7 @@ export default function SecurityContent() {
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-2xl">🔍</div>
               <h2 className="text-2xl font-bold text-gray-900">Responsible disclosure</h2>
               <p className="mt-3 text-gray-500">
-                Found a security vulnerability? We take all reports seriously. Contact our security team and we&apos;ll respond within 24 hours.
+                Found a security vulnerability? Please include the affected URL, steps to reproduce, and potential impact. Do not access other people&apos;s data or disrupt the service while testing.
               </p>
               <a
                 href="mailto:support@mansamusainitiative.com"
@@ -169,7 +169,7 @@ export default function SecurityContent() {
         <section className="bg-gray-950 py-20 text-white">
           <div className="mx-auto max-w-3xl px-6 text-center">
             <h2 className="text-3xl font-bold">Ready to deploy with confidence?</h2>
-            <p className="mt-4 text-gray-400">Start for free. Enterprise customers get dedicated security reviews and custom DPAs.</p>
+            <p className="mt-4 text-gray-400">Review our privacy policy and enable two-factor authentication after creating your account.</p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link
                 href="/register"

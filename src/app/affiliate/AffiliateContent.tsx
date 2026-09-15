@@ -83,7 +83,7 @@ const FAQS = [
   },
   {
     q: "How long does my cookie last?",
-    a: "Your affiliate cookie lasts 60 days. If a visitor clicks your link and subscribes within 60 days, you earn the commission.",
+    a: "Your affiliate cookie lasts 90 days. If a visitor clicks your link and subscribes within 90 days, you earn the commission.",
   },
   {
     q: "What happens if a customer upgrades their plan?",

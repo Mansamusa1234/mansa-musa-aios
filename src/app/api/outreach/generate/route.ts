@@ -6,6 +6,7 @@ import { anthropic } from "@/lib/anthropic";
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { campaignId, contacts } = await req.json() as {
     campaignId: string;

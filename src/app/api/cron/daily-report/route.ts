@@ -110,6 +110,19 @@ export const GET = withCron(async () => {
   const todayStr = now.toISOString().split("T")[0];
   const intelligenceReports = await db.agentIntelligenceReport.count({ where: { date: todayStr } }).catch(() => 0);
 
+  const configuredPlatforms = [
+    process.env.TWITTER_API_KEY && process.env.TWITTER_ACCESS_TOKEN ? "X/Twitter" : null,
+    process.env.FACEBOOK_PAGE_ACCESS_TOKEN ? "Facebook" : null,
+    process.env.INSTAGRAM_ACCESS_TOKEN ? "Instagram" : null,
+    process.env.YOUTUBE_REFRESH_TOKEN ? "YouTube" : null,
+    process.env.PINTEREST_ACCESS_TOKEN ? "Pinterest" : null,
+    process.env.LINKEDIN_ACCESS_TOKEN ? "LinkedIn" : null,
+    process.env.TIKTOK_ACCESS_TOKEN ? "TikTok" : null,
+    process.env.THREADS_ACCESS_TOKEN ? "Threads" : null,
+  ].filter((value): value is string => !!value);
+  const launchAttention = activeSubscriptions === 0 || activeReceptionists === 0 || verifiedUsers < totalUsers;
+  const organisationStatus = launchAttention ? "LAUNCH SETUP NEEDS ATTENTION" : "CORE SERVICE OPERATIONAL";
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -122,7 +135,7 @@ export const GET = withCron(async () => {
     </div>
     <div style="background:linear-gradient(135deg,#7c3aed,#2563eb);border-radius:12px;padding:20px;margin-bottom:24px;text-align:center">
       <p style="margin:0;color:rgba(255,255,255,0.8);font-size:13px;text-transform:uppercase;letter-spacing:1px">Organization Status</p>
-      <p style="margin:4px 0 0;color:#fff;font-size:28px;font-weight:800">FULLY OPERATIONAL</p>
+      <p style="margin:4px 0 0;color:#fff;font-size:28px;font-weight:800">${organisationStatus}</p>
       <p style="margin:8px 0 0;color:rgba(255,255,255,0.7);font-size:13px">${activeSubscriptions} active customers · ${activeReceptionists} AI receptionists live · ${intelligenceReports}/5 agent reports generated</p>
     </div>
     ${section("Users & Growth", [
@@ -163,10 +176,12 @@ export const GET = withCron(async () => {
       ["Total Tickets (all time)", totalTickets.toString()],
     ])}
     ${section("Social Media & Content", [
-      ["Platforms Posting Daily", "5 (Twitter, Facebook, Instagram, YouTube, Substack)"],
-      ["Posts This Month", "Daily automated at 9am"],
-      ["Newsletter", "Daily automated at 10am"],
-      ["Blog/Medium", "Daily automated at 11am"],
+      ["Credentials Configured", configuredPlatforms.length ? `${configuredPlatforms.length} (${configuredPlatforms.join(", ")})` : "None"],
+      ["Verified Publishing", "Check platform results — credentials alone do not prove delivery"],
+      ["Social Schedule", "Daily attempt at 9am UTC"],
+      ["Newsletter Schedule", "Daily attempt at 10am UTC"],
+      ["Medium Schedule", "Daily attempt at 11am UTC"],
+      ["Substack", "Not counted as operational until its publishing API is restored"],
       ["AI Agent Reports Generated Today", `${intelligenceReports}/5`],
     ])}
     <div style="text-align:center;margin-top:32px;padding-top:24px;border-top:1px solid #1e293b">

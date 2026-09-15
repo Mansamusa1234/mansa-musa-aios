@@ -3,6 +3,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import { sendEmail, bookingConfirmedGuestEmailHtml, newBookingOwnerEmailHtml } from "@/lib/email";
 import { triggerWorkflows } from "@/lib/email-automation";
+import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 
 const schema = z.object({
   guestName: z.string().min(1).max(100),
@@ -35,6 +36,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ userId:
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ userId: string }> }) {
+  const limited = await checkRateLimit(limiters.publicWrite, getIP(req));
+  if (limited) return limited;
+
   const { userId } = await params;
 
   const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, email: true } });
@@ -46,6 +50,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
   const { startAt, endAt, ...rest } = parsed.data;
   const start = new Date(startAt);
   const end = new Date(endAt);
+  const durationMs = end.getTime() - start.getTime();
+  if (start.getTime() < Date.now() || durationMs < 5 * 60_000 || durationMs > 8 * 60 * 60_000) {
+    return NextResponse.json({ error: "Booking time or duration is invalid." }, { status: 400 });
+  }
+  if (start.getTime() > Date.now() + 366 * 86_400_000) {
+    return NextResponse.json({ error: "Bookings cannot be made more than one year ahead." }, { status: 400 });
+  }
 
   // Conflict check
   const conflict = await db.calendarBooking.findFirst({

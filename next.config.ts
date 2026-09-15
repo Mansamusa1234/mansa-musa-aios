@@ -6,6 +6,8 @@ const securityHeaders = [
   { key: "X-DNS-Prefetch-Control",   value: "on" },
   { key: "X-Frame-Options",          value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options",   value: "nosniff" },
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   { key: "Referrer-Policy",          value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy",       value: "camera=(), microphone=(), geolocation=()" },
   {
@@ -25,6 +27,8 @@ const securityHeaders = [
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "frame-ancestors 'self'",
+      "upgrade-insecure-requests",
     ].join("; "),
   },
 ];

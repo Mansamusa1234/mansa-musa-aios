@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { auth } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   const clientId = process.env.LINKEDIN_CLIENT_ID;
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin).replace(/\/$/, "");
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    const callbackUrl = `${appUrl}/api/linkedin/connect`;
+    return NextResponse.redirect(`${appUrl}/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+  }
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Administrator access required" }, { status: 403 });
+  }
 
   if (!clientId) {
     return NextResponse.json({ error: "LINKEDIN_CLIENT_ID is not configured" }, { status: 500 });

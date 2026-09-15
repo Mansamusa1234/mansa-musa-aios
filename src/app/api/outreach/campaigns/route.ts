@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const campaigns = await db.outreachCampaign.findMany({
     orderBy: { createdAt: "desc" },
@@ -17,6 +18,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { name, industry, subject } = await req.json();
   if (!name || !subject) return NextResponse.json({ error: "Name and subject required" }, { status: 400 });

@@ -17,7 +17,10 @@ function getStored(): Consent | null {
 }
 
 function store(c: Consent) {
-  try { localStorage.setItem(KEY, JSON.stringify(c)); } catch {}
+  try {
+    localStorage.setItem(KEY, JSON.stringify(c));
+    window.dispatchEvent(new CustomEvent("mm-cookie-consent", { detail: c }));
+  } catch {}
 }
 
 export function getCookieConsent(): Consent | null {
@@ -28,7 +31,7 @@ export function getCookieConsent(): Consent | null {
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [analytics, setAnalytics] = useState(true);
+  const [analytics, setAnalytics] = useState(false);
   const [marketing, setMarketing] = useState(false);
 
   useEffect(() => {
@@ -69,7 +72,7 @@ export default function CookieBanner() {
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">We value your privacy</h2>
           <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
             We use cookies to improve your experience and analyse usage.{" "}
-            <Link href="/privacy" className="underline hover:text-gray-700 dark:hover:text-gray-300">Privacy Policy</Link>.
+            <Link href="/cookies" className="underline hover:text-gray-700 dark:hover:text-gray-300">Cookie Policy</Link>.
           </p>
         </div>
       </div>
