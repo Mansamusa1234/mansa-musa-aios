@@ -63,7 +63,7 @@ export default function ReceptionistContent() {
                 </Link>
               </motion.div>
               <motion.p variants={fadeUp} className="mt-4 text-xs text-gray-500">
-                Free plan includes 100 calls/month. No credit card required.
+                Join free with no card. Starter includes up to 200 calls/month.
               </motion.p>
             </motion.div>
           </div>
