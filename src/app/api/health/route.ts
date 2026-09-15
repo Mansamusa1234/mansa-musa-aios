@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { checkEnv } from "@/lib/envValidator";
+import { hospitalIsConfigured } from "@/lib/hospital";
 
 export async function GET() {
   const start = Date.now();
@@ -58,6 +59,13 @@ export async function GET() {
   checks.ai = {
     ok: !!process.env.ANTHROPIC_API_KEY,
     message: process.env.ANTHROPIC_API_KEY ? "Anthropic configured" : "ANTHROPIC_API_KEY missing",
+  };
+
+  checks.hospital = {
+    ok: hospitalIsConfigured(),
+    message: hospitalIsConfigured()
+      ? "Persistent recovery queue configured"
+      : "Upstash Redis missing — failures will be logged but not persisted",
   };
 
   const allOk = Object.values(checks).every((c) => c.ok);

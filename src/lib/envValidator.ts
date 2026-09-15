@@ -17,6 +17,8 @@ const ENV_MANIFEST: EnvVar[] = [
   { key: "GOOGLE_CLIENT_SECRET", required: false, description: "Google OAuth client secret",             group: "Auth" },
 
   { key: "DATABASE_URL",         required: true,  description: "PostgreSQL connection string",           group: "Database" },
+  { key: "UPSTASH_REDIS_REST_URL",   required: false, description: "Upstash Redis REST URL for rate limits and AI Hospital", group: "Storage" },
+  { key: "UPSTASH_REDIS_REST_TOKEN", required: false, description: "Upstash Redis REST token",                            group: "Storage" },
 
   { key: "STRIPE_SECRET_KEY",         required: false, description: "Stripe secret API key",                  group: "Stripe" },
   { key: "STRIPE_WEBHOOK_SECRET",     required: false, description: "Stripe webhook signing secret",          group: "Stripe" },
