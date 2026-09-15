@@ -112,9 +112,9 @@ const jsonLd = {
         "Deploy AI agents and automate business workflows with MansaMusaAI — the AI Operating System for modern business.",
       offers: [
         { "@type": "Offer", name: "Free",       price: "0",   priceCurrency: "GBP", availability: "https://schema.org/InStock" },
-        { "@type": "Offer", name: "Basic",      price: "19",  priceCurrency: "GBP", availability: "https://schema.org/InStock" },
-        { "@type": "Offer", name: "Pro",        price: "49",  priceCurrency: "GBP", availability: "https://schema.org/InStock" },
-        { "@type": "Offer", name: "Enterprise", price: "199", priceCurrency: "GBP", availability: "https://schema.org/InStock" },
+        { "@type": "Offer", name: "Starter",      price: "49",  priceCurrency: "GBP", availability: "https://schema.org/InStock" },
+        { "@type": "Offer", name: "Professional", price: "149", priceCurrency: "GBP", availability: "https://schema.org/InStock" },
+        { "@type": "Offer", name: "Enterprise",   price: "499", priceCurrency: "GBP", availability: "https://schema.org/InStock" },
       ],
       featureList: [
         "AI Agents Hub",
