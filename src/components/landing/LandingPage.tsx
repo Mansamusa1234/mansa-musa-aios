@@ -12,7 +12,6 @@ import SocialProof from "@/components/marketing/SocialProof";
 import ROICalculator from "@/components/marketing/ROICalculator";
 import PromoBanner from "@/components/marketing/PromoBanner";
 import ExitIntent from "@/components/marketing/ExitIntent";
-import SocialProofTicker from "@/components/marketing/SocialProofTicker";
 import UrgencyBanner from "@/components/marketing/UrgencyBanner";
 import LeadMagnetBar from "@/components/marketing/LeadMagnetBar";
 import { fadeUp, scaleIn, stagger, staggerSlow, fadeIn } from "@/lib/motion";
@@ -107,7 +106,6 @@ export default function LandingPage({ plans }: Props) {
       <UrgencyBanner />
       <PromoBanner />
       <ExitIntent />
-      <SocialProofTicker />
 
       {/* ══ NAV ══════════════════════════════════════════════════ */}
       <motion.nav
