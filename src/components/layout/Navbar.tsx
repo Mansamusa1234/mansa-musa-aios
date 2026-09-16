@@ -49,24 +49,30 @@ export default function Navbar({ user }: Props) {
         {/* Theme toggle */}
         <ThemeToggle size="sm" />
 
-        {/* Avatar */}
-        {user.image ? (
-          <Image
-            src={user.image}
-            alt={user.name ?? "User avatar"}
-            width={32}
-            height={32}
-            className="rounded-full ring-2 ring-brand-500/30"
-          />
-        ) : (
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            aria-label={`${user.name ?? "User"} avatar`}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/20 text-sm font-bold text-brand-300 border border-brand-500/30 cursor-default select-none"
-          >
-            {user.name?.[0]?.toUpperCase() ?? "U"}
-          </motion.div>
-        )}
+        {/* Avatar / account settings */}
+        <Link
+          href="/settings"
+          aria-label="Open account settings"
+          title="Account settings"
+          className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#09091a]"
+        >
+          {user.image ? (
+            <Image
+              src={user.image}
+              alt={user.name ?? "User avatar"}
+              width={32}
+              height={32}
+              className="rounded-full ring-2 ring-brand-500/30 transition-transform hover:scale-105"
+            />
+          ) : (
+            <motion.span
+              whileHover={{ scale: 1.05 }}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/20 text-sm font-bold text-brand-300 border border-brand-500/30 select-none"
+            >
+              {user.name?.[0]?.toUpperCase() ?? "U"}
+            </motion.span>
+          )}
+        </Link>
 
         {/* Sign out */}
         <motion.button
