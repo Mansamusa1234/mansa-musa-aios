@@ -25,7 +25,9 @@ type Item = { id: number; e: typeof EVENTS[number]; ts: string };
 export default function AgentFeed({ maxItems = 5 }: { maxItems?: number }) {
   const idRef = useRef(EVENTS.length);
   const [items, setItems] = useState<Item[]>(() =>
-    EVENTS.slice(0, maxItems - 1).map((e, i) => ({ id: i, e, ts: ts() }))
+    // Keep the server and first browser render identical. Live timestamps begin
+    // with the first client-side event, avoiding a hydration mismatch.
+    EVENTS.slice(0, maxItems - 1).map((e, i) => ({ id: i, e, ts: "Just now" }))
   );
 
   useEffect(() => {
