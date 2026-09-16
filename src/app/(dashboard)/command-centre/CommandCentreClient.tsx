@@ -64,6 +64,7 @@ export default function CommandCentreClient() {
   const [campaignIndustry, setCampaignIndustry] = useState("");
   const [contactsCsv, setContactsCsv] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [outreachError, setOutreachError] = useState<string | null>(null);
 
   const loadQueue = useCallback(async () => {
     setLoading(true);
@@ -142,8 +143,18 @@ export default function CommandCentreClient() {
 
   async function createCampaignAndGenerate() {
     if (!campaignName || !campaignSubject || !contactsCsv.trim()) return;
+    setOutreachError(null);
     setGenerating(true);
     try {
+      const contacts = contactsCsv.trim().split("\n").map((line) => {
+        const [name, email, company, industry] = line.split(",").map((s) => s.trim());
+        return { name, email, company, industry };
+      }).filter((c) => c.name && c.email);
+
+      if (contacts.length === 0) {
+        throw new Error("Add at least one contact as: Name, Email, Company (optional)");
+      }
+
       // Create campaign
       const cRes = await fetch("/api/outreach/campaigns", {
         method: "POST",
@@ -151,24 +162,30 @@ export default function CommandCentreClient() {
         body: JSON.stringify({ name: campaignName, subject: campaignSubject, industry: campaignIndustry }),
       });
       const cData = await cRes.json();
+      if (!cRes.ok) {
+        throw new Error(cRes.status === 403
+          ? "This account is not authorised for Outreach. Sign in with the MansaMusaAI administrator account."
+          : cData.error || "Unable to create the campaign.");
+      }
       const campaignId = cData.campaign.id;
 
       // Parse CSV: Name, Email, Company (one per line)
-      const contacts = contactsCsv.trim().split("\n").map((line) => {
-        const [name, email, company, industry] = line.split(",").map((s) => s.trim());
-        return { name, email, company, industry };
-      }).filter((c) => c.name && c.email);
-
-      await fetch("/api/outreach/generate", {
+      const generateRes = await fetch("/api/outreach/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ campaignId, contacts }),
       });
+      const generateData = await generateRes.json();
+      if (!generateRes.ok) {
+        throw new Error(generateData.error || "The AI could not generate the outreach emails.");
+      }
 
       setShowNewCampaign(false);
       setCampaignName(""); setCampaignSubject(""); setCampaignIndustry(""); setContactsCsv("");
       await loadCampaigns();
       setSelectedCampaign(campaignId);
+    } catch (error) {
+      setOutreachError(error instanceof Error ? error.message : "Unable to generate emails. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -332,6 +349,11 @@ export default function CommandCentreClient() {
                       Cancel
                     </button>
                   </div>
+                  {outreachError && (
+                    <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                      {outreachError}
+                    </p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -406,15 +428,3 @@ export default function CommandCentreClient() {
 
               {campaigns.length === 0 && !showNewCampaign && (
                 <div className="text-center py-16 rounded-2xl border border-white/5">
-                  <p className="text-4xl mb-3">📨</p>
-                  <p className="text-white font-semibold">No campaigns yet</p>
-                  <p className="text-gray-500 text-sm mt-1">Create one — paste in contacts, AI writes personalised emails, you approve</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
