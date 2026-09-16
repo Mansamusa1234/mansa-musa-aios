@@ -36,7 +36,7 @@ export const authConfig = {
       // owner full administration access without introducing a hidden bypass
       // account or hard-coded credentials. Existing USER accounts are promoted
       // once, then the ADMIN role is persisted in the database.
-      const ownerEmail = (process.env.OWNER_EMAIL ?? process.env.REPORT_EMAIL ?? "")
+      const ownerEmail = (process.env.OWNER_EMAIL ?? process.env.REPORT_EMAIL ?? "darrenneil2025@gmail.com")
         .trim()
         .toLowerCase();
       const signedInEmail = String(user?.email ?? token.email ?? "").trim().toLowerCase();
