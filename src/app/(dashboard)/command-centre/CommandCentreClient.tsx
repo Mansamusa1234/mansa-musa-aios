@@ -428,3 +428,15 @@ export default function CommandCentreClient() {
 
               {campaigns.length === 0 && !showNewCampaign && (
                 <div className="text-center py-16 rounded-2xl border border-white/5">
+                  <p className="text-4xl mb-3">📨</p>
+                  <p className="text-white font-semibold">No campaigns yet</p>
+                  <p className="text-gray-500 text-sm mt-1">Create one — paste in contacts, AI writes personalised emails, you approve</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
