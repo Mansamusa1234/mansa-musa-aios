@@ -217,17 +217,18 @@ export async function getHeyGenVideoUrl(videoId: string): Promise<string | null>
   const apiKey = process.env.HEYGEN_API_KEY;
   if (!apiKey) return null;
 
-  const res = await fetch(`https://api.heygen.com/v1/video_status.get?video_id=${videoId}`, {
-    headers: { "X-Api-Key": apiKey },
+  const res = await fetch(`https://api.heygen.com/v3/videos/${encodeURIComponent(videoId)}`, {
+    headers: { "x-api-key": apiKey },
   });
 
   const data = await res.json();
   if (!res.ok) {
     console.error("[social:heygen] video status failed", res.status, JSON.stringify(data).slice(0, 1200));
+    return null;
   }
   if (data?.data?.status === "failed") {
-    const code = data?.data?.error?.code ?? "UNKNOWN";
-    const message = data?.data?.error?.message ?? "Video generation failed";
+    const code = data?.data?.failure_code ?? "UNKNOWN";
+    const message = data?.data?.failure_message ?? "Video generation failed";
     throw new Error(`HeyGen ${code}: ${message}`);
   }
   return data?.data?.status === "completed" ? data.data.video_url : null;
