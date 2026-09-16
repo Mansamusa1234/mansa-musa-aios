@@ -15,6 +15,7 @@ const ENV_MANIFEST: EnvVar[] = [
   { key: "NEXTAUTH_SECRET",      required: true,  description: "NextAuth JWT encryption secret",         group: "Auth" },
   { key: "GOOGLE_CLIENT_ID",     required: false, description: "Google OAuth client ID",                 group: "Auth" },
   { key: "GOOGLE_CLIENT_SECRET", required: false, description: "Google OAuth client secret",             group: "Auth" },
+  { key: "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", required: false, description: "Google Maps Places key for UK address autocomplete", group: "Address" },
 
   { key: "DATABASE_URL",         required: true,  description: "PostgreSQL connection string",           group: "Database" },
   { key: "UPSTASH_REDIS_REST_URL",   required: false, description: "Upstash Redis REST URL for rate limits and AI Hospital", group: "Storage" },
