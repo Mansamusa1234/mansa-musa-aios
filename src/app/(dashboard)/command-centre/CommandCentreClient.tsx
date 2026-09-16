@@ -147,8 +147,18 @@ export default function CommandCentreClient() {
     setGenerating(true);
     try {
       const contacts = contactsCsv.trim().split("\n").map((line) => {
-        const [name, email, company, industry] = line.split(",").map((s) => s.trim());
-        return { name, email, company, industry };
+        const parts = line.split(",").map((s) => s.trim());
+        if (parts.length >= 2) {
+          const [name, email, company, industry] = parts;
+          return { name, email, company, industry };
+        }
+
+        // Be forgiving when a user types "Name email@example.com" without a
+        // comma. The email is unambiguous, so everything before it is the name.
+        const emailMatch = line.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+        const email = emailMatch?.[0] ?? "";
+        const name = emailMatch ? line.slice(0, emailMatch.index).trim().replace(/[,;|\-]+$/, "").trim() : "";
+        return { name, email, company: undefined, industry: undefined };
       }).filter((c) => c.name && c.email);
 
       if (contacts.length === 0) {
