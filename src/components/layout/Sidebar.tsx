@@ -225,6 +225,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Grow",
     items: [
+      { href: "/marketing-team", label: "AI Marketing Team", icon: "command", adminOnly: true, badge: "AI" },
       { href: "/referrals", label: "Referrals", icon: "gift" },
       { href: "/affiliate", label: "Affiliate",  icon: "link" },
     ],
