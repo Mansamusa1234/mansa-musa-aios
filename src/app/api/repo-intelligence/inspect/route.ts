@@ -25,9 +25,14 @@ export async function POST(req: Request) {
       getVercelRepoStatus(),
     ]);
 
+    const browserInspection = {
+      ...inspection,
+      selectedFiles: inspection.selectedFiles.map((file) => ({ path: file.path })),
+    };
+
     return NextResponse.json({
       ok: true,
-      inspection,
+      inspection: browserInspection,
       infrastructure: {
         github: {
           connected: inspection.access.authenticated,

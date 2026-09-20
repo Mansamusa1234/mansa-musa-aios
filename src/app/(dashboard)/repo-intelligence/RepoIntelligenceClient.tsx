@@ -28,7 +28,7 @@ type Inspection = {
   commits: Array<{ sha: string; message: string; author: string | null; date: string | null; url: string }>;
   pullRequests: Array<{ number: number; title: string; author: string | null; draft: boolean; updatedAt: string; url: string }>;
   workflows: Array<{ id: number; name: string; status: string; conclusion: string | null; event: string; branch: string | null; sha: string; createdAt: string; url: string }>;
-  selectedFiles: Array<{ path: string; content: string }>;
+  selectedFiles: Array<{ path: string }>;
 };
 
 type Infrastructure = {
