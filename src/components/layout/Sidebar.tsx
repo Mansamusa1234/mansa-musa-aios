@@ -205,6 +205,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/news",         label: "News Feed",    icon: "news"     },
       { href: "/intelligence", label: "Market Intel", icon: "globe"    },
       { href: "/evidence",     label: "Evidence Vault", icon: "shield", badge: "NEW" },
+      { href: "/repo-intelligence", label: "Repo Intelligence", icon: "command", badge: "NEW", adminOnly: true },
       { href: "/legal-dictionary", label: "Legal Dictionary", icon: "wisdom" },
     ],
   },
