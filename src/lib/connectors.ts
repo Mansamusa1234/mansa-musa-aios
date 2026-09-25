@@ -155,4 +155,131 @@ export const CONNECTORS: Connector[] = [
       return { ok: true, summary: `${results.length} GOV.UK results for "business support".`, data: results.map((r) => r.title) };
     },
   },
+  {
+    key: "shopify-store",
+    name: "Shopify Store Connector",
+    category: "Commerce",
+    description: "Read-only Shopify Admin GraphQL access for store, product and commerce intelligence.",
+    isConfigured: () =>
+      !!process.env.SHOPIFY_STORE_DOMAIN &&
+      !!process.env.SHOPIFY_ADMIN_ACCESS_TOKEN &&
+      !!process.env.SHOPIFY_API_VERSION,
+    notConfiguredReason: "Needs SHOPIFY_STORE_DOMAIN, SHOPIFY_ADMIN_ACCESS_TOKEN and SHOPIFY_API_VERSION.",
+    fetchSample: async () => {
+      const domain = process.env.SHOPIFY_STORE_DOMAIN!;
+      const version = process.env.SHOPIFY_API_VERSION!;
+      const token = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN!;
+      const query = `query MansaStoreSnapshot {
+        shop { name myshopifyDomain }
+        products(first: 3, sortKey: UPDATED_AT, reverse: true) {
+          nodes { id title status updatedAt }
+        }
+      }`;
+      const response = await fetch(
+        `https://${domain.replace(/^https?:\\/\\//, "").replace(/\\/$/, "")}/admin/api/${version}/graphql.json`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": token,
+          },
+          body: JSON.stringify({ query }),
+          signal: AbortSignal.timeout(10000),
+        },
+      );
+      if (!response.ok) throw new Error(`Shopify HTTP ${response.status}`);
+      const payload = await response.json() as {
+        data?: { shop?: { name?: string; myshopifyDomain?: string }; products?: { nodes?: unknown[] } };
+        errors?: Array<{ message?: string }>;
+      };
+      if (payload.errors?.length) {
+        throw new Error(payload.errors.map((e) => e.message).filter(Boolean).join("; ") || "Shopify GraphQL error");
+      }
+      const count = payload.data?.products?.nodes?.length ?? 0;
+      return {
+        ok: true,
+        summary: `Connected to Shopify store ${payload.data?.shop?.name || payload.data?.shop?.myshopifyDomain || domain}; loaded ${count} recent products.`,
+        data: payload.data,
+      };
+    },
+  },
+  {
+    key: "meta-ads",
+    name: "Meta Ads Connector",
+    category: "Marketing",
+    description: "Read-only Meta Marketing API campaign performance snapshot for the configured ad account.",
+    isConfigured: () =>
+      !!process.env.META_AD_ACCOUNT_ID &&
+      !!process.env.META_ACCESS_TOKEN &&
+      !!process.env.META_GRAPH_API_VERSION,
+    notConfiguredReason: "Needs META_AD_ACCOUNT_ID, META_ACCESS_TOKEN and META_GRAPH_API_VERSION.",
+    fetchSample: async () => {
+      const accountId = process.env.META_AD_ACCOUNT_ID!.replace(/^act_/, "");
+      const version = process.env.META_GRAPH_API_VERSION!;
+      const params = new URLSearchParams({
+        fields: "campaign_name,spend,impressions,clicks,ctr,cpc",
+        date_preset: "last_7d",
+        level: "campaign",
+        limit: "10",
+      });
+      const response = await fetch(
+        `https://graph.facebook.com/${version}/act_${accountId}/insights?${params.toString()}`,
+        {
+          headers: { Authorization: `Bearer ${process.env.META_ACCESS_TOKEN!}` },
+          signal: AbortSignal.timeout(10000),
+        },
+      );
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        throw new Error(`Meta Ads HTTP ${response.status}${detail ? ": " + detail.slice(0, 180) : ""}`);
+      }
+      const payload = await response.json() as { data?: unknown[] };
+      const count = payload.data?.length ?? 0;
+      return {
+        ok: true,
+        summary: `Loaded ${count} Meta Ads campaign performance rows for the last 7 days.`,
+        data: payload.data ?? [],
+      };
+    },
+  },
+  {
+    key: "figma-brand",
+    name: "Figma Brand Connector",
+    category: "Creative",
+    description: "Read-only Figma file snapshot for brand-kit, components and creative context.",
+    isConfigured: () => !!process.env.FIGMA_ACCESS_TOKEN && !!process.env.FIGMA_FILE_KEY,
+    notConfiguredReason: "Needs FIGMA_ACCESS_TOKEN and FIGMA_FILE_KEY.",
+    fetchSample: async () => {
+      const response = await fetch(
+        `https://api.figma.com/v1/files/${encodeURIComponent(process.env.FIGMA_FILE_KEY!)}?depth=2`,
+        {
+          headers: { "X-Figma-Token": process.env.FIGMA_ACCESS_TOKEN! },
+          signal: AbortSignal.timeout(10000),
+        },
+      );
+      if (!response.ok) throw new Error(`Figma HTTP ${response.status}`);
+      const payload = await response.json() as {
+        name?: string;
+        lastModified?: string;
+        version?: string;
+        document?: { children?: Array<{ id?: string; name?: string; type?: string }> };
+      };
+      const pages = payload.document?.children?.map((node) => ({
+        id: node.id,
+        name: node.name,
+        type: node.type,
+      })) ?? [];
+      return {
+        ok: true,
+        summary: `Loaded Figma file "${payload.name || "Brand file"}" with ${pages.length} top-level pages.`,
+        data: {
+          name: payload.name,
+          lastModified: payload.lastModified,
+          version: payload.version,
+          pages,
+        },
+      };
+    },
+  },
+
 ];
