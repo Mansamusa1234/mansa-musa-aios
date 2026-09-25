@@ -42,6 +42,7 @@ export interface ProposedAction {
 
 export interface OrchestratorRunInput {
   goal: string;
+  skillId?: string;
   context?: string;
   useSupercomputer?: boolean;
 }
