@@ -19,6 +19,7 @@ RESPONSES_URL = os.getenv(
     "https://routellm.abacus.ai/v1/responses",
 )
 RESEARCH_MODEL = os.getenv("ABACUS_RESEARCH_MODEL", "gpt-5.5")
+YOUTUBE_DATA_API_KEY = os.getenv("YOUTUBE_DATA_API_KEY", "")
 
 
 class RepoJob(BaseModel):
@@ -57,6 +58,7 @@ async def health(authorization: str | None = Header(default=None)) -> dict[str, 
         "abacus_api_key": bool(ABACUS_API_KEY),
         "market_gap": True,
         "research_model": RESEARCH_MODEL,
+        "youtube_data_api": bool(YOUTUBE_DATA_API_KEY),
     }
 
 
@@ -154,6 +156,125 @@ def _extract_response_text(payload: dict[str, Any]) -> str:
     return "\n\n".join(chunks).strip()
 
 
+async def _youtube_snapshot(job: MarketGapJob) -> str:
+    """Collect a small, evidence-grade YouTube snapshot when a Data API key is configured."""
+    if not YOUTUBE_DATA_API_KEY:
+        return "Direct YouTube Data API snapshot: not configured. Use web-search evidence and label it accordingly."
+
+    raw_terms = [item.strip() for item in job.keywords if item.strip()]
+    if not raw_terms:
+        raw_terms = [job.projectName, job.problem[:120]]
+    terms = raw_terms[:4]
+
+    video_ids: list[str] = []
+    query_map: dict[str, list[str]] = {}
+    async with httpx.AsyncClient(timeout=30) as client:
+        for term in terms:
+            response = await client.get(
+                "https://www.googleapis.com/youtube/v3/search",
+                params={
+                    "key": YOUTUBE_DATA_API_KEY,
+                    "part": "snippet",
+                    "type": "video",
+                    "q": term,
+                    "order": "viewCount",
+                    "maxResults": 10,
+                    "safeSearch": "moderate",
+                },
+            )
+            if response.status_code >= 400:
+                continue
+            items = response.json().get("items", [])
+            ids: list[str] = []
+            for item in items:
+                video_id = item.get("id", {}).get("videoId")
+                if isinstance(video_id, str) and video_id:
+                    ids.append(video_id)
+                    if video_id not in video_ids:
+                        video_ids.append(video_id)
+            query_map[term] = ids
+
+        if not video_ids:
+            return "Direct YouTube Data API snapshot: configured, but no usable public video results were returned."
+
+        details = await client.get(
+            "https://www.googleapis.com/youtube/v3/videos",
+            params={
+                "key": YOUTUBE_DATA_API_KEY,
+                "part": "snippet,statistics",
+                "id": ",".join(video_ids[:50]),
+            },
+        )
+        if details.status_code >= 400:
+            return "Direct YouTube Data API snapshot: search succeeded, but video statistics retrieval failed."
+
+        videos = details.json().get("items", [])
+        channel_ids: list[str] = []
+        for video in videos:
+            channel_id = video.get("snippet", {}).get("channelId")
+            if isinstance(channel_id, str) and channel_id and channel_id not in channel_ids:
+                channel_ids.append(channel_id)
+
+        channels_by_id: dict[str, Any] = {}
+        if channel_ids:
+            channel_response = await client.get(
+                "https://www.googleapis.com/youtube/v3/channels",
+                params={
+                    "key": YOUTUBE_DATA_API_KEY,
+                    "part": "snippet,statistics",
+                    "id": ",".join(channel_ids[:50]),
+                },
+            )
+            if channel_response.status_code < 400:
+                channels_by_id = {
+                    item.get("id"): item
+                    for item in channel_response.json().get("items", [])
+                    if isinstance(item.get("id"), str)
+                }
+
+    ranked: list[dict[str, Any]] = []
+    for video in videos:
+        snippet = video.get("snippet", {})
+        stats = video.get("statistics", {})
+        channel_id = snippet.get("channelId", "")
+        channel = channels_by_id.get(channel_id, {})
+        channel_stats = channel.get("statistics", {})
+        try:
+            views = int(stats.get("viewCount", 0))
+        except (TypeError, ValueError):
+            views = 0
+        ranked.append({
+            "title": snippet.get("title", ""),
+            "videoId": video.get("id", ""),
+            "channel": snippet.get("channelTitle", ""),
+            "publishedAt": snippet.get("publishedAt", ""),
+            "views": views,
+            "likes": stats.get("likeCount"),
+            "channelViews": channel_stats.get("viewCount"),
+            "subscribers": channel_stats.get("subscriberCount"),
+        })
+
+    ranked.sort(key=lambda item: item["views"], reverse=True)
+    top = ranked[:20]
+    lines = [
+        "Direct YouTube Data API snapshot (public metrics; observation date "
+        + date.today().isoformat()
+        + "):"
+    ]
+    for idx, item in enumerate(top, start=1):
+        lines.append(
+            f"{idx}. {item['title']} | channel={item['channel']} | "
+            f"video_views={item['views']} | likes={item['likes']} | "
+            f"channel_subscribers={item['subscribers']} | channel_views={item['channelViews']} | "
+            f"published={item['publishedAt']} | https://www.youtube.com/watch?v={item['videoId']}"
+        )
+    lines.append(
+        "Interpretation rule: these are public visibility metrics, not revenue or proof of commercial success. "
+        "YouTube subscriber counts may be rounded by the platform."
+    )
+    return "\n".join(lines)
+
+
 def _market_prompt(job: MarketGapJob) -> str:
     today = date.today().isoformat()
     keywords = ", ".join(job.keywords[:30]) if job.keywords else "derive the strongest search terms yourself"
@@ -212,6 +333,8 @@ Evidence standard:
 
 
 async def _run_live_market_research(job: MarketGapJob) -> tuple[str, str | None]:
+    youtube_snapshot = await _youtube_snapshot(job)
+    research_prompt = _market_prompt(job) + "\n\n" + youtube_snapshot
     async with httpx.AsyncClient(timeout=180) as client:
         response = await client.post(
             RESPONSES_URL,
@@ -221,7 +344,7 @@ async def _run_live_market_research(job: MarketGapJob) -> tuple[str, str | None]
             },
             json={
                 "model": RESEARCH_MODEL,
-                "input": _market_prompt(job),
+                "input": research_prompt,
                 "tools": [{"type": "web_search"}],
                 "store": False,
             },
