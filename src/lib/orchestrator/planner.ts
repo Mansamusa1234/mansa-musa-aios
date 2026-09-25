@@ -4,7 +4,11 @@ function has(text: string, pattern: RegExp) {
   return pattern.test(text.toLowerCase());
 }
 
-export function planGoal(goal: string, context = ""): PlannedTask[] {
+export function planGoal(
+  goal: string,
+  context = "",
+  forcedLanes: Array<PlannedTask["lane"]> = [],
+): PlannedTask[] {
   const text = `${goal}\n${context}`;
   const tasks: PlannedTask[] = [
     {
@@ -81,6 +85,65 @@ export function planGoal(goal: string, context = ""): PlannedTask[] {
       route: "abacus-preferred",
       complexity: "heavy",
     });
+  }
+
+  const existing = new Set(tasks.map((task) => task.lane));
+  const forcedDefaults: Record<PlannedTask["lane"], PlannedTask> = {
+    research: {
+      id: "research",
+      lane: "research",
+      title: "Evidence & external intelligence",
+      objective: "Identify the facts, evidence, assumptions, dependencies and missing information that matter to the goal. Separate verified inputs from inference.",
+      route: "abacus-preferred",
+      complexity: "heavy",
+    },
+    analysis: {
+      id: "analysis",
+      lane: "analysis",
+      title: "Commercial & strategic analysis",
+      objective: "Analyse the goal from a commercial, operational and decision-quality perspective. Find bottlenecks, leverage points, trade-offs and measurable outcomes.",
+      route: "model-preferred",
+      complexity: "normal",
+    },
+    engineering: {
+      id: "engineering",
+      lane: "engineering",
+      title: "Technical architecture",
+      objective: "Design the smallest production-safe technical implementation, including architecture, integrations, failure modes, observability and deployment implications.",
+      route: "abacus-preferred",
+      complexity: "heavy",
+    },
+    creative: {
+      id: "creative",
+      lane: "creative",
+      title: "Creative & growth",
+      objective: "Develop high-quality creative and growth directions grounded in the supplied evidence. Produce testable concepts, not unsupported claims.",
+      route: "model-preferred",
+      complexity: "normal",
+    },
+    operations: {
+      id: "operations",
+      lane: "operations",
+      title: "Operations & automation",
+      objective: "Map the operational workflow, identify what can be automated safely, what needs human approval, and what should remain read-only.",
+      route: "model-preferred",
+      complexity: "normal",
+    },
+    risk: {
+      id: "risk",
+      lane: "risk",
+      title: "Risk, security & controls",
+      objective: "Review security, privacy, financial, reputational and operational risks. Specify approval gates and rollback controls for external actions.",
+      route: "abacus-preferred",
+      complexity: "heavy",
+    },
+  };
+
+  for (const lane of forcedLanes) {
+    if (!existing.has(lane)) {
+      tasks.push(forcedDefaults[lane]);
+      existing.add(lane);
+    }
   }
 
   return tasks.slice(0, 6);
