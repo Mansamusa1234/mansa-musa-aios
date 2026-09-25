@@ -203,6 +203,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Intelligence",
     items: [
       { href: "/news",         label: "News Feed",    icon: "news"     },
+      { href: "/market-gap",   label: "Gap Finder",   icon: "globe", badge: "NEW" },
       { href: "/intelligence", label: "Market Intel", icon: "globe"    },
       { href: "/evidence",     label: "Evidence Vault", icon: "shield", badge: "NEW" },
       { href: "/repo-intelligence", label: "Repo Intelligence", icon: "command", badge: "NEW", adminOnly: true },
