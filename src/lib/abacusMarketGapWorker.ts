@@ -21,6 +21,19 @@ function getWorkerUrl(): string | null {
   const explicit = process.env.ABACUS_MARKET_GAP_WORKER_URL?.trim();
   if (explicit) return explicit;
 
+  const repoWorker = process.env.ABACUS_REPO_WORKER_URL?.trim();
+  if (repoWorker) {
+    try {
+      const url = new URL(repoWorker);
+      if (url.pathname.endsWith("/repo-intelligence")) {
+        url.pathname = url.pathname.replace(/\/repo-intelligence$/, "/market-gap");
+        return url.toString();
+      }
+    } catch {
+      // Continue to legacy worker resolution.
+    }
+  }
+
   const legacy = process.env.ABACUS_WORKER_URL?.trim();
   if (!legacy) return null;
 
