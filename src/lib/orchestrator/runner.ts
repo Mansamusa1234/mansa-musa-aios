@@ -3,6 +3,7 @@ import { specialistPrompt, specialistSystem, judgePrompt } from "./prompts";
 import { runAbacusTask } from "./abacus";
 import { runAiGatewayTask } from "./aiGateway";
 import { runLocalModelTask } from "./localModel";
+import { collectLiveContext } from "./context";
 import type {
   EngineResult,
   OrchestratorLane,
@@ -163,8 +164,10 @@ export async function runSuperOrchestrator(
   input: OrchestratorRunInput,
 ): Promise<OrchestratorRunResult> {
   const startedAt = new Date().toISOString();
-  const context = (input.context || "").slice(0, 15_000);
+  const ownerContext = (input.context || "").slice(0, 15_000);
   const useSupercomputer = input.useSupercomputer !== false;
+  const live = await collectLiveContext(input.goal, ownerContext);
+  const context = [ownerContext, live.context].filter(Boolean).join("\n\n").slice(0, 30_000);
   const plan = planGoal(input.goal, context);
 
   const raw = await Promise.all(
@@ -228,6 +231,8 @@ export async function runSuperOrchestrator(
       gatewayUsed: [...tasks.map((task) => task.result), judge].some((r) => r.engine === "ai-gateway"),
       modelHubUsed: [...tasks.map((task) => task.result), judge].some((r) => r.engine === "model-hub"),
       parallelTasks: tasks.length,
+      liveConnectorsUsed: live.connectorsUsed,
+      connectorFailures: live.failures,
     },
   };
 }
