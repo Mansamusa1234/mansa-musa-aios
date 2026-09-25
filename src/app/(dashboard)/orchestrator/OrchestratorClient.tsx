@@ -253,6 +253,11 @@ export default function OrchestratorClient() {
                 {result.run.architecture.abacusUsed ? <span className="rounded-full bg-purple-500/15 px-3 py-1 font-bold text-purple-200">Abacus used</span> : null}
                 {result.run.architecture.gatewayUsed ? <span className="rounded-full bg-cyan-500/15 px-3 py-1 font-bold text-cyan-200">AI Gateway used</span> : null}
                 {result.run.architecture.modelHubUsed ? <span className="rounded-full bg-brand-500/15 px-3 py-1 font-bold text-brand-200">Model Hub used</span> : null}
+                {result.run.architecture.liveConnectorsUsed.length ? (
+                  <span className="rounded-full bg-emerald-500/15 px-3 py-1 font-bold text-emerald-200">
+                    {result.run.architecture.liveConnectorsUsed.length} live connector{result.run.architecture.liveConnectorsUsed.length === 1 ? "" : "s"}
+                  </span>
+                ) : null}
               </div>
             </div>
 
