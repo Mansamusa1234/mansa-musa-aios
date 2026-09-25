@@ -36,14 +36,16 @@ const TYPE_LABELS: Record<string, string> = {
   social_post: "Social Post",
   email: "Email",
   lead_followup: "Lead Follow-up",
-  pr: "PR / Press",\n  orchestrator_action: "Orchestrator Action",
+  pr: "PR / Press",
+  orchestrator_action: "Orchestrator Action",
 };
 
 const TYPE_ICONS: Record<string, string> = {
   social_post: "📱",
   email: "📧",
   lead_followup: "🎯",
-  pr: "📰",\n  orchestrator_action: "🧠",
+  pr: "📰",
+  orchestrator_action: "🧠",
 };
 
 export default function CommandCentreClient() {
