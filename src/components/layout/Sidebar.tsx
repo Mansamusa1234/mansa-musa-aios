@@ -177,7 +177,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Overview",
     items: [
       { href: "/dashboard",        label: "Dashboard",      icon: "home"       },
-      { href: "/command-centre",   label: "Command Centre", icon: "command", badge: "🔴" },
+      { href: "/command-centre",   label: "Command Centre", icon: "command", badge: "🔴" },\n      { href: "/orchestrator",     label: "Super Orchestrator", icon: "command", badge: "NEW" },
       { href: "/workforce",        label: "Workforce OS",   icon: "workforce", badge: "HQ" },
       { href: "/analytics",        label: "Analytics",      icon: "analytics"  },
     ],
