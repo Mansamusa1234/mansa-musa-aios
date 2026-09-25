@@ -1,4 +1,5 @@
 import os
+from datetime import date
 from typing import Any
 
 import httpx
@@ -13,6 +14,11 @@ ROUTELLM_URL = os.getenv(
     "ABACUS_ROUTELLM_URL",
     "https://routellm.abacus.ai/v1/chat/completions",
 )
+RESPONSES_URL = os.getenv(
+    "ABACUS_RESPONSES_URL",
+    "https://routellm.abacus.ai/v1/responses",
+)
+RESEARCH_MODEL = os.getenv("ABACUS_RESEARCH_MODEL", "gpt-5.5")
 
 
 class RepoJob(BaseModel):
@@ -22,6 +28,19 @@ class RepoJob(BaseModel):
     treeSummary: dict[str, Any]
     focus: str | None = Field(default=None, max_length=1200)
     context: str = Field(min_length=20, max_length=80000)
+
+
+class MarketGapJob(BaseModel):
+    job: str
+    version: int = 1
+    projectName: str = Field(min_length=2, max_length=160)
+    idea: str = Field(min_length=10, max_length=8000)
+    customers: str = Field(min_length=2, max_length=4000)
+    problem: str = Field(min_length=2, max_length=4000)
+    market: str = Field(default="Global", max_length=1000)
+    goal: str = Field(default="Find the strongest commercially testable market gap", max_length=2000)
+    keywords: list[str] = Field(default_factory=list, max_length=30)
+    context: str | None = Field(default=None, max_length=12000)
 
 
 def check_auth(authorization: str | None) -> None:
@@ -36,6 +55,8 @@ async def health(authorization: str | None = Header(default=None)) -> dict[str, 
         "ok": True,
         "service": "mansa-repo-intelligence-worker",
         "abacus_api_key": bool(ABACUS_API_KEY),
+        "market_gap": True,
+        "research_model": RESEARCH_MODEL,
     }
 
 
@@ -108,3 +129,178 @@ Clearly label uncertainty when the supplied context is insufficient."""
         "runId": payload.get("id"),
         "report": content[:120000],
     }
+
+
+def _extract_response_text(payload: dict[str, Any]) -> str:
+    direct = payload.get("output_text")
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
+
+    chunks: list[str] = []
+    output = payload.get("output")
+    if isinstance(output, list):
+        for item in output:
+            if not isinstance(item, dict):
+                continue
+            content = item.get("content")
+            if not isinstance(content, list):
+                continue
+            for part in content:
+                if not isinstance(part, dict):
+                    continue
+                text = part.get("text")
+                if isinstance(text, str) and text.strip():
+                    chunks.append(text.strip())
+    return "\n\n".join(chunks).strip()
+
+
+def _market_prompt(job: MarketGapJob) -> str:
+    today = date.today().isoformat()
+    keywords = ", ".join(job.keywords[:30]) if job.keywords else "derive the strongest search terms yourself"
+    return f"""Research and validate this business/project idea using CURRENT public web evidence as of {today}.
+
+PROJECT: {job.projectName}
+IDEA:
+{job.idea}
+
+TARGET CUSTOMERS:
+{job.customers}
+
+PROBLEM:
+{job.problem}
+
+TARGET MARKET:
+{job.market}
+
+OWNER GOAL:
+{job.goal}
+
+SEARCH KEYWORDS:
+{keywords}
+
+ADDITIONAL CONTEXT:
+{job.context or "None"}
+
+You are the Market Gap Intelligence unit inside Mansa Musa AI.
+
+Use live web search aggressively. Search official company sites, credible industry sources, app/store listings, YouTube channels and videos, social profiles, review/community discussions, pricing pages and news.
+
+Return a substantial Markdown report with these sections:
+# Executive Summary
+# Who Would Actually Pay
+# Competitor Landscape
+# Business Scale Evidence
+# YouTube & Social Visibility
+# Customer Pain & Complaint Mining
+# Market Gaps
+# Positioning Opportunities
+# What To Build First
+# Validation Tests
+# Risks & Disconfirming Evidence
+# Sources
+
+Evidence standard:
+- Label material evidence as VERIFIED FACT, COMPANY CLAIM, THIRD-PARTY ESTIMATE, PROXY, or HYPOTHESIS.
+- Prefer primary sources for prices, features, channel ownership and company claims.
+- Do not fabricate figures or URLs.
+- Do not call a company the biggest or say it does the most business unless reliable evidence supports that claim.
+- Treat funding, followers, views, web traffic and app ranking as proxies, not revenue.
+- For YouTube/social figures, identify platform and observation date when supported by the source.
+- Separate evidence-backed gaps from weakly served needs and speculative opportunities.
+- If current evidence is unavailable, say so.
+"""
+
+
+async def _run_live_market_research(job: MarketGapJob) -> tuple[str, str | None]:
+    async with httpx.AsyncClient(timeout=180) as client:
+        response = await client.post(
+            RESPONSES_URL,
+            headers={
+                "Authorization": "Bearer " + ABACUS_API_KEY,
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": RESEARCH_MODEL,
+                "input": _market_prompt(job),
+                "tools": [{"type": "web_search"}],
+                "store": False,
+            },
+        )
+
+    if response.status_code >= 400:
+        raise RuntimeError("Responses API failed: " + str(response.status_code) + " " + response.text[:500])
+
+    payload = response.json()
+    report = _extract_response_text(payload)
+    if len(report) < 40:
+        raise RuntimeError("Responses API returned an empty research report")
+
+    run_id = payload.get("id")
+    return report[:120000], run_id if isinstance(run_id, str) else None
+
+
+async def _run_market_fallback(job: MarketGapJob) -> tuple[str, str | None]:
+    system = """You are Mansa Musa AI Market Gap Intelligence in offline fallback mode.
+You do not have live web-search evidence in this request.
+Do not state current revenue, rankings, prices, social counts or competitor leadership as verified.
+Produce a strategy report and clearly mark current-market statements that still need live verification."""
+
+    async with httpx.AsyncClient(timeout=120) as client:
+        response = await client.post(
+            ROUTELLM_URL,
+            headers={
+                "Authorization": "Bearer " + ABACUS_API_KEY,
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "route-llm",
+                "temperature": 0.2,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": _market_prompt(job)},
+                ],
+            },
+        )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail="Abacus fallback analysis failed")
+
+    payload = response.json()
+    content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
+    if not isinstance(content, str) or len(content.strip()) < 40:
+        raise HTTPException(status_code=502, detail="Abacus fallback returned an empty report")
+
+    run_id = payload.get("id")
+    return content[:120000], run_id if isinstance(run_id, str) else None
+
+
+@app.post("/market-gap")
+async def market_gap(
+    job: MarketGapJob,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    check_auth(authorization)
+
+    if job.job != "mansa-market-gap":
+        raise HTTPException(status_code=400, detail="Unsupported job")
+    if not ABACUS_API_KEY:
+        raise HTTPException(status_code=503, detail="ABACUS_API_KEY is not available")
+
+    try:
+        report, run_id = await _run_live_market_research(job)
+        return {
+            "runId": run_id,
+            "report": report,
+            "liveSearch": True,
+            "source": "abacus-responses-web-search",
+        }
+    except Exception as live_error:
+        print("[market-gap] live research failed", repr(live_error))
+        report, run_id = await _run_market_fallback(job)
+        return {
+            "runId": run_id,
+            "report": report,
+            "liveSearch": False,
+            "source": "abacus-routellm-fallback",
+            "warning": "Live web search was unavailable; current-market facts require verification.",
+        }
