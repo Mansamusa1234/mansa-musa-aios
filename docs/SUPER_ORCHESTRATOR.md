@@ -64,3 +64,16 @@ Native connector slots now include:
 - Existing internal analytics, GOV.UK, RSS, crypto and other repository connectors
 
 The Shopify, Meta and Figma adapters are read-only. They remain disabled until their server-side credentials are configured. External writes still flow through the Command Centre approval boundary.
+
+
+## Reusable skills
+
+The UI includes reusable workflow presets that force the specialist lanes required for a class of work while still allowing the owner to edit the goal and context:
+
+- Full Business Audit
+- Growth & Creative Lab
+- Production Readiness
+- Evidence Deep Dive
+- Automation Designer
+
+Skills are code-defined operating procedures, not separate AI personalities. They shape decomposition and routing while preserving the same security, connector and approval boundaries.
