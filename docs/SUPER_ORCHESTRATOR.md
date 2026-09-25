@@ -50,3 +50,17 @@ Model IDs are intentionally configured through environment variables rather than
 - The initial UI/API is admin-only to control cost and operational risk.
 - Each engine can fail independently; the router falls through to the next configured engine.
 - The deterministic planner means the system can still explain its intended work even if every AI provider is temporarily unavailable.
+
+
+## Live data fabric
+
+The orchestrator can enrich a run with configured read-only connector data before specialist jobs start. It currently recognises relevant goals and selectively pulls from the existing connector registry rather than hitting every service on every run.
+
+Native connector slots now include:
+
+- Shopify Admin GraphQL — store and recent product snapshot
+- Meta Marketing API — recent campaign-level performance snapshot
+- Figma REST API — brand/design file structure
+- Existing internal analytics, GOV.UK, RSS, crypto and other repository connectors
+
+The Shopify, Meta and Figma adapters are read-only. They remain disabled until their server-side credentials are configured. External writes still flow through the Command Centre approval boundary.
