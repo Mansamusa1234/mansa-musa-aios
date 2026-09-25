@@ -10,6 +10,7 @@ export const maxDuration = 300;
 
 const bodySchema = z.object({
   goal: z.string().trim().min(5).max(4000),
+  skillId: z.string().trim().max(80).optional(),
   context: z.string().max(15000).optional().default(""),
   useSupercomputer: z.boolean().optional().default(true),
   queueActions: z.boolean().optional().default(true),
