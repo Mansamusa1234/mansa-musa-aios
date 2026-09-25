@@ -4,6 +4,7 @@ import { runAbacusTask } from "./abacus";
 import { runAiGatewayTask } from "./aiGateway";
 import { runLocalModelTask } from "./localModel";
 import { collectLiveContext } from "./context";
+import { getOrchestratorSkill } from "./skills";
 import type {
   EngineResult,
   OrchestratorLane,
@@ -164,11 +165,12 @@ export async function runSuperOrchestrator(
   input: OrchestratorRunInput,
 ): Promise<OrchestratorRunResult> {
   const startedAt = new Date().toISOString();
+  const skill = getOrchestratorSkill(input.skillId);
   const ownerContext = (input.context || "").slice(0, 15_000);
   const useSupercomputer = input.useSupercomputer !== false;
   const live = await collectLiveContext(input.goal, ownerContext);
   const context = [ownerContext, live.context].filter(Boolean).join("\n\n").slice(0, 30_000);
-  const plan = planGoal(input.goal, context);
+  const plan = planGoal(input.goal, context, skill?.lanes ?? []);
 
   const raw = await Promise.all(
     plan.map(async (task) => {
