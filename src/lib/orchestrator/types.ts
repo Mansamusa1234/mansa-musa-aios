@@ -59,5 +59,7 @@ export interface OrchestratorRunResult {
     gatewayUsed: boolean;
     modelHubUsed: boolean;
     parallelTasks: number;
+    liveConnectorsUsed: string[];
+    connectorFailures: Array<{ key: string; error: string }>;
   };
 }
