@@ -175,8 +175,9 @@ export const CONNECTORS: Connector[] = [
           nodes { id title status updatedAt }
         }
       }`;
+      const hostname = domain.trim().replace("https://", "").replace("http://", "").split("/")[0];
       const response = await fetch(
-        `https://${domain.replace(/^https?:\\/\\//, "").replace(/\\/$/, "")}/admin/api/${version}/graphql.json`,
+        `https://${hostname}/admin/api/${version}/graphql.json`,
         {
           method: "POST",
           headers: {
