@@ -1,3 +1,4 @@
+import { CONNECTORS } from "@/lib/connectors";
 import { MODEL_CATALOG } from "@/lib/modelRouter";
 import { abacusConfigured } from "./abacus";
 import { aiGatewayConfigured } from "./aiGateway";
@@ -19,7 +20,24 @@ export function orchestratorStatus() {
     ),
   );
 
+  const liveDataConnectors = CONNECTORS.map((connector) => {
+    let configured = false;
+    try {
+      configured = connector.isConfigured();
+    } catch {
+      configured = false;
+    }
+    return {
+      key: connector.key,
+      name: connector.name,
+      category: connector.category,
+      configured,
+      description: connector.description,
+    };
+  });
+
   return {
+    liveDataConnectors,
     abacus: { configured: abacusConfigured() },
     aiGateway: {
       configured: aiGatewayConfigured(),
