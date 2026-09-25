@@ -2,6 +2,7 @@ import { CONNECTORS } from "@/lib/connectors";
 import { MODEL_CATALOG } from "@/lib/modelRouter";
 import { abacusConfigured } from "./abacus";
 import { aiGatewayConfigured } from "./aiGateway";
+import { ORCHESTRATOR_SKILLS } from "./skills";
 
 function has(name: string) {
   return Boolean(process.env[name]);
@@ -37,6 +38,14 @@ export function orchestratorStatus() {
   });
 
   return {
+    skills: ORCHESTRATOR_SKILLS.map(({ id, name, description, goalTemplate, contextHint, preferSupercomputer }) => ({
+      id,
+      name,
+      description,
+      goalTemplate,
+      contextHint,
+      preferSupercomputer,
+    })),
     liveDataConnectors,
     abacus: { configured: abacusConfigured() },
     aiGateway: {
