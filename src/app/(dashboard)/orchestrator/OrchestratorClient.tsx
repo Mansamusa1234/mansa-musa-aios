@@ -8,6 +8,7 @@ type Status = {
   aiGateway: { configured: boolean; modelRoutingConfigured: boolean };
   modelHub: { configured: boolean; providers: string[] };
   integrations: Array<{ id: string; label: string; configured: boolean }>;
+  skills: Array<{ id: string; name: string; description: string; goalTemplate: string; contextHint: string; preferSupercomputer: boolean }>;
   liveDataConnectors: Array<{ key: string; name: string; category: string; configured: boolean; description: string }>;
   pendingApprovals: number;
 };
@@ -52,6 +53,7 @@ export default function OrchestratorClient() {
   const [goal, setGoal] = useState(
     "Audit the business stack, find the highest-leverage growth and automation opportunities, identify risks, and produce approval-ready actions.",
   );
+  const [skillId, setSkillId] = useState("");
   const [context, setContext] = useState("");
   const [useSupercomputer, setUseSupercomputer] = useState(true);
   const [queueActions, setQueueActions] = useState(true);
@@ -84,6 +86,7 @@ export default function OrchestratorClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           goal,
+          skillId: skillId || undefined,
           context,
           useSupercomputer,
           queueActions,
@@ -137,6 +140,36 @@ export default function OrchestratorClient() {
 
       <section className="grid gap-6 lg:grid-cols-[1.3fr_.7fr]">
         <article className="rounded-2xl border border-white/8 bg-[#0d0d1d] p-6">
+          <div className="mb-5">
+            <div className="text-xs font-bold uppercase tracking-wider text-gray-500">Reusable skills</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {status?.skills.map((skill) => (
+                <button
+                  key={skill.id}
+                  type="button"
+                  onClick={() => {
+                    setSkillId(skill.id);
+                    setGoal(skill.goalTemplate);
+                    setUseSupercomputer(skill.preferSupercomputer);
+                  }}
+                  title={skill.description}
+                  className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                    skillId === skill.id
+                      ? "border-brand-500/50 bg-brand-500/15 text-brand-200"
+                      : "border-white/8 bg-black/20 text-gray-400 hover:border-white/15 hover:text-gray-200"
+                  }`}
+                >
+                  {skill.name}
+                </button>
+              ))}
+            </div>
+            {skillId ? (
+              <p className="mt-2 text-xs text-gray-500">
+                {status?.skills.find((skill) => skill.id === skillId)?.contextHint}
+              </p>
+            ) : null}
+          </div>
+
           <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Master goal</label>
           <textarea
             value={goal}
