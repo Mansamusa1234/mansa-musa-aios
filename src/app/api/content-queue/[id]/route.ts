@@ -42,6 +42,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   if (action === "approve") {
+    // Super Orchestrator actions are approval-staged, not auto-executed.
+    // A connector-specific executor may later consume APPROVED items.
+    if (item.type === "orchestrator_action") {
+      await db.contentQueue.update({
+        where: { id },
+        data: {
+          status: "APPROVED",
+          approvedAt: new Date(),
+          ...(content ? { content } : {}),
+        },
+      });
+      return NextResponse.json({ ok: true, status: "APPROVED" });
+    }
+
     await publishContent({ ...item, content: content ?? item.content });
     await db.contentQueue.update({ where: { id }, data: { status: "SENT", approvedAt: new Date(), sentAt: new Date(), ...(content ? { content } : {}) } });
     return NextResponse.json({ ok: true, status: "SENT" });
