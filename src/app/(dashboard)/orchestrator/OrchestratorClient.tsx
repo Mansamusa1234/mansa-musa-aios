@@ -8,6 +8,7 @@ type Status = {
   aiGateway: { configured: boolean; modelRoutingConfigured: boolean };
   modelHub: { configured: boolean; providers: string[] };
   integrations: Array<{ id: string; label: string; configured: boolean }>;
+  liveDataConnectors: Array<{ key: string; name: string; category: string; configured: boolean; description: string }>;
   pendingApprovals: number;
 };
 
@@ -24,6 +25,8 @@ type RunResponse = {
       gatewayUsed: boolean;
       modelHubUsed: boolean;
       parallelTasks: number;
+      liveConnectorsUsed: string[];
+      connectorFailures: Array<{ key: string; error: string }>;
     };
     tasks: Array<{
       id: string;
@@ -183,6 +186,19 @@ export default function OrchestratorClient() {
                 <span className={item.configured ? "text-emerald-300" : "text-gray-600"}>{item.configured ? "Configured" : "Not configured"}</span>
               </div>
             )) ?? <p className="text-sm text-gray-500">Loading integration status…</p>}
+          </div>
+          <div className="mt-6 border-t border-white/8 pt-5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Live data fabric</h3>
+            <div className="mt-3 space-y-2">
+              {status?.liveDataConnectors.map((connector) => (
+                <div key={connector.key} className="flex items-center justify-between gap-3 text-xs">
+                  <span className="truncate text-gray-400">{connector.name}</span>
+                  <span className={connector.configured ? "text-emerald-300" : "text-gray-600"}>
+                    {connector.configured ? "Ready" : "Needs connection"}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
           <Link href="/command-centre" className="mt-5 inline-block text-sm font-semibold text-brand-300 hover:text-brand-200">
             Open approval queue →
