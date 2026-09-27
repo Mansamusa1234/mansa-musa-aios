@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canUseBusinessResearch } from "@/lib/researchAccess";
 
 const input = z.object({
   title: z.string().trim().min(3).max(160),
@@ -11,6 +12,9 @@ const input = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await canUseBusinessResearch(session.user.id, session.user.role)) {
+    return NextResponse.json({ error: "Professional or Enterprise plan required" }, { status: 403 });
+  }
   try {
     const investigations = await db.investigation.findMany({
       where: { userId: session.user.id },
@@ -27,6 +31,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await canUseBusinessResearch(session.user.id, session.user.role)) {
+    return NextResponse.json({ error: "Professional or Enterprise plan required" }, { status: 403 });
+  }
   const parsed = input.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Enter a title (3–160 characters) and an optional description." }, { status: 400 });
   try {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canUseBusinessResearch } from "@/lib/researchAccess";
 
 const action = z.discriminatedUnion("action", [
   z.object({ action: z.literal("claim"), statement: z.string().trim().min(8).max(4000) }),
@@ -35,6 +36,9 @@ async function ownedInvestigation(userId: string, id: string) {
 export async function GET(_req: Request, context: Context) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await canUseBusinessResearch(session.user.id, session.user.role)) {
+    return NextResponse.json({ error: "Professional or Enterprise plan required" }, { status: 403 });
+  }
   const { id } = await context.params;
   try {
     const investigation = await db.investigation.findFirst({
@@ -55,6 +59,9 @@ export async function GET(_req: Request, context: Context) {
 export async function POST(req: Request, context: Context) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await canUseBusinessResearch(session.user.id, session.user.role)) {
+    return NextResponse.json({ error: "Professional or Enterprise plan required" }, { status: 403 });
+  }
   const { id } = await context.params;
   const parsed = action.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });

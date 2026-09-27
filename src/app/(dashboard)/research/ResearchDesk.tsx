@@ -25,7 +25,7 @@ async function request(url: string, body?: object) {
   return result;
 }
 
-export default function ResearchDesk({ isAdmin }: { isAdmin: boolean }) {
+export default function ResearchDesk() {
   const [cases, setCases] = useState<Summary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [active, setActive] = useState<Investigation | null>(null);
@@ -83,10 +83,10 @@ export default function ResearchDesk({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="space-y-6 pb-12">
       <header>
-        <p className="text-xs font-bold uppercase tracking-widest text-brand-400">· Intelligence · Research Desk ·</p>
-        <h1 className="mt-1 text-3xl font-extrabold text-white">Follow the evidence</h1>
+        <p className="text-xs font-bold uppercase tracking-widest text-brand-400">· Intelligence · Professional & Enterprise ·</p>
+        <h1 className="mt-1 text-3xl font-extrabold text-white">Business Research Desk</h1>
         <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-400">
-          Keep claims, original records, opposing evidence and your reasoning together. Statuses reflect a human review of linked sources; adding a link alone does not verify its contents.
+          Build auditable due-diligence files for suppliers, competitors, contracts, compliance and investments. Keep each business claim, source, counter-evidence and decision trail together.
         </p>
       </header>
       {error && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</div>}
@@ -95,14 +95,10 @@ export default function ResearchDesk({ isAdmin }: { isAdmin: boolean }) {
         <aside className="space-y-4">
           <form onSubmit={createCase} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
             <h2 className="font-bold text-white">New investigation</h2>
-            <input aria-label="Investigation title" className={field} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Birth registration claims" required minLength={3} maxLength={160} />
-            <textarea aria-label="Investigation scope" className={field} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Question, jurisdiction, scope" rows={3} maxLength={4000} />
+            <input aria-label="Investigation title" className={field} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Supplier due diligence" required minLength={3} maxLength={160} />
+            <textarea aria-label="Investigation scope" className={field} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Business question, market and decision scope" rows={3} maxLength={4000} />
             <button className={button} disabled={busy}>Create investigation</button>
           </form>
-          {isAdmin && <button onClick={async () => { const result = await mutate("/api/investigations/starter", {}); if (result) setActiveId(result.investigation.id); }} disabled={busy} className="w-full rounded-xl border border-brand-500/40 bg-brand-500/10 p-3 text-left text-sm font-semibold text-brand-200 hover:bg-brand-500/20 disabled:opacity-50">
-            Open the research starter →
-            <span className="mt-1 block text-xs font-normal text-gray-400">Nine claims from your discussion, with original source links and no preset verdicts.</span>
-          </button>}
           <nav aria-label="Investigations" className="space-y-2">
             {cases.length === 0 && <p className="text-sm text-gray-500">No investigations saved yet.</p>}
             {cases.map((item) => (
