@@ -35,8 +35,12 @@ const entries = [
     source: { title: "US DOJ Epstein Library", url: "https://www.justice.gov/epstein", publisher: "US Department of Justice", sourceType: "PRIMARY", notes: "Check document context and redaction explanations. Being named in a file does not establish wrongdoing." }, stance: "SUPPORTS",
   },
   {
-    statement: "Some commercial data centres operate underground; the claim of an OpenAI facility exactly 40 metres underground needs separate evidence.",
-    source: { title: "Lefdal Mine: Our Facility", url: "https://www.lefdalmine.com/data-center/our-facility", publisher: "Lefdal Mine Data Centers", sourceType: "PRIMARY", notes: "Operator description of its own underground site; does not establish any OpenAI tenancy." }, stance: "CONTEXT",
+    statement: "Lefdal Mine Data Centers operates a commercial computing facility inside a former mine in Norway.",
+    source: { title: "Lefdal Mine: Our Facility", url: "https://www.lefdalmine.com/data-center/our-facility", publisher: "Lefdal Mine Data Centers", sourceType: "PRIMARY", notes: "Operator description of its own underground site; does not establish any OpenAI tenancy." }, stance: "SUPPORTS",
+  },
+  {
+    statement: "An OpenAI or Stargate data centre is located exactly 40 metres underground.",
+    source: { title: "OpenAI: Five new Stargate sites", url: "https://openai.com/index/five-new-stargate-sites/", publisher: "OpenAI", sourceType: "PRIMARY", notes: "Public site announcement. Its silence about an underground facility is not proof that no such facility exists." }, stance: "CONTEXT",
   },
 ];
 

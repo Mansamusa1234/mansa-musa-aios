@@ -101,7 +101,7 @@ export default function ResearchDesk() {
           </form>
           <button onClick={async () => { const result = await mutate("/api/investigations/starter", {}); if (result) setActiveId(result.investigation.id); }} disabled={busy} className="w-full rounded-xl border border-brand-500/40 bg-brand-500/10 p-3 text-left text-sm font-semibold text-brand-200 hover:bg-brand-500/20 disabled:opacity-50">
             Open the research starter →
-            <span className="mt-1 block text-xs font-normal text-gray-400">Eight claims from our discussion, with original source links and no preset verdicts.</span>
+            <span className="mt-1 block text-xs font-normal text-gray-400">Nine claims from our discussion, with original source links and no preset verdicts.</span>
           </button>
           <nav aria-label="Investigations" className="space-y-2">
             {cases.length === 0 && <p className="text-sm text-gray-500">No investigations saved yet.</p>}
