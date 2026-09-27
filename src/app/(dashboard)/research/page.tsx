@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { auth } from "@/lib/auth";
 import ResearchDesk from "./ResearchDesk";
 
 export const metadata: Metadata = {
@@ -6,6 +7,7 @@ export const metadata: Metadata = {
   description: "Investigate claims with linked sources, competing evidence and recorded reviews.",
 };
 
-export default function ResearchPage() {
-  return <ResearchDesk />;
+export default async function ResearchPage() {
+  const session = await auth();
+  return <ResearchDesk isAdmin={session?.user?.role === "ADMIN"} />;
 }

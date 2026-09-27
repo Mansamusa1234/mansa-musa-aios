@@ -47,6 +47,7 @@ const entries = [
 export async function POST() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
     const existing = await db.investigation.findFirst({ where: { userId: session.user.id, title }, select: { id: true } });
     if (existing) return NextResponse.json({ investigation: existing, alreadyExists: true });
