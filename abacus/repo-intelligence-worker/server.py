@@ -108,3 +108,79 @@ Clearly label uncertainty when the supplied context is insufficient."""
         "runId": payload.get("id"),
         "report": content[:120000],
     }
+
+
+class SuperTask(BaseModel):
+    job: str
+    version: int = 1
+    taskId: str = Field(min_length=1, max_length=120)
+    lane: str = Field(min_length=1, max_length=80)
+    title: str = Field(min_length=1, max_length=240)
+    objective: str = Field(min_length=1, max_length=4000)
+    goal: str = Field(min_length=5, max_length=8000)
+    context: str = Field(default="", max_length=80000)
+
+
+@app.post("/task")
+async def super_task(
+    job: SuperTask,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
+    check_auth(authorization)
+
+    if job.job != "mansa-super-task":
+        raise HTTPException(status_code=400, detail="Unsupported job")
+    if not ABACUS_API_KEY:
+        raise HTTPException(status_code=503, detail="ABACUS_API_KEY is not available")
+
+    system = """You are an Abacus Supercomputer specialist worker inside Mansa Musa AI.
+Complete only the assigned specialist task. Use the supplied goal, objective and context.
+Be evidence-aware: distinguish facts, inference and unknowns.
+Never claim access to systems or data that were not supplied.
+Never request, expose or reproduce credentials, tokens, passwords or private keys.
+For consequential external actions, recommend a draft and approval gate; do not claim execution.
+Return concise but substantial Markdown for the synthesis judge."""
+
+    user_content = "\n".join(
+        [
+            "Task ID: " + job.taskId,
+            "Lane: " + job.lane,
+            "Title: " + job.title,
+            "Master goal: " + job.goal,
+            "Objective: " + job.objective,
+            "",
+            "Context:",
+            job.context or "No additional context supplied.",
+        ]
+    )
+
+    async with httpx.AsyncClient(timeout=110) as client:
+        response = await client.post(
+            ROUTELLM_URL,
+            headers={
+                "Authorization": "Bearer " + ABACUS_API_KEY,
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "route-llm",
+                "temperature": 0.2,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user_content},
+                ],
+            },
+        )
+
+    if response.status_code >= 400:
+        raise HTTPException(status_code=502, detail="RouteLLM failed: " + str(response.status_code))
+
+    payload = response.json()
+    content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
+    if not isinstance(content, str) or len(content.strip()) < 20:
+        raise HTTPException(status_code=502, detail="RouteLLM returned an empty task result")
+
+    return {
+        "runId": payload.get("id"),
+        "taskId": job.taskId,
+        "result": content[:120000],
+    }
