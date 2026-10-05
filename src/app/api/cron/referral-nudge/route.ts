@@ -13,7 +13,6 @@ export const GET = withCron(async () => {
       subscription: { status: "ACTIVE" },
       createdAt: { lte: cutoff },
       referralNudgeSentAt: null,
-      email: { not: null },
     } as never,
     include: { subscription: true },
     take: 50,
