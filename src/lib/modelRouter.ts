@@ -172,7 +172,7 @@ export const MODEL_CATALOG: ModelDef[] = [
     contextWindow: 1048576,
     costPer1kInMicro: 100,
     costPer1kOutMicro: 400,
-    available: () => !!process.env.GOOGLE_AI_API_KEY,
+    available: () => !!(process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY),
   },
   {
     provider: "gemini",
@@ -184,7 +184,7 @@ export const MODEL_CATALOG: ModelDef[] = [
     badge: "Pro",
     costPer1kInMicro: 1250,
     costPer1kOutMicro: 10000,
-    available: () => !!process.env.GOOGLE_AI_API_KEY,
+    available: () => !!(process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY),
   },
   // ── OpenRouter ──────────────────────────────────────────
   {
@@ -433,7 +433,7 @@ function routeGemini(model: ModelDef, messages: ChatMessage[], system: string): 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
+        const genAI = new GoogleGenerativeAI((process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY)!);
         const gemini = genAI.getGenerativeModel({ model: model.modelId, systemInstruction: system });
         const history = messages.slice(0, -1).map((m) => ({
           role: m.role === "assistant" ? "model" : "user",
