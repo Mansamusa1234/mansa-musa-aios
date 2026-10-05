@@ -34,7 +34,7 @@ const ENV_MANIFEST: EnvVar[] = [
   { key: "ANTHROPIC_API_KEY",    required: false, description: "Anthropic Claude API key",               group: "AI" },
   { key: "OPENAI_API_KEY",       required: false, description: "OpenAI API key for GPT models",          group: "AI" },
   { key: "XAI_API_KEY",          required: false, description: "xAI Grok API key",                       group: "AI" },
-  { key: "GOOGLE_AI_API_KEY",    required: false, description: "Google Gemini API key",                  group: "AI" },
+  { key: "GEMINI_API_KEY",       required: false, description: "Google Gemini API key",                  group: "AI" },
   { key: "MISTRAL_API_KEY",      required: false, description: "Mistral API key",                        group: "AI" },
   { key: "OPENROUTER_API_KEY",   required: false, description: "OpenRouter API key",                     group: "AI" },
 
