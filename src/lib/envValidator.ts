@@ -79,7 +79,8 @@ export function checkEnv(): EnvCheckResult {
   const present: string[] = [];
 
   for (const v of ENV_MANIFEST) {
-    const val = process.env[v.key];
+    const aliases: Record<string, string> = { UPSTASH_REDIS_REST_URL: "KV_REST_API_URL", UPSTASH_REDIS_REST_TOKEN: "KV_REST_API_TOKEN" };
+    const val = process.env[v.key] || process.env[aliases[v.key]];
     if (val && val.trim() !== "") {
       present.push(v.key);
     } else if (v.required) {

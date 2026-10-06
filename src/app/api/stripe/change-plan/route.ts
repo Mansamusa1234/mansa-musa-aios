@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       where: { userId: session.user.id },
       data: {
         stripePriceId: updated.items.data[0].price.id,
-        status: "ACTIVE",
+        status: updated.status === "active" ? "ACTIVE" : updated.status === "trialing" ? "TRIALING" : updated.status === "canceled" ? "CANCELED" : updated.status === "incomplete" || updated.status === "incomplete_expired" ? "INACTIVE" : "PAST_DUE",
         currentPeriodStart: new Date(updated.current_period_start * 1000),
         currentPeriodEnd: new Date(updated.current_period_end * 1000),
         cancelAtPeriodEnd: updated.cancel_at_period_end,

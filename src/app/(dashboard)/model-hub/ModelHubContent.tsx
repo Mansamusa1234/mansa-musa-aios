@@ -21,7 +21,7 @@ interface CatalogItem {
 }
 
 interface Preference { mode: string; provider: string; modelId: string }
-interface Props { catalog: CatalogItem[]; plan: string; preference: Preference }
+interface Props { catalog: CatalogItem[]; plan: string; preference: Preference; autoModelKey: string | null }
 
 const PROVIDER_META: Record<Provider, { name: string; color: string; bg: string; logo: string }> = {
   anthropic:   { name: "Anthropic",   color: "text-orange-400",  bg: "border-orange-500/25 bg-orange-500/5",  logo: "⚙" },
@@ -35,11 +35,12 @@ const PROVIDER_META: Record<Provider, { name: string; color: string; bg: string;
 const TABS = ["Model Selection", "Compare", "Routing Info"] as const;
 type Tab = typeof TABS[number];
 
-export default function ModelHubContent({ catalog, plan, preference: initPref }: Props) {
+export default function ModelHubContent({ catalog, plan, preference: initPref, autoModelKey }: Props) {
   const [tab, setTab] = useState<Tab>("Model Selection");
   const [pref, setPref] = useState<Preference>(initPref);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   const [filterProvider, setFilterProvider] = useState<Provider | "all">("all");
 
   /* Compare tab state */
@@ -55,31 +56,32 @@ export default function ModelHubContent({ catalog, plan, preference: initPref }:
 
   async function savePreference(next: Preference) {
     setSaving(true);
-    await fetch("/api/model-hub/preferences", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
-    });
-    setPref(next);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setError("");
+    try {
+      const response = await fetch("/api/model-hub/preferences", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Unable to save model preference");
+      setPref(next); setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to save model preference"); }
+    finally { setSaving(false); }
   }
 
   async function runCompare() {
     if (!comparePrompt.trim() || compareModels.length < 2) return;
-    setComparing(true);
-    setCompareResults([]);
-    setWinnerKey(null);
-    const res = await fetch("/api/model-hub/compare", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: comparePrompt, modelKeys: compareModels }),
-    });
-    const data = await res.json();
-    setCompareResults(data.results ?? []);
-    setWinnerKey(data.winnerKey ?? null);
-    setComparing(false);
+    setComparing(true); setCompareResults([]); setWinnerKey(null); setError("");
+    try {
+      const res = await fetch("/api/model-hub/compare", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: comparePrompt, modelKeys: compareModels }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Model comparison failed");
+      setCompareResults(data.results ?? []); setWinnerKey(data.winnerKey ?? null);
+    } catch (err) { setError(err instanceof Error ? err.message : "Model comparison failed"); }
+    finally { setComparing(false); }
   }
 
   function toggleCompare(key: string) {
@@ -90,7 +92,7 @@ export default function ModelHubContent({ catalog, plan, preference: initPref }:
 
   const selectedModel = catalog.find((m) => m.provider === pref.provider && m.modelId === pref.modelId);
   const activeModel = pref.mode === "auto"
-    ? catalog.find((m) => m.modelId === (plan === "enterprise" ? "claude-opus-4-8" : plan === "pro" ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001"))
+    ? catalog.find((m) => `${m.provider}:${m.modelId}` === autoModelKey)
     : selectedModel;
 
   return (
@@ -109,6 +111,7 @@ export default function ModelHubContent({ catalog, plan, preference: initPref }:
         )}
       </motion.div>
 
+      {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
       {/* Tabs */}
       <motion.div variants={fadeUp} className="flex gap-1 rounded-xl border border-white/8 bg-white/2 p-1 w-fit">
         {TABS.map((t) => (
@@ -131,7 +134,7 @@ export default function ModelHubContent({ catalog, plan, preference: initPref }:
                   { mode: "auto", label: "Auto", desc: "We pick the best model for your plan — always optimised" },
                   { mode: "manual", label: "Manual", desc: "You pick the exact model used for every conversation" },
                 ].map(({ mode, label, desc }) => (
-                  <button key={mode} onClick={() => savePreference({ ...pref, mode })}
+                  <button key={mode} disabled={saving} onClick={() => savePreference({ ...pref, mode })}
                     className={`text-left rounded-xl border p-4 transition-colors ${pref.mode === mode ? "border-brand-500/50 bg-brand-500/8" : "border-white/8 hover:border-white/16"}`}>
                     <p className={`font-semibold text-sm ${pref.mode === mode ? "text-brand-400" : "text-white"}`}>{label}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{desc}</p>

@@ -33,14 +33,22 @@ export function hasFeature(plan: Plan, feature: string): boolean {
   return PLAN_ORDER.indexOf(plan) >= PLAN_ORDER.indexOf(required);
 }
 
-export async function getActivePlan(userId: string): Promise<Plan> {
-  const subscription = await db.subscription.findUnique({ where: { userId } });
-  const active = subscription?.status === "ACTIVE" || subscription?.status === "TRIALING";
-  if (active && subscription?.stripePriceId) {
-    const priceId = subscription.stripePriceId;
-    if (ENTERPRISE_IDS.includes(priceId)) return "enterprise";
-    if (PRO_IDS.includes(priceId)) return "pro";
-    if (STARTER_IDS.includes(priceId)) return "starter";
+export function resolveSubscriptionPlan(subscription: { status: string; stripePriceId: string | null; trialEndsAt?: Date | null } | null): Plan {
+  if (!subscription) return "free";
+  if (subscription.status === "TRIALING") {
+    if (subscription.trialEndsAt && subscription.trialEndsAt.getTime() <= Date.now()) return "free";
+    // The card-free trial grants Professional access until its explicit expiry.
+    if (!subscription.stripePriceId && subscription.trialEndsAt) return "pro";
   }
+  if (subscription.status !== "ACTIVE" && subscription.status !== "TRIALING") return "free";
+  const priceId = subscription.stripePriceId;
+  if (!priceId) return "free";
+  if (ENTERPRISE_IDS.includes(priceId)) return "enterprise";
+  if (PRO_IDS.includes(priceId)) return "pro";
+  if (STARTER_IDS.includes(priceId)) return "starter";
   return "free";
+}
+
+export async function getActivePlan(userId: string): Promise<Plan> {
+  return resolveSubscriptionPlan(await db.subscription.findUnique({ where: { userId } }));
 }

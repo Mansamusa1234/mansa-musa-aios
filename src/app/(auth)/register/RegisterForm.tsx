@@ -5,7 +5,6 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import PasswordStrengthMeter from "@/components/ui/PasswordStrengthMeter";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface Props {
   showGithub: boolean;
@@ -105,6 +104,31 @@ function TrustBar() {
   );
 }
 
+function Field({ id, label, value, onChange, onBlur, touched: t, error: err, type = "text", autoComplete, inputName, placeholder, children }: {
+    id: string; label: string; value: string; onChange: (v: string) => void; onBlur: () => void;
+    touched: boolean; error: string; type?: string; autoComplete?: string; inputName?: string; placeholder?: string; children?: React.ReactNode;
+  }) {
+    return (
+      <div>
+        <label htmlFor={id} className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-300">
+          <span>{label}</span>
+          {t && !err && <Check />}
+        </label>
+        <div className="relative">
+          <input
+            id={id} name={inputName ?? id} type={type} autoComplete={autoComplete} value={value} placeholder={placeholder} required={id !== "register-last"}
+            onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
+            aria-invalid={t && !!err ? true : undefined}
+            aria-describedby={t && err ? `${id}-err` : undefined}
+            className={fieldCls(err, t)}
+          />
+          {children}
+        </div>
+        {t && err && <p id={`${id}-err`} role="alert" className="mt-1 text-xs text-red-400">{err}</p>}
+      </div>
+    );
+  }
+
 export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, showApple }: Props) {
   const router = useRouter();
 
@@ -119,7 +143,6 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
   const [loading, setLoading] = useState(false);
   const [loadingOAuth, setLoadingOAuth] = useState<string | null>(null);
   const [ref, setRef] = useState<string | null>(null);
-  const [passkeySupported, setPasskeySupported] = useState(false);
 
   const [touched, setTouched] = useState({ firstName: false, lastName: false, email: false, password: false, confirm: false });
   const [fe, setFe] = useState({ firstName: "", lastName: "", email: "", password: "", confirm: "" });
@@ -128,12 +151,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
   useEffect(() => {
     setRef(new URLSearchParams(window.location.search).get("ref"));
-    // Detect passkey support
-    if (typeof window !== "undefined" && window.PublicKeyCredential) {
-      window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-        .then(setPasskeySupported)
-        .catch(() => {});
-    }
+
   }, []);
 
   function revalidate(updates: Partial<typeof fe>) {
@@ -144,7 +162,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
     setTouched((t) => ({ ...t, [field]: true }));
     setFe({
       firstName: validateRequired(firstName, "First name"),
-      lastName: validateRequired(lastName, "Last name"),
+      lastName: "",
       email: validateEmail(email),
       password: validatePassword(password),
       confirm: validateConfirm(password, confirm),
@@ -153,33 +171,21 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
 
   async function handleOAuth(provider: string) {
     setLoadingOAuth(provider);
-    await signIn(provider, { callbackUrl: "/dashboard" });
-  }
-
-  async function handlePasskey() {
     try {
-      const challenge = new Uint8Array(32);
-      crypto.getRandomValues(challenge);
-      await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          userVerification: "required",
-          rpId: window.location.hostname,
-        },
-      });
-      // Passkey auth flow — redirect to dashboard on success
-      router.push("/dashboard");
+      await signIn(provider, { callbackUrl: "/dashboard" });
     } catch {
-      setError("Passkey sign-in failed. Please use email and password.");
+      setError("Could not start provider sign-in. Please try again.");
+      setLoadingOAuth(null);
     }
   }
+
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTouched({ firstName: true, lastName: true, email: true, password: true, confirm: true });
     const errs = {
       firstName: validateRequired(firstName, "First name"),
-      lastName: validateRequired(lastName, "Last name"),
+      lastName: "",
       email: validateEmail(email),
       password: validatePassword(password),
       confirm: validateConfirm(password, confirm),
@@ -198,7 +204,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: `${firstName.trim()} ${lastName.trim()}`,
+          name: [firstName.trim(), lastName.trim()].filter(Boolean).join(" "),
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email,
@@ -254,30 +260,6 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
     return `${b} text-gray-200 hover:bg-white/5 active:scale-[0.98]`;
   }
 
-  function Field({ id, label, value, onChange, onBlur, touched: t, error: err, type = "text", autoComplete, inputName, placeholder, children }: {
-    id: string; label: string; value: string; onChange: (v: string) => void; onBlur: () => void;
-    touched: boolean; error: string; type?: string; autoComplete?: string; inputName?: string; placeholder?: string; children?: React.ReactNode;
-  }) {
-    return (
-      <div>
-        <label htmlFor={id} className="mb-1.5 flex items-center justify-between text-sm font-medium text-gray-300">
-          <span>{label}</span>
-          {t && !err && <Check />}
-        </label>
-        <div className="relative">
-          <input
-            id={id} name={inputName ?? id} type={type} autoComplete={autoComplete} value={value} placeholder={placeholder} required
-            onChange={(e) => onChange(e.target.value)} onBlur={onBlur}
-            aria-invalid={t && !!err ? true : undefined}
-            aria-describedby={t && err ? `${id}-err` : undefined}
-            className={fieldCls(err, t)}
-          />
-          {children}
-        </div>
-        {t && err && <p id={`${id}-err`} role="alert" className="mt-1 text-xs text-red-400">{err}</p>}
-      </div>
-    );
-  }
 
   const EyeOff = () => (
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -332,25 +314,7 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
           </p>
 
           {/* Passkey / biometric */}
-          {passkeySupported && (
-            <>
-              <button
-                type="button"
-                onClick={handlePasskey}
-                className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 py-2.5 text-sm font-medium text-gray-200 hover:bg-white/5 active:scale-[0.98] transition-all mb-3"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
-                </svg>
-                Sign up with Passkey / Face ID / Touch ID
-              </button>
-              <div className="mb-4 flex items-center gap-4">
-                <div className="flex-1 border-t border-white/8" />
-                <span className="text-xs text-gray-500">or</span>
-                <div className="flex-1 border-t border-white/8" />
-              </div>
-            </>
-          )}
+
 
           {/* OAuth */}
           {hasOAuth && (
@@ -427,8 +391,8 @@ export default function RegisterForm({ showGithub, showGoogle, showMicrosoft, sh
                 onBlur={() => touchField("firstName")} touched={touched.firstName} error={fe.firstName}
               />
               <Field
-                id="register-last" label="Last name" inputName="family-name" value={lastName} autoComplete="family-name" placeholder="Smith"
-                onChange={(v) => { setLastName(v); if (touched.lastName) revalidate({ lastName: validateRequired(v, "Last name") }); }}
+                id="register-last" label="Last name (optional)" inputName="family-name" value={lastName} autoComplete="family-name" placeholder="Smith"
+                onChange={(v) => { setLastName(v); if (touched.lastName) revalidate({ lastName: "" }); }}
                 onBlur={() => touchField("lastName")} touched={touched.lastName} error={fe.lastName}
               />
             </div>

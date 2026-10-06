@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import { db } from "@/lib/db";
+import { getStripe } from "@/lib/stripe";
 import { anthropic } from "@/lib/anthropic";
 
 export interface ConnectorResult {
@@ -61,7 +62,10 @@ export const CONNECTORS: Connector[] = [
     description: "Real-time news headlines via a third-party news API.",
     isConfigured: () => !!process.env.NEWS_API_KEY,
     notConfiguredReason: "Needs a NEWS_API_KEY (e.g. from newsapi.org) — not yet provided.",
-    fetchSample: async () => ({ ok: false, summary: "Not configured — no NEWS_API_KEY set." }),
+    fetchSample: async () => {
+      const data = await fetchJson("https://newsapi.org/v2/top-headlines?language=en&pageSize=5", { headers: { "X-Api-Key": process.env.NEWS_API_KEY! } }) as { articles?: { title: string }[] };
+      return { ok: true, summary: `${data.articles?.length ?? 0} live headlines retrieved.`, data: data.articles?.map(article => article.title) };
+    },
   },
   {
     key: "financial-market-data",
@@ -90,9 +94,14 @@ export const CONNECTORS: Connector[] = [
     name: "Stripe Connector",
     category: "Finance",
     description: "Live billing/revenue data from your own Stripe account.",
-    isConfigured: () => false,
-    notConfiguredReason: "Stripe connector tests are temporarily disabled for deployment.",
-    fetchSample: async () => ({ ok: false, summary: "Stripe connector tests are temporarily disabled for deployment." }),
+    isConfigured: () => !!process.env.STRIPE_SECRET_KEY,
+    notConfiguredReason: "Set STRIPE_SECRET_KEY to connect billing.",
+    fetchSample: async () => {
+      const stripe = getStripe();
+      if (!stripe) return { ok: false, summary: "Stripe credentials are missing." };
+      await stripe.balance.retrieve({}, { timeout: 8000 });
+      return { ok: true, summary: "Stripe authentication verified with a read-only balance check." };
+    },
   },
   {
     key: "supabase-analytics",
@@ -125,7 +134,7 @@ export const CONNECTORS: Connector[] = [
     description: "Parses public RSS feeds (no key required).",
     isConfigured: () => true,
     fetchSample: async () => {
-      const res = await fetch("http://feeds.bbci.co.uk/news/business/rss.xml", { signal: AbortSignal.timeout(8000) });
+      const res = await fetch("https://feeds.bbci.co.uk/news/business/rss.xml", { signal: AbortSignal.timeout(8000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const xml = await res.text();
       const parsed = xmlParser.parse(xml);

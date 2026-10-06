@@ -193,15 +193,16 @@ export async function createHeyGenVideo(script: VideoScript, avatarId: string, v
   const apiKey = process.env.HEYGEN_API_KEY;
   if (!apiKey) return null;
 
-  const res = await fetch("https://api.heygen.com/v2/video/generate", {
+  const res = await fetch("https://api.heygen.com/v3/videos", {
     method: "POST",
     headers: { "X-Api-Key": apiKey, "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(30000),
     body: JSON.stringify({
-      video_inputs: [{
-        character: { type: "avatar", avatar_id: avatarId, avatar_style: "normal" },
-        voice: { type: "text", input_text: script.script, voice_id: voiceId },
-      }],
-      dimension: { width: 1080, height: 1920 },
+      type: "avatar",
+      avatar_id: avatarId,
+      voice_id: voiceId,
+      script: script.script,
+      aspect_ratio: "9:16",
       title: script.title,
     }),
   });
@@ -219,6 +220,7 @@ export async function getHeyGenVideoUrl(videoId: string): Promise<string | null>
 
   const res = await fetch(`https://api.heygen.com/v3/videos/${encodeURIComponent(videoId)}`, {
     headers: { "x-api-key": apiKey },
+    signal: AbortSignal.timeout(15000),
   });
 
   const data = await res.json();

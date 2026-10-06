@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PLANS, getLivePrices } from "@/lib/stripe";
 import BillingClient from "./BillingClient";
+import TrialButton from "./TrialButton";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
     };
   });
 
-  const isTrialing = subscription?.status === "TRIALING";
+  const isTrialing = subscription?.status === "TRIALING" && (!subscription.trialEndsAt || subscription.trialEndsAt.getTime() > Date.now());
   const trialEndsAt = subscription?.trialEndsAt ?? null;
   const trialUsed = subscription?.trialUsed ?? false;
   const cancelAtPeriodEnd = subscription?.cancelAtPeriodEnd ?? false;
@@ -54,7 +55,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
 
       {success === "true" && (
         <div className="mt-6 rounded-xl border border-green-500/30 bg-green-500/10 px-5 py-4">
-          <p className="text-sm font-semibold text-green-300">🎉 Payment successful — your plan is now active!</p>
+          <p className="text-sm font-semibold text-green-300">{subscription?.status === "ACTIVE" ? "Your paid plan is active." : "Checkout returned. Waiting for payment confirmation."}</p>
           <p className="text-xs text-gray-400 mt-0.5">It may take a moment to reflect. Refresh if needed.</p>
         </div>
       )}
@@ -88,14 +89,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
             <p className="text-sm font-semibold text-green-300">Start your 14-day free trial</p>
             <p className="text-xs text-gray-400 mt-0.5">Full Professional access. No credit card required.</p>
           </div>
-          <form action="/api/subscription/start-trial" method="POST">
-            <button
-              type="submit"
-              className="rounded-lg bg-green-600 px-4 py-2 text-xs font-semibold text-white hover:bg-green-700 transition-colors"
-            >
-              Start free trial
-            </button>
-          </form>
+          <TrialButton />
         </div>
       )}
 

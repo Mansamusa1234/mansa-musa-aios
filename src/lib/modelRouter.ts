@@ -165,8 +165,8 @@ export const MODEL_CATALOG: ModelDef[] = [
   // ── Google Gemini ─────────────────────────────────────
   {
     provider: "gemini",
-    modelId: "gemini-2.0-flash",
-    displayName: "Gemini 2.0 Flash",
+    modelId: "gemini-3.6-flash",
+    displayName: "Gemini 3.6 Flash",
     description: "Google's fast, multimodal model",
     planGate: "basic",
     contextWindow: 1048576,
@@ -289,7 +289,7 @@ export interface RouteResult {
 }
 
 const PLAN_ORDER = ["free", "basic", "pro", "enterprise"];
-const planRank = (p: string) => PLAN_ORDER.indexOf(p);
+export const planRank = (plan: string) => PLAN_ORDER.indexOf(plan === "starter" ? "basic" : plan === "professional" ? "pro" : plan);
 
 export function getAutoModel(plan: string): ModelDef {
   const candidates: Record<string, string> = {
@@ -299,7 +299,11 @@ export function getAutoModel(plan: string): ModelDef {
     free:       "claude-haiku-4-5-20251001",
   };
   const target = candidates[plan] ?? candidates.free;
-  return MODEL_CATALOG.find((m) => m.modelId === target)!;
+  const eligible = MODEL_CATALOG.filter(model => model.available() && planRank(plan) >= planRank(model.planGate));
+  const preferred = eligible.find(model => model.modelId === target);
+  const fallback = eligible.filter(model => model.provider === "anthropic").sort((a, b) => planRank(b.planGate) - planRank(a.planGate))[0] ?? eligible[0];
+  if (!preferred && !fallback) throw new Error("No configured AI model is available for this plan.");
+  return preferred ?? fallback;
 }
 
 export function resolveModel(opts: {
@@ -339,23 +343,30 @@ function routeAnthropic(model: ModelDef, messages: ChatMessage[], system: string
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
   const encoder = new TextEncoder();
   let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
+  let rejectFn: (error: unknown) => void;
   const onComplete = new Promise<{ inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }>(
-    (r) => { resolveFn = r; }
+    (resolve, reject) => { resolveFn = resolve; rejectFn = reject; }
   );
 
+  void onComplete.catch(() => {});
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      try {
       const s = await client.messages.stream({ model: model.modelId, max_tokens: 2048, system, messages });
       for await (const chunk of s) {
         if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
           controller.enqueue(encoder.encode(chunk.delta.text));
         }
       }
-      controller.close();
       const final = await s.finalMessage();
       const inp = final.usage.input_tokens;
       const out = final.usage.output_tokens;
+      controller.close();
       resolveFn!({ inputTokens: inp, outputTokens: out, costUsdMicro: Math.round(inp * model.costPer1kInMicro / 1000 + out * model.costPer1kOutMicro / 1000), model: model.modelId, provider: "anthropic" });
+      } catch (error) {
+        rejectFn!(error);
+        controller.error(error);
+      }
     },
   });
 
@@ -367,12 +378,15 @@ function routeOpenAI(model: ModelDef, messages: ChatMessage[], system: string): 
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
   const encoder = new TextEncoder();
   let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
+  let rejectFn: (error: unknown) => void;
   const onComplete = new Promise<{ inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }>(
-    (r) => { resolveFn = r; }
+    (resolve, reject) => { resolveFn = resolve; rejectFn = reject; }
   );
 
+  void onComplete.catch(() => {});
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      try {
       let inputTokens = 0, outputTokens = 0;
       const s = await client.chat.completions.create({
         model: model.modelId, stream: true, stream_options: { include_usage: true },
@@ -386,6 +400,10 @@ function routeOpenAI(model: ModelDef, messages: ChatMessage[], system: string): 
       }
       controller.close();
       resolveFn!({ inputTokens, outputTokens, costUsdMicro: Math.round(inputTokens * model.costPer1kInMicro / 1000 + outputTokens * model.costPer1kOutMicro / 1000), model: model.modelId, provider: "openai" });
+      } catch (error) {
+        rejectFn!(error);
+        controller.error(error);
+      }
     },
   });
 
@@ -397,12 +415,15 @@ function routeGrok(model: ModelDef, messages: ChatMessage[], system: string): Ro
   const client = new OpenAI({ apiKey: process.env.XAI_API_KEY!, baseURL: "https://api.x.ai/v1" });
   const encoder = new TextEncoder();
   let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
+  let rejectFn: (error: unknown) => void;
   const onComplete = new Promise<{ inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }>(
-    (r) => { resolveFn = r; }
+    (resolve, reject) => { resolveFn = resolve; rejectFn = reject; }
   );
 
+  void onComplete.catch(() => {});
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      try {
       let inputTokens = 0, outputTokens = 0;
       const s = await client.chat.completions.create({
         model: model.modelId, stream: true,
@@ -416,6 +437,10 @@ function routeGrok(model: ModelDef, messages: ChatMessage[], system: string): Ro
       }
       controller.close();
       resolveFn!({ inputTokens, outputTokens, costUsdMicro: Math.round(inputTokens * model.costPer1kInMicro / 1000 + outputTokens * model.costPer1kOutMicro / 1000), model: model.modelId, provider: "grok" });
+      } catch (error) {
+        rejectFn!(error);
+        controller.error(error);
+      }
     },
   });
 
@@ -426,10 +451,12 @@ function routeGrok(model: ModelDef, messages: ChatMessage[], system: string): Ro
 function routeGemini(model: ModelDef, messages: ChatMessage[], system: string): RouteResult {
   const encoder = new TextEncoder();
   let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
+  let rejectFn: (error: unknown) => void;
   const onComplete = new Promise<{ inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }>(
-    (r) => { resolveFn = r; }
+    (resolve, reject) => { resolveFn = resolve; rejectFn = reject; }
   );
 
+  void onComplete.catch(() => {});
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
@@ -453,9 +480,8 @@ function routeGemini(model: ModelDef, messages: ChatMessage[], system: string): 
         controller.close();
         resolveFn!({ inputTokens, outputTokens, costUsdMicro: Math.round(inputTokens * model.costPer1kInMicro / 1000 + outputTokens * model.costPer1kOutMicro / 1000), model: model.modelId, provider: "gemini" });
       } catch (err) {
-        controller.close();
-        resolveFn!({ inputTokens: 0, outputTokens: 0, costUsdMicro: 0, model: model.modelId, provider: "gemini" });
-        throw err;
+        rejectFn!(err);
+        controller.error(err);
       }
     },
   });
@@ -467,10 +493,12 @@ function routeGemini(model: ModelDef, messages: ChatMessage[], system: string): 
 function routeMistral(model: ModelDef, messages: ChatMessage[], system: string): RouteResult {
   const encoder = new TextEncoder();
   let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
+  let rejectFn: (error: unknown) => void;
   const onComplete = new Promise<{ inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }>(
-    (r) => { resolveFn = r; }
+    (resolve, reject) => { resolveFn = resolve; rejectFn = reject; }
   );
 
+  void onComplete.catch(() => {});
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
@@ -491,9 +519,8 @@ function routeMistral(model: ModelDef, messages: ChatMessage[], system: string):
         controller.close();
         resolveFn!({ inputTokens, outputTokens, costUsdMicro: Math.round(inputTokens * model.costPer1kInMicro / 1000 + outputTokens * model.costPer1kOutMicro / 1000), model: model.modelId, provider: "mistral" });
       } catch (err) {
-        controller.close();
-        resolveFn!({ inputTokens: 0, outputTokens: 0, costUsdMicro: 0, model: model.modelId, provider: "mistral" });
-        throw err;
+        rejectFn!(err);
+        controller.error(err);
       }
     },
   });
@@ -513,10 +540,12 @@ function routeOpenRouter(model: ModelDef, messages: ChatMessage[], system: strin
   });
   const encoder = new TextEncoder();
   let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
+  let rejectFn: (error: unknown) => void;
   const onComplete = new Promise<{ inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }>(
-    (r) => { resolveFn = r; }
+    (resolve, reject) => { resolveFn = resolve; rejectFn = reject; }
   );
 
+  void onComplete.catch(() => {});
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
@@ -534,9 +563,8 @@ function routeOpenRouter(model: ModelDef, messages: ChatMessage[], system: strin
         controller.close();
         resolveFn!({ inputTokens, outputTokens, costUsdMicro: Math.round(inputTokens * model.costPer1kInMicro / 1000 + outputTokens * model.costPer1kOutMicro / 1000), model: model.modelId, provider: "openrouter" });
       } catch (err) {
-        controller.close();
-        resolveFn!({ inputTokens: 0, outputTokens: 0, costUsdMicro: 0, model: model.modelId, provider: "openrouter" });
-        throw err;
+        rejectFn!(err);
+        controller.error(err);
       }
     },
   });

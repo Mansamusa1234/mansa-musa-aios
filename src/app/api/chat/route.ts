@@ -2,12 +2,14 @@ import { auth } from "@/lib/auth";
 import { SYSTEM_PROMPT, buildAgentSystemPrompt } from "@/lib/anthropic";
 import { db } from "@/lib/db";
 import { checkRateLimit, limiters } from "@/lib/ratelimit";
+import { resolveSubscriptionPlan } from "@/lib/subscription";
 import { PLANS } from "@/lib/stripe";
 import { AGENTS } from "@/data/agents";
 import { resolveModel, routeMessage } from "@/lib/modelRouter";
 import { sendEmail, usageLimitWarningEmailHtml } from "@/lib/email";
 import { NextResponse } from "next/server";
 import { after } from "next/server";
+import { z } from "zod";
 
 export async function POST(req: Request) {
   const t0 = Date.now();
@@ -19,10 +21,9 @@ export async function POST(req: Request) {
   const limited = await checkRateLimit(limiters.chat, session.user.id);
   if (limited) return limited;
 
-  const { conversationId, message } = await req.json();
-  if (!conversationId || !message) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-  }
+  const parsed = z.object({ conversationId: z.string().min(1).max(128), message: z.string().trim().min(1).max(32000) }).safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Invalid conversation or message" }, { status: 400 });
+  const { conversationId, message } = parsed.data;
 
   const userId = session.user.id;
 
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
   const [history, agentMemory] = await Promise.all([
     db.message.findMany({
       where: { conversationId },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
       take: 20,
     }),
     agent
@@ -73,15 +74,16 @@ export async function POST(req: Request) {
     }
   }
 
-  let plan = "free";
-  if (subscription?.status === "ACTIVE" && subscription.stripePriceId) {
-    const priceId = subscription.stripePriceId;
-    if (priceId === process.env.STRIPE_PRICE_ENTERPRISE) plan = "enterprise";
-    else if (priceId === process.env.STRIPE_PRICE_PRO || priceId === process.env.STRIPE_PRICE_PROFESSIONAL) plan = "pro";
-    else if (priceId === process.env.STRIPE_PRICE_BASIC || priceId === process.env.STRIPE_PRICE_STARTER) plan = "basic";
+  const activePlan = resolveSubscriptionPlan(subscription);
+  const plan = activePlan === "starter" ? "basic" : activePlan;
+  const planId = activePlan === "pro" ? "professional" : activePlan;
+  const planDef = PLANS.find((entry) => entry.id === planId) ?? PLANS[0];
+  if (planDef.messagesPerDay) {
+    const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
+    const count = await db.usageRecord.count({ where: { userId, createdAt: { gte: dayStart } } });
+    if (count >= planDef.messagesPerDay) return NextResponse.json({ error: "MESSAGE_LIMIT_REACHED", limit: planDef.messagesPerDay, period: "day", plan: planDef.name, upgradeUrl: "/billing" }, { status: 402 });
   }
 
-  const planDef = PLANS.find((p) => p.id === plan) ?? PLANS[0];
   if (planDef.messagesPerMonth !== Infinity) {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -98,18 +100,23 @@ export async function POST(req: Request) {
     }
   }
 
-  const modelDef = resolveModel({
+  let modelDef;
+  try {
+    modelDef = resolveModel({
     plan,
     mode: pref?.mode ?? "auto",
     provider: pref?.provider,
     modelId: pref?.modelId,
-  });
+    });
+  } catch {
+    return NextResponse.json({ error: "No AI provider is available for your plan. Contact support." }, { status: 503 });
+  }
 
   console.log(`[chat] pre-stream setup: ${Date.now() - t0}ms`);
 
   const { stream, onComplete } = routeMessage(
     modelDef,
-    history.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+    history.reverse().map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
     system
   );
 
@@ -121,6 +128,7 @@ export async function POST(req: Request) {
     async start(controller) {
       const reader = stream.getReader();
       const decoder = new TextDecoder();
+      try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -130,11 +138,17 @@ export async function POST(req: Request) {
       }
       assistantContent = chunks.join("");
       controller.close();
+      } catch (error) { controller.error(error); }
+      finally { reader.releaseLock(); }
     },
   });
 
   after(async () => {
-    const usage = await onComplete;
+    const usage = await onComplete.catch((error) => {
+      console.error("[chat] provider failed:", error instanceof Error ? error.message : "Unknown provider failure");
+      return null;
+    });
+    if (!usage) return;
     await Promise.all([
       db.message.create({
         data: {

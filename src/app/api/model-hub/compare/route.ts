@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { SYSTEM_PROMPT } from "@/lib/anthropic";
-import { MODEL_CATALOG, routeMessage } from "@/lib/modelRouter";
+import { getActivePlan } from "@/lib/subscription";
+import { MODEL_CATALOG, routeMessage, planRank } from "@/lib/modelRouter";
 import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { anthropic } from "@/lib/anthropic";
@@ -103,6 +104,8 @@ export async function POST(req: Request) {
 
   if (models.length < 2) return NextResponse.json({ error: "Unknown models" }, { status: 400 });
 
+  const plan = await getActivePlan(session.user.id);
+  if (models.some(model => planRank(plan) < planRank(model.planGate))) return NextResponse.json({ error: "Upgrade your plan to compare these models." }, { status: 403 });
   const messages = [{ role: "user" as const, content: prompt }];
 
   const results = await Promise.all(

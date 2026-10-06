@@ -26,6 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             { href: "/admin/connectors", label: "Connectors" },
             { href: "/admin/coupons", label: "Coupons" },
             { href: "/admin/marketing", label: "Marketing" },
+            { href: "/admin/approval-queue", label: "Approval Queue" },
             { href: "/admin/affiliates", label: "Affiliates" },
           ].map((l) => (
             <Link
@@ -44,7 +45,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </Link>
         </nav>
       </aside>
-      <main className="flex-1 overflow-auto p-6">{children}</main>
+      <main className="flex-1 overflow-auto p-4 sm:p-6 min-w-0">
+        <nav className="mb-5 flex gap-4 overflow-x-auto md:hidden text-sm text-brand-400" aria-label="Admin navigation">
+          <Link href="/admin">Overview</Link><Link href="/admin/approval-queue">Approval Queue</Link><Link href="/admin/connectors">Connectors</Link><Link href="/admin/billing">Billing</Link><Link href="/dashboard">App</Link>
+        </nav>
+        {children}
+      </main>
     </div>
   );
 }

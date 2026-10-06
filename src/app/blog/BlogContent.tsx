@@ -21,6 +21,34 @@ interface Props { posts: BlogPost[] }
 
 export default function BlogContent({ posts }: Props) {
   const [active, setActive] = useState("All");
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterBusy, setNewsletterBusy] = useState(false);
+  const [newsletterMessage, setNewsletterMessage] = useState("");
+  const [newsletterError, setNewsletterError] = useState(false);
+
+  async function subscribe(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (newsletterBusy) return;
+    setNewsletterBusy(true);
+    setNewsletterMessage("");
+    setNewsletterError(false);
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newsletterEmail.trim() }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error ?? "Could not subscribe. Please try again.");
+      setNewsletterMessage(result.message ?? "You're subscribed!");
+      setNewsletterEmail("");
+    } catch (error) {
+      setNewsletterError(true);
+      setNewsletterMessage(error instanceof Error ? error.message : "Connection error. Please try again.");
+    } finally {
+      setNewsletterBusy(false);
+    }
+  }
   const categories = ["All", ...Array.from(new Set(posts.map((p) => p.category)))];
   const filtered = active === "All" ? posts : posts.filter((p) => p.category === active);
   const featured = posts.find((p) => p.featured);
@@ -166,16 +194,22 @@ export default function BlogContent({ posts }: Props) {
       <section className="bg-gray-900 px-6 py-16 text-center">
         <h2 className="text-3xl font-bold text-white">Stay ahead of the AI curve</h2>
         <p className="mt-3 text-gray-400">Weekly insights on AI, business automation, and fintech delivered to your inbox.</p>
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+        <form onSubmit={subscribe} className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
           <input
             type="email"
+            required
+            aria-label="Email address for newsletter"
+            value={newsletterEmail}
+            onChange={(event) => setNewsletterEmail(event.target.value)}
+            disabled={newsletterBusy}
             placeholder="your@email.com"
             className="flex-1 rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
           />
-          <button className="rounded-xl bg-brand-500 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
-            Subscribe
+          <button type="submit" disabled={newsletterBusy} className="rounded-xl bg-brand-500 px-6 py-3 text-sm font-semibold text-white hover:bg-brand-600 transition-colors disabled:opacity-50">
+            {newsletterBusy ? "Subscribing…" : "Subscribe"}
           </button>
-        </div>
+        </form>
+        {newsletterMessage && <p role={newsletterError ? "alert" : "status"} className={`mt-3 text-sm ${newsletterError ? "text-red-300" : "text-green-300"}`}>{newsletterMessage}</p>}
         <p className="mt-3 text-xs text-gray-600">No spam. Unsubscribe anytime.</p>
       </section>
 

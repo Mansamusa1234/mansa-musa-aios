@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { db } from "@/lib/db";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM         = process.env.EMAIL_FROM          ?? "MansaMusaAI <sales@mansamusainitiative.com>";
+const FROM         = process.env.EMAIL_FROM ?? process.env.RESEND_FROM_EMAIL ?? "MansaMusaAI <sales@mansamusainitiative.com>";
 const FROM_WELCOME = process.env.EMAIL_FROM_WELCOME  ?? "MansaMusaAI <greetings@mansamusainitiative.com>";
 const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
@@ -13,13 +13,17 @@ export interface SendResult {
 }
 
 /** Best-effort transactional email. Never throws — logs and returns unsent if no provider is configured. */
-export async function sendEmail(to: string, subject: string, html: string, from = FROM): Promise<SendResult> {
+export async function sendEmail(to: string, subject: string, html: string, from = FROM, idempotencyKey?: string): Promise<SendResult> {
   if (!resend) {
     console.log(`[email] Not configured (RESEND_API_KEY missing) — would have sent "${subject}" to ${to}`);
     return { sent: false, reason: "Email provider not configured." };
   }
   try {
-    await resend.emails.send({ from, to, subject, html });
+    const result = await resend.emails.send({ from, to, subject, html }, idempotencyKey ? { idempotencyKey } : undefined);
+    if (result.error) {
+      console.error("[email] provider rejected send:", result.error.name);
+      return { sent: false, reason: "Email provider rejected the message." };
+    }
     return { sent: true };
   } catch (err) {
     console.error("[email] send failed:", err);

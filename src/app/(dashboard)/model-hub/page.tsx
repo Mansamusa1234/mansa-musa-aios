@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { MODEL_CATALOG } from "@/lib/modelRouter";
+import { getActivePlan } from "@/lib/subscription";
+import { MODEL_CATALOG, getAutoModel } from "@/lib/modelRouter";
 import ModelHubContent from "./ModelHubContent";
 
 export const metadata: Metadata = { title: "Model Hub | MansaMusaAI" };
@@ -12,13 +13,10 @@ export default async function ModelHubPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const subscription = await db.subscription.findUnique({ where: { userId: session.user.id } });
-  let plan = "free";
-  if (subscription?.status === "ACTIVE" && subscription.stripePriceId) {
-    if (subscription.stripePriceId === process.env.STRIPE_PRICE_ENTERPRISE) plan = "enterprise";
-    else if (subscription.stripePriceId === process.env.STRIPE_PRICE_PRO) plan = "pro";
-    else if (subscription.stripePriceId === process.env.STRIPE_PRICE_BASIC) plan = "basic";
-  }
+  const activePlan = await getActivePlan(session.user.id);
+  const plan = activePlan === "starter" ? "basic" : activePlan;
+  let autoModelKey: string | null = null;
+  try { const model = getAutoModel(plan); autoModelKey = `${model.provider}:${model.modelId}`; } catch { /* Catalog will show missing credentials. */ }
 
   const pref = await db.userModelPreference.findUnique({ where: { userId: session.user.id } });
 
@@ -42,6 +40,7 @@ export default async function ModelHubPage() {
   return (
     <ModelHubContent
       catalog={catalog}
+      autoModelKey={autoModelKey}
       plan={plan}
       preference={pref ? { mode: pref.mode, provider: pref.provider, modelId: pref.modelId } : { mode: "auto", provider: "anthropic", modelId: "claude-haiku-4-5-20251001" }}
     />

@@ -19,69 +19,76 @@ interface Slot { start: Date; end: Date }
 
 const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
 
+// Convert a business-local wall clock into an instant without using the visitor's timezone.
+function businessInstant(year: number, month: number, day: number, minutes: number, timezone: string): Date | null {
+  const target = Date.UTC(year, month - 1, day, Math.floor(minutes / 60), minutes % 60);
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  });
+  let instant = target;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const parts = Object.fromEntries(formatter.formatToParts(new Date(instant)).map((part) => [part.type, part.value]));
+    const wall = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+    if (wall === target) return new Date(instant);
+    instant += target - wall;
+  }
+  // Times skipped by a daylight-saving transition are not bookable.
+  return null;
+}
+
 function generateSlots(avail: Availability, existingBookings: { startAt: string; endAt: string }[]): Slot[] {
   const slots: Slot[] = [];
-  const now = new Date();
-  const buffer = avail.bufferMins * 60_000;
-  const slotMs = avail.slotMins * 60_000;
-
-  for (let dayOffset = 1; dayOffset <= 30; dayOffset++) {
-    const date = new Date(now);
-    date.setDate(date.getDate() + dayOffset);
-    date.setHours(0, 0, 0, 0);
-
-    const dayKey = DAY_KEYS[date.getDay()];
-    const hours = avail[dayKey];
-    if (!hours) continue;
-
-    const [startStr, endStr] = hours.split("-");
-    const [sh, sm] = startStr.split(":").map(Number);
-    const [eh, em] = endStr.split(":").map(Number);
-
-    const dayStart = new Date(date);
-    dayStart.setHours(sh, sm, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(eh, em, 0, 0);
-
-    let cursor = dayStart.getTime();
-    while (cursor + slotMs <= dayEnd.getTime()) {
-      const slotStart = new Date(cursor);
-      const slotEnd = new Date(cursor + slotMs);
-
-      // Check against existing bookings (include buffer)
-      const isBooked = existingBookings.some((b) => {
-        const bs = new Date(b.startAt).getTime() - buffer;
-        const be = new Date(b.endAt).getTime() + buffer;
-        return slotStart.getTime() < be && slotEnd.getTime() > bs;
-      });
-
-      if (!isBooked) {
-        slots.push({ start: slotStart, end: slotEnd });
+  if (!Number.isInteger(avail.slotMins) || avail.slotMins < 5 || avail.slotMins > 480 ||
+      !Number.isInteger(avail.bufferMins) || avail.bufferMins < 0) return slots;
+  try {
+    const now = new Date();
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+      timeZone: avail.timezone, year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(now).map((part) => [part.type, part.value]));
+    const today = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
+    const buffer = avail.bufferMins * 60_000;
+    for (let dayOffset = 1; dayOffset <= 30; dayOffset++) {
+      const date = new Date(today + dayOffset * 86_400_000);
+      const hours = avail[DAY_KEYS[date.getUTCDay()]];
+      const match = hours?.match(/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/);
+      if (!match) continue;
+      const [, sh, sm, eh, em] = match.map(Number);
+      if (sh > 23 || eh > 23 || sm > 59 || em > 59) continue;
+      const opening = sh * 60 + sm;
+      const closing = eh * 60 + em;
+      for (let minute = opening; minute + avail.slotMins <= closing; minute += avail.slotMins + avail.bufferMins) {
+        const start = businessInstant(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), minute, avail.timezone);
+        const end = businessInstant(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), minute + avail.slotMins, avail.timezone);
+        if (!start || !end || end.getTime() - start.getTime() !== avail.slotMins * 60_000 || start <= now) continue;
+        const booked = existingBookings.some((booking) =>
+          start.getTime() < new Date(booking.endAt).getTime() + buffer &&
+          end.getTime() > new Date(booking.startAt).getTime() - buffer);
+        if (!booked) slots.push({ start, end });
       }
-
-      cursor += slotMs + buffer;
     }
+  } catch {
+    // Invalid saved timezones fail closed, matching the booking API.
+    return [];
   }
-
   return slots;
 }
 
-function groupByDate(slots: Slot[]): Record<string, Slot[]> {
+function groupByDate(slots: Slot[], timezone: string): Record<string, Slot[]> {
   const groups: Record<string, Slot[]> = {};
-  for (const s of slots) {
-    const key = s.start.toDateString();
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(s);
+  for (const slot of slots) {
+    const key = slot.start.toLocaleDateString("en-GB", { timeZone: timezone });
+    (groups[key] ??= []).push(slot);
   }
   return groups;
 }
 
-function fmtDate(d: Date) {
-  return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+function fmtDate(date: Date, timezone: string) {
+  return date.toLocaleDateString("en-GB", { timeZone: timezone, weekday: "long", day: "numeric", month: "long" });
 }
 
-function fmtTime(d: Date) {
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+function fmtTime(date: Date, timezone: string) {
+  return date.toLocaleTimeString("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit" });
 }
 
 export default function PublicBookingPage({ params }: { params: Promise<{ userId: string }> }) {
@@ -111,7 +118,8 @@ export default function PublicBookingPage({ params }: { params: Promise<{ userId
   }, [userId]);
 
   const slots = availability ? generateSlots(availability, bookings) : [];
-  const grouped = groupByDate(slots);
+  const timezone = availability?.timezone ?? "Europe/London";
+  const grouped = groupByDate(slots, timezone);
   const dates = Object.keys(grouped);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -149,6 +157,7 @@ export default function PublicBookingPage({ params }: { params: Promise<{ userId
           </div>
           <h1 className="text-2xl font-extrabold text-white">Book an appointment</h1>
           <p className="mt-2 text-sm text-gray-400">Pick a time that works for you.</p>
+          {availability && <p className="mt-1 text-xs text-gray-500">All appointment times are shown in {timezone}.</p>}
         </div>
 
         {loading && (
@@ -168,7 +177,7 @@ export default function PublicBookingPage({ params }: { params: Promise<{ userId
             <p className="mt-2 text-sm text-gray-400">
               You&apos;re booked in for{" "}
               <span className="text-white font-semibold">
-                {selectedSlot ? `${fmtDate(selectedSlot.start)} at ${fmtTime(selectedSlot.start)}` : ""}
+                {selectedSlot ? `${fmtDate(selectedSlot.start, timezone)} at ${fmtTime(selectedSlot.start, timezone)}` : ""}
               </span>.
             </p>
             <p className="mt-4 text-xs text-gray-500">Check your email for a confirmation.</p>
@@ -187,7 +196,7 @@ export default function PublicBookingPage({ params }: { params: Promise<{ userId
                 dates.map((dateKey) => (
                   <div key={dateKey}>
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
-                      {fmtDate(grouped[dateKey][0].start)}
+                      {fmtDate(grouped[dateKey][0].start, timezone)}
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {grouped[dateKey].map((slot, i) => {
@@ -202,7 +211,7 @@ export default function PublicBookingPage({ params }: { params: Promise<{ userId
                                 : "border-white/8 bg-white/3 text-gray-300 hover:border-brand-500/40 hover:bg-brand-500/10"
                             }`}
                           >
-                            {fmtTime(slot.start)}
+                            {fmtTime(slot.start, timezone)}
                           </button>
                         );
                       })}
@@ -217,9 +226,9 @@ export default function PublicBookingPage({ params }: { params: Promise<{ userId
               {selectedSlot ? (
                 <form onSubmit={handleSubmit} className="rounded-2xl border border-white/8 bg-white/3 p-5 space-y-3 sticky top-6">
                   <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 px-3 py-2.5 mb-4">
-                    <p className="text-xs font-bold text-brand-300">{fmtDate(selectedSlot.start)}</p>
+                    <p className="text-xs font-bold text-brand-300">{fmtDate(selectedSlot.start, timezone)}</p>
                     <p className="text-sm font-extrabold text-white">
-                      {fmtTime(selectedSlot.start)} – {fmtTime(selectedSlot.end)}
+                      {fmtTime(selectedSlot.start, timezone)} – {fmtTime(selectedSlot.end, timezone)}
                     </p>
                   </div>
 

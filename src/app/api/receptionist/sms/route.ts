@@ -58,23 +58,21 @@ export async function POST(req: Request) {
   await db.whatsAppMessage.createMany({
     data: [
       { userId: rec.userId, from, to, body, direction: "INBOUND", status: "received" },
-      { userId: rec.userId, from: to, to: from, body: reply, direction: "OUTBOUND", status: "sent" },
+      { userId: rec.userId, from: to, to: from, body: reply, direction: "OUTBOUND", status: "responded" },
     ],
   }).catch(() => {});
 
-  // Try to send via Twilio SDK
-  try {
-    const twilio = (await import("twilio")).default;
-    const client = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
-    await client.messages.create({ body: reply, from: to, to: from });
-  } catch {}
-
+  // Twilio sends the reply from this webhook TwiML; an SDK send here would duplicate it.
   return smsReply(reply);
 }
 
 function smsReply(message: string) {
   return new Response(
-    `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${message}</Message></Response>`,
+    `<?xml version="1.0" encoding="UTF-8"?><Response><Message>${escapeXml(message)}</Message></Response>`,
     { headers: { "Content-Type": "text/xml" } }
   );
+}
+
+function escapeXml(message: string) {
+  return message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }

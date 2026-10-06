@@ -41,36 +41,38 @@ function ApiKeysCard() {
   const [err, setErr] = useState<string | null>(null);
 
   async function load() {
-    const res = await fetch("/api/settings/api-keys");
-    const data = await res.json() as { keys: typeof keys };
-    setKeys(data.keys ?? []);
-    setLoaded(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/settings/api-keys");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not load API keys.");
+      setKeys(data.keys ?? []);
+      setLoaded(true);
+    } catch (error) { setErr(error instanceof Error ? error.message : "Connection failed. Try loading again."); }
   }
 
   async function createKey() {
-    if (!newKeyName.trim()) return;
-    setCreating(true);
-    setErr(null);
-    const res = await fetch("/api/settings/api-keys", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newKeyName.trim() }),
-    });
-    const data = await res.json() as { key?: string; prefix?: string; name?: string; error?: string };
-    if (!res.ok) { setErr(data.error ?? "Failed"); setCreating(false); return; }
-    setCreatedKey(data.key!);
-    setNewKeyName("");
-    load();
-    setCreating(false);
+    if (!newKeyName.trim() || creating) return;
+    setCreating(true); setErr(null);
+    try {
+      const res = await fetch("/api/settings/api-keys", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newKeyName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not create the API key.");
+      setCreatedKey(data.key); setNewKeyName(""); await load();
+    } catch (error) { setErr(error instanceof Error ? error.message : "Connection failed. Refresh the keys before retrying."); }
+    finally { setCreating(false); }
   }
 
   async function revokeKey(id: string) {
-    await fetch("/api/settings/api-keys", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    setKeys((prev) => prev.filter((k) => k.id !== id));
+    setErr(null);
+    try {
+      const res = await fetch("/api/settings/api-keys", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not revoke the API key.");
+      setKeys(previous => previous.filter(key => key.id !== id));
+    } catch (error) { setErr(error instanceof Error ? error.message : "Connection failed. Refresh to check the key status."); }
   }
 
   return (
@@ -79,6 +81,7 @@ function ApiKeysCard() {
         <h2 className="text-sm font-bold text-white">API Keys</h2>
         {!loaded && <button onClick={load} className="text-xs text-indigo-400 hover:text-indigo-300">Load keys</button>}
       </div>
+      {err && <p role="alert" className="mb-3 text-sm text-red-400">{err}</p>}
       {loaded && (
         <div className="space-y-3">
           {createdKey && (
@@ -101,7 +104,6 @@ function ApiKeysCard() {
               {creating ? "…" : "Create"}
             </button>
           </div>
-          {err && <p className="text-xs text-red-400">{err}</p>}
           {keys.length === 0 ? (
             <p className="text-xs text-gray-600 py-2">No API keys yet.</p>
           ) : (

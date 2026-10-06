@@ -21,8 +21,8 @@ async function shouldSendAlert(checks: CheckResult[], now: Date): Promise<boolea
     .map((check) => `${check.name}:${check.message}`)
     .sort()
     .join("|");
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL);
+  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN);
   if (!url || !token) return now.getUTCHours() === 8;
 
   const redis = new Redis({ url, token });

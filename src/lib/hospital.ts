@@ -33,8 +33,8 @@ export interface HospitalIncident {
 }
 
 function createRedis(): Redis | null {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL);
+  const token = (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN);
   return url && token ? new Redis({ url, token }) : null;
 }
 
@@ -72,7 +72,7 @@ function parseIncident(raw: Record<string, unknown> | null): HospitalIncident | 
 }
 
 export function hospitalIsConfigured(): boolean {
-  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+  return Boolean((process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL) && (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN));
 }
 
 export async function recordHospitalFailure(input: {

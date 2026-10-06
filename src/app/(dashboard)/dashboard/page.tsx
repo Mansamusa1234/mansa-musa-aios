@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { resolveSubscriptionPlan } from "@/lib/subscription";
 import { PLANS } from "@/lib/stripe";
 import DashboardClient from "@/components/dashboard/DashboardClient";
 import OnboardingAgent from "@/components/onboarding/OnboardingAgent";
@@ -34,12 +35,9 @@ export default async function DashboardPage() {
     db.calendarAvailability.findUnique({ where: { userId }, select: { id: true } }),
   ]);
 
-  let planId = "free";
-  if ((subscription?.status === "ACTIVE" || subscription?.status === "TRIALING") && subscription.stripePriceId) {
-    if (subscription.stripePriceId === process.env.STRIPE_PRICE_ENTERPRISE) planId = "enterprise";
-    else if (subscription.stripePriceId === (process.env.STRIPE_PRICE_PROFESSIONAL ?? process.env.STRIPE_PRICE_PRO)) planId = "professional";
-    else if (subscription.stripePriceId === (process.env.STRIPE_PRICE_STARTER ?? process.env.STRIPE_PRICE_BASIC)) planId = "starter";
-  }
+  const activePlan = resolveSubscriptionPlan(subscription);
+  const planId = activePlan === "pro" ? "professional" : activePlan;
+
   const planDef = PLANS.find((p) => p.id === planId) ?? PLANS[0];
 
   const onboardingItems = [

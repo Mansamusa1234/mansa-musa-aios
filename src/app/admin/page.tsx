@@ -92,7 +92,7 @@ export default async function AdminPage() {
       }}
       health={{
         stripe: !!process.env.STRIPE_SECRET_KEY?.trim(),
-        redis: !!process.env.UPSTASH_REDIS_REST_URL,
+        redis: !!(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL),
         ai: !!process.env.ANTHROPIC_API_KEY,
         database: true,
       }}
