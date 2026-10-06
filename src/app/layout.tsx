@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import Analytics from "@/components/analytics/Analytics";
@@ -7,8 +6,6 @@ import CookieBanner from "@/components/ui/CookieBanner";
 import PWAInstallButton from "@/components/ui/PWAInstallButton";
 import { Suspense } from "react";
 import UTMCapture from "@/components/marketing/UTMCapture";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 const BASE = "https://www.mansamusainitiative.com";
 
@@ -130,7 +127,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#6366f1" />

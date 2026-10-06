@@ -8,6 +8,8 @@ export default function ExitIntent() {
   const [show, setShow] = useState(false);
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (sessionStorage.getItem("mm_exit_seen")) return;
@@ -38,13 +40,27 @@ export default function ExitIntent() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email) return;
-    await fetch("/api/newsletter/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, source: "exit-intent" }),
-    }).catch(() => {});
-    setSubmitted(true);
+    if (!email.trim() || loading) return;
+    setLoading(true);
+    setError("");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), source: "exit-intent" }),
+        signal: controller.signal,
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error ?? "Could not subscribe. Please try again.");
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error && err.name === "AbortError" ? "Request timed out. Please try again." : err instanceof Error ? err.message : "Connection error. Please try again.");
+    } finally {
+      clearTimeout(timeout);
+      setLoading(false);
+    }
   }
 
   return (
@@ -83,7 +99,7 @@ export default function ExitIntent() {
                   ✅
                 </div>
                 <h3 className="text-xl font-bold text-white">You&apos;re in!</h3>
-                <p className="mt-2 text-sm text-gray-400">Check your inbox for your free AI Business Audit.</p>
+                <p className="mt-2 text-sm text-gray-400">You are subscribed to AI business updates.</p>
                 <Link
                   href="/register"
                   onClick={() => setShow(false)}
@@ -97,10 +113,9 @@ export default function ExitIntent() {
                 <div className="relative mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-500/15 text-3xl">
                   🎁
                 </div>
-                <h3 className="relative text-2xl font-bold text-white">Before you go — get your free AI Business Audit</h3>
+                <h3 className="relative text-2xl font-bold text-white">Keep up with AI for your business</h3>
                 <p className="relative mt-2 text-gray-400 text-sm leading-relaxed">
-                  We&apos;ll analyse your business and show you exactly where AI can save you time and money.{" "}
-                  <span className="text-brand-400 font-semibold">Worth £297. Yours free.</span>
+                  Subscribe for updates about AI agents and business automation.
                 </p>
 
                 <form onSubmit={handleSubmit} className="relative mt-5 space-y-3">
@@ -114,17 +129,19 @@ export default function ExitIntent() {
                   />
                   <button
                     type="submit"
+                    disabled={loading}
                     className="w-full rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/25"
                   >
-                    Send my free audit →
+                    {loading ? "Subscribing…" : "Subscribe free →"}
                   </button>
                 </form>
+                {error && <p role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
 
                 <button
                   onClick={() => setShow(false)}
                   className="relative mt-3 text-xs text-gray-700 hover:text-gray-500 transition-colors"
                 >
-                  No thanks, I don&apos;t want free money
+                  No thanks
                 </button>
               </>
             )}

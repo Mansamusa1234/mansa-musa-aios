@@ -57,40 +57,39 @@ export default function PricingContent({ plans }: Props) {
   const [annual, setAnnual] = useState(false);
 
   async function handleCheckout(priceId: string, planId: string, paidPlan: boolean) {
+    if (checkoutLoading) return;
     setCheckoutError(null);
-    if (!priceId) {
-      if (paidPlan) {
-        window.location.href = `/contact?offering=${encodeURIComponent(`${planId} billing`)}`;
-      } else {
-        const res = await fetch("/api/auth/session");
-        const s = await res.json().catch(() => null);
-        window.location.href = s?.user ? "/dashboard" : "/register";
-      }
-      return;
-    }
     setCheckoutLoading(planId);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     try {
-      const res = await fetch("/api/stripe/create-checkout", {
+      if (!priceId) {
+        if (paidPlan) {
+          window.location.href = `/contact?offering=${encodeURIComponent(`${planId} billing`)}`;
+        } else {
+          const response = await fetch("/api/auth/session", { signal: controller.signal });
+          if (!response.ok) throw new Error("Could not check your account. Please try again.");
+          const session = await response.json();
+          window.location.href = session?.user ? "/dashboard" : "/register";
+        }
+        return;
+      }
+      const response = await fetch("/api/stripe/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceId }),
         signal: controller.signal,
       });
-      clearTimeout(timer);
-      if (res.status === 401) { window.location.href = "/login?redirect=/pricing"; return; }
-      const data = await res.json().catch(() => ({}));
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setCheckoutError(data.error ?? "Could not start checkout. Please try again.");
-      }
+      if (response.status === 401) { window.location.href = "/login?redirect=/pricing"; return; }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error ?? "Could not start checkout. Please try again.");
+      if (!data.url) throw new Error("Could not start checkout. Please try again.");
+      window.location.href = data.url;
     } catch (err) {
-      clearTimeout(timer);
       const isAbort = err instanceof DOMException && (err.name === "AbortError" || err.name === "TimeoutError");
-      setCheckoutError(isAbort ? "Request timed out. Please try again." : "Could not connect. Please try again.");
+      setCheckoutError(isAbort ? "Request timed out. Please try again." : err instanceof Error ? err.message : "Could not connect. Please try again.");
     } finally {
+      clearTimeout(timer);
       setCheckoutLoading(null);
     }
   }
@@ -203,7 +202,7 @@ export default function PricingContent({ plans }: Props) {
                   </ul>
                   <button
                     onClick={() => handleCheckout(selectedPriceId, plan.id, plan.price > 0)}
-                    disabled={isLoading}
+                    disabled={checkoutLoading !== null}
                     className={`mt-6 block w-full rounded-xl py-2.5 text-center text-sm font-semibold transition-all disabled:opacity-60 ${
                       plan.highlighted
                         ? "bg-white text-brand-600 hover:bg-brand-50"
@@ -212,7 +211,7 @@ export default function PricingContent({ plans }: Props) {
                         : "border border-brand-500 text-brand-400 hover:bg-brand-500 hover:text-white"
                     }`}
                   >
-                    {isLoading ? "Loading…" : plan.price === 0 ? "Start free" : annual && !hasAnnualPrice ? "Contact sales" : "Start 14-day trial"}
+                    {isLoading ? "Loading…" : plan.price === 0 ? "Start free" : annual && !hasAnnualPrice ? "Contact sales" : `Subscribe to ${plan.name}`}
                   </button>
                 </motion.div>
               );

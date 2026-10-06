@@ -6,7 +6,7 @@ import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 import { createChallengeToken } from "@/lib/authChallenge";
 
 const schema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email().transform((value) => value.toLowerCase()),
   password: z.string().min(1),
 });
 
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   try {
     const { email, password } = schema.parse(await req.json());
 
-    const user = await db.user.findUnique({ where: { email } });
+    const user = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
 
     if (!user?.passwordHash) {
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });

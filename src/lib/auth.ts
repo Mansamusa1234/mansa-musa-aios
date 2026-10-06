@@ -37,7 +37,7 @@ const googleProvider =
     : [];
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email().transform((value) => value.toLowerCase()),
   password: z.string().min(8),
   rememberMe: z.string().optional(),
 });
@@ -107,7 +107,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const limited = await checkRateLimit(limiters.login, ip).catch(() => null);
         if (limited) return null;
 
-        const user = await db.user.findUnique({ where: { email: parsed.data.email } });
+        const user = await db.user.findFirst({ where: { email: { equals: parsed.data.email, mode: "insensitive" } } });
 
         if (!user?.passwordHash) {
           after(() => logAuditEvent({ event: "LOGIN_FAILURE", ip, userAgent, metadata: { email: parsed.data.email, reason: "no_account" } }));

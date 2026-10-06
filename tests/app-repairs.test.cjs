@@ -76,3 +76,24 @@ test('provider failure rejects both the stream and completion instead of hanging
   await assert.rejects(result.stream.getReader().read(), /Provider rejected/);
   await assert.rejects(result.onComplete, /Provider rejected/);
 });
+function webhookFixture(type, providerStatus, previousId = null) {
+  const writes = []; const tasks = []; let converted = 0;
+  const sub = { id: 'sub1', status: providerStatus, items: { data: [{ price: { id: 'price_test' } }] }, current_period_start: 1, current_period_end: 2 };
+  const object = type === 'checkout.session.completed' ? { mode: 'subscription', subscription: 'sub1', customer: 'customer1', metadata: { userId: 'user1' } } : type.startsWith('invoice.') ? { subscription: 'sub1', customer: 'customer1', id: 'invoice1' } : sub;
+  const db = { subscription: { findUnique: async () => previousId ? { stripeSubscriptionId: previousId } : null, findFirst: async () => null, upsert: async args => { writes.push(args.create); }, updateMany: async args => { writes.push(args.data); } } };
+  const stripe = { webhooks: { constructEvent: () => ({ id: 'evt1', type, data: { object } }) }, subscriptions: { retrieve: async () => sub } };
+  const api = load('src/app/api/stripe/webhook/route.ts', { 'next/server': { ...response, after: fn => tasks.push(fn) }, '@/lib/stripe': { getStripe: () => stripe, findPlanByPriceId: () => null }, '@/lib/db': { db }, '@/lib/referrals': { recordConversion: async () => { converted++; } }, '@/lib/email-automation': { triggerWorkflows: async () => {} }, '@/lib/email': { sendEmail: async () => ({ sent: true }) }, '@/lib/stripeSubscriptionStatus': load('src/lib/stripeSubscriptionStatus.ts', {}) }, { STRIPE_WEBHOOK_SECRET: 'test' });
+  return { run: () => api.POST(new Request('https://app.test/api/stripe/webhook', { method: 'POST', headers: { 'stripe-signature': 'test' }, body: '{}' })), writes, tasks, conversions: () => converted };
+}
+test('Stripe checkout does not activate incomplete payments or trigger activation', async () => {
+  const f = webhookFixture('checkout.session.completed', 'incomplete'); await f.run(); assert.equal(f.writes[0].status, 'INACTIVE'); assert.equal(f.tasks.length, 0); assert.equal(f.conversions(), 0);
+});
+test('invoice events preserve actual Stripe status, including failed-payment recovery', async () => {
+  for (const [type, status, expected] of [['invoice.payment_succeeded', 'trialing', 'TRIALING'], ['invoice.payment_failed', 'past_due', 'PAST_DUE'], ['invoice.payment_failed', 'active', 'ACTIVE']]) {
+    const f = webhookFixture(type, status); await f.run(); assert.equal(f.writes[0].status, expected);
+    if (status === 'active') assert.equal(f.tasks.length, 0);
+  }
+});
+test('repeated checkout completion does not repeat activation workflow', async () => {
+  const f = webhookFixture('checkout.session.completed', 'active', 'sub1'); await f.run(); assert.equal(f.tasks.length, 0); assert.equal(f.writes[0].status, 'ACTIVE');
+});

@@ -28,18 +28,26 @@ export default function EnterpriseContent() {
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(20000),
         body: JSON.stringify({ name, email, company, size, message: `Enterprise enquiry — ${size || "unspecified"} employees. ${message || "Please contact me about Enterprise."}`, subject: "Enterprise Enquiry", offering: "enterprise" }),
       });
-      if (!response.ok) throw new Error("Unable to send enquiry");
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(typeof data?.error === "string" ? data.error : "Unable to send your enquiry. Please try again.");
+      if (data?.success !== true) throw new Error("Your enquiry could not be confirmed. Please try again.");
       setSubmitted(true);
+    } catch (cause) {
+      setError(cause instanceof TypeError ? "Could not connect. Check your internet connection and try again." : cause instanceof Error && cause.name === "TimeoutError" ? "Sending took too long. Your details are still here; please try again." : cause instanceof Error ? cause.message : "Unable to send your enquiry. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -142,6 +150,7 @@ export default function EnterpriseContent() {
               </motion.div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+                {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="ent-name" className="mb-1.5 block text-sm font-medium text-gray-700">Full name</label>

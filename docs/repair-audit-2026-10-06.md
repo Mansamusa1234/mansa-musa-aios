@@ -22,7 +22,7 @@ Scope: source review, production deployment/log and environment-name inspection,
 
 ## Validation
 
-- `npm run test:repairs`: 16 passing targeted regression tests.
+- `npm run test:repairs`: 25 passing targeted regression tests, rerun on 6 October.
 - `npx tsc --noEmit`: passed.
 - `npm run lint`: zero errors, 26 pre-existing warnings.
 - `npm audit --omit=dev --json`: zero reported vulnerabilities at audit time, not a guarantee of security.
@@ -36,3 +36,15 @@ Scope: source review, production deployment/log and environment-name inspection,
 - Public receptionist plan enforcement, external API-key usage, concurrent quota reservation, multi-turn voice and several legacy connector samples need further product work; not certified as fully complete.
 - Local Omarchy/OpenClaw/Ollama hardware cannot be reached from this workspace. Private bridge repair and documented owner commands are in Command Center PR4.
 - No claim of sales/revenue, literal holographic 5D display, or universal bug elimination.
+
+## Commerce follow-up
+
+- Login credentials/2FA and portal/enterprise forms release loading after provider or network failure. Login returns buyers to pricing/billing; canonical email lookup includes legacy casing.
+- Signup follow-up work uses Next after plus allSettled so one failed email does not abort independent tasks.
+- Lead/exit forms report real API results; removed unimplemented downloadable-resource promises. Removed unsupported registration customer-count and compliance claims.
+- Paid pricing buttons accurately describe subscriptions rather than promising an immediate checkout is a no-card trial.
+- Checkout blocks duplicate subscriptions using local state and current Stripe data, reuses matching open sessions, expires conflicting open subscription sessions, and uses a short-lived idempotency key.
+- Webhook status follows current Stripe status for completed checkout and successful/failed invoices. Repeat activation email uses provider idempotency; known subscription checkout replays skip repeated activation workflows. No durable event ledger added; concurrent event workflows/commission accounting require further work.
+- First production repair deployed READY as a908c232c4436c2765c2a995629d51fd11f041d2. Live signup retained Darren-neil; anonymous admin, queue and chat APIs returned401; public health200/ok.
+- Follow-up production build passed on 6 October after replacing the build-time Google font download with a system font stack. The remote main branch was verified still at the first repair commit before preparing this release.
+- Laptop-local commit eb5da52 was not transferred into this workspace. This release includes the independently reviewed commerce fixes here; it does not claim to include every laptop-local audit change.

@@ -8,9 +8,13 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ redirect?: string; callbackUrl?: string }> }) {
+  const params = await searchParams;
+  const requested = params.redirect ?? params.callbackUrl;
+  const callbackUrl = requested && ["/pricing", "/billing", "/dashboard"].includes(requested) ? requested : "/dashboard";
   return (
     <LoginForm
+      callbackUrl={callbackUrl}
       showGithub={!!process.env.GITHUB_CLIENT_ID}
       showGoogle={!!process.env.GOOGLE_CLIENT_ID}
       showMicrosoft={isMicrosoftConfigured}

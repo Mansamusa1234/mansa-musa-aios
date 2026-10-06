@@ -39,24 +39,41 @@ function formatDate(d: Date | null): string {
 export default function PortalContent({ user, subscription, plan, totalMessages, totalConversations, messagesThisMonth }: Props) {
   const [portalLoading, setPortalLoading] = useState(false);
   const [reactivating, setReactivating] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const isActive  = subscription?.status === "ACTIVE";
   const isFree    = !subscription || plan.price === 0;
   const willCancel = subscription?.cancelAtPeriodEnd ?? false;
 
   async function handleReactivate() {
+    if (reactivating || portalLoading) return;
     setReactivating(true);
-    const res = await fetch("/api/stripe/reactivate", { method: "POST" });
-    if (res.ok) window.location.reload();
-    else setReactivating(false);
+    setActionError(null);
+    try {
+      const res = await fetch("/api/stripe/reactivate", { method: "POST", signal: AbortSignal.timeout(20000) });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(typeof data?.error === "string" ? data.error : "Could not reactivate your subscription. Please try again.");
+      if (data?.ok !== true) throw new Error("Reactivation could not be confirmed. Refresh your account before trying again.");
+      window.location.reload();
+    } catch (error) {
+      setActionError(error instanceof TypeError ? "Could not connect to billing. Check your connection and try again." : error instanceof Error && error.name === "TimeoutError" ? "Billing took too long to respond. Refresh your account before trying again." : error instanceof Error ? error.message : "Could not reactivate your subscription. Please try again.");
+    } finally {
+      setReactivating(false);
+    }
   }
 
   async function openBillingPortal() {
+    if (portalLoading || reactivating) return;
     setPortalLoading(true);
-    const res = await fetch("/api/stripe/portal", { method: "POST" });
-    const data = await res.json();
-    if (data.url) {
+    setActionError(null);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST", signal: AbortSignal.timeout(20000) });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(typeof data?.error === "string" ? data.error : "Could not open billing. Please try again.");
+      if (typeof data?.url !== "string" || !data.url.startsWith("https://")) throw new Error("The billing service did not return a valid link. Please try again.");
       window.location.href = data.url;
-    } else {
+    } catch (error) {
+      setActionError(error instanceof TypeError ? "Could not connect to billing. Check your connection and try again." : error instanceof Error && error.name === "TimeoutError" ? "Billing took too long to respond. Please try again." : error instanceof Error ? error.message : "Could not open billing. Please try again.");
+    } finally {
       setPortalLoading(false);
     }
   }
@@ -66,6 +83,7 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
 
   return (
     <div className="space-y-6">
+      {actionError && <p role="alert" className="rounded-xl border border-red-500/25 bg-red-500/10 p-3 text-sm text-red-300">{actionError}</p>}
       {/* Header */}
       <motion.div variants={stagger} initial="hidden" animate="visible">
         <motion.div variants={fadeUp}>
@@ -127,7 +145,7 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
               ) : (
                 <button
                   onClick={openBillingPortal}
-                  disabled={portalLoading}
+                  disabled={portalLoading || reactivating}
                   className="flex-shrink-0 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-300 hover:bg-brand-500/20 transition-colors disabled:opacity-50"
                 >
                   {portalLoading ? "Opening…" : "Manage billing"}
@@ -152,7 +170,7 @@ export default function PortalContent({ user, subscription, plan, totalMessages,
                 </p>
                 <button
                   onClick={handleReactivate}
-                  disabled={reactivating}
+                  disabled={reactivating || portalLoading}
                   className="flex-shrink-0 rounded-lg border border-amber-500/30 px-2 py-1 text-[10px] font-semibold text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 transition-colors"
                 >
                   {reactivating ? "…" : "Reactivate"}

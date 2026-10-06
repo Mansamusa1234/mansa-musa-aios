@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface Props {
+  callbackUrl: string;
   showGithub: boolean;
   showGoogle: boolean;
   showMicrosoft?: boolean;
@@ -30,7 +31,7 @@ function OAuthSpinner() {
   );
 }
 
-export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showApple }: Props) {
+export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showApple, callbackUrl }: Props) {
   const router = useRouter();
   const emailRef = useRef<HTMLInputElement>(null);
   const totpRef = useRef<HTMLInputElement>(null);
@@ -67,7 +68,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
   async function handleOAuth(provider: string) {
     setLoadingOAuth(provider);
     try {
-      await signIn(provider, { callbackUrl: "/dashboard" });
+      await signIn(provider, { callbackUrl });
     } catch {
       setError("Could not start provider sign-in. Please try again.");
       setLoadingOAuth(null);
@@ -79,10 +80,11 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     setLoading(true);
     setError("");
 
+    try {
     const res = await fetch("/api/auth/2fa/challenge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
     });
     const data = await res.json();
 
@@ -101,7 +103,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     }
 
     const result = await signIn("credentials", {
-      email,
+      email: email.trim().toLowerCase(),
       password,
       rememberMe: rememberMe ? "true" : "false",
       redirect: false,
@@ -111,8 +113,10 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
       setFailedAttempts((n) => n + 1);
       setError("Invalid email or password.");
     } else {
-      router.push("/dashboard");
+      router.push(callbackUrl);
     }
+    } catch { setError("Sign-in could not complete. Check your connection and try again."); }
+    finally { setLoading(false); }
   }
 
   async function handleTotp(e: React.FormEvent) {
@@ -125,6 +129,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     setLoading(true);
     setError("");
 
+    try {
     const result = await signIn("credentials", {
       challengeToken,
       totp: code,
@@ -136,8 +141,10 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
       setError(isBackupMode ? "Invalid backup code. Check it and try again." : "Invalid code. Check your authenticator app and try again.");
       setTotp("");
     } else {
-      router.push("/dashboard");
+      router.push(callbackUrl);
     }
+    } catch { setError("Verification could not complete. Please try again."); }
+    finally { setLoading(false); }
   }
 
   function oauthCls(provider: string) {

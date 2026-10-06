@@ -12,6 +12,7 @@ import {
   paymentFailedEmailHtml,
 } from "@/lib/email";
 import type Stripe from "stripe";
+import { stripeSubscriptionStatus } from "@/lib/stripeSubscriptionStatus";
 
 const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
@@ -47,7 +48,10 @@ export async function POST(req: Request) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
+      if (session.mode !== "subscription" || !session.subscription || !session.metadata?.userId) break;
       const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+      const previous = await db.subscription.findUnique({ where: { stripeCustomerId: session.customer as string } });
+      const active = sub.status === "active" || sub.status === "trialing";
 
       await db.subscription.upsert({
         where: { stripeCustomerId: session.customer as string },
@@ -56,20 +60,20 @@ export async function POST(req: Request) {
           stripeCustomerId: session.customer as string,
           stripeSubscriptionId: sub.id,
           stripePriceId: sub.items.data[0]?.price.id ?? "",
-          status: "ACTIVE",
+          status: stripeSubscriptionStatus(sub.status),
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
         },
         update: {
           stripeSubscriptionId: sub.id,
           stripePriceId: sub.items.data[0]?.price.id ?? "",
-          status: "ACTIVE",
+          status: stripeSubscriptionStatus(sub.status),
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
         },
       });
 
-      try {
+      if (active) try {
         await recordConversion(
           session.metadata!.userId,
           sub.items.data[0]?.price.id ?? "",
@@ -80,7 +84,7 @@ export async function POST(req: Request) {
         console.error("[webhook] referral/affiliate conversion tracking failed:", err);
       }
 
-      after(async () => {
+      if (active && previous?.stripeSubscriptionId !== sub.id) after(async () => {
         try {
           const user = await db.user.findUnique({
             where: { id: session.metadata!.userId },
@@ -97,9 +101,10 @@ export async function POST(req: Request) {
                 plan: planName,
                 amount: formatAmount(priceItem?.price.unit_amount ?? null, priceItem?.price.currency ?? "gbp"),
                 nextBillDate: formatDate(sub.current_period_end),
-              })
+              }),
+              undefined, `stripe-started-${sub.id}`
             );
-            void triggerWorkflows(session.metadata!.userId, "SUBSCRIPTION_ACTIVATED", { email: user.email, name: user.name ?? "" });
+            await triggerWorkflows(session.metadata!.userId, "SUBSCRIPTION_ACTIVATED", { email: user.email, name: user.name ?? "" });
           }
         } catch (err) {
           console.error("[webhook] subscription started email failed:", err);
@@ -111,14 +116,8 @@ export async function POST(req: Request) {
 
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
-      const sub = event.data.object as Stripe.Subscription;
-      const statusMap: Record<string, string> = {
-        active: "ACTIVE",
-        canceled: "CANCELED",
-        past_due: "PAST_DUE",
-        trialing: "TRIALING",
-        unpaid: "PAST_DUE",
-      };
+      const payload = event.data.object as Stripe.Subscription;
+      const sub = event.type === "customer.subscription.updated" ? await stripe.subscriptions.retrieve(payload.id) : payload;
 
       const existingSub = await db.subscription.findFirst({
         where: { stripeSubscriptionId: sub.id },
@@ -128,7 +127,7 @@ export async function POST(req: Request) {
       await db.subscription.updateMany({
         where: { stripeSubscriptionId: sub.id },
         data: {
-          status: (statusMap[sub.status] ?? "INACTIVE") as never,
+          status: stripeSubscriptionStatus(sub.status),
           stripePriceId: sub.items.data[0]?.price.id ?? "",
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
@@ -147,9 +146,10 @@ export async function POST(req: Request) {
                 name: existingSub.user.name ?? "there",
                 plan: planName,
                 endsAt: formatDate(sub.current_period_end),
-              })
+              }),
+              undefined, `stripe-cancelled-${sub.id}`
             );
-            void triggerWorkflows(existingSub.userId, "SUBSCRIPTION_CANCELLED", { email: existingSub.user.email, name: existingSub.user.name ?? "" });
+            await triggerWorkflows(existingSub.userId, "SUBSCRIPTION_CANCELLED", { email: existingSub.user.email, name: existingSub.user.name ?? "" });
           } catch (err) {
             console.error("[webhook] subscription cancelled email failed:", err);
           }
@@ -159,6 +159,7 @@ export async function POST(req: Request) {
       break;
     }
 
+    case "invoice.paid":
     case "invoice.payment_succeeded": {
       const invoice = event.data.object as Stripe.Invoice;
       const stripeSubId = invoice.subscription as string | null;
@@ -168,7 +169,7 @@ export async function POST(req: Request) {
         await db.subscription.updateMany({
           where: { stripeSubscriptionId: stripeSubId },
           data: {
-            status: "ACTIVE",
+            status: stripeSubscriptionStatus(stripeSub.status),
             currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
             currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
           },
@@ -216,6 +217,11 @@ export async function POST(req: Request) {
 
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice;
+      if (invoice.subscription) {
+        const current = await stripe.subscriptions.retrieve(invoice.subscription as string);
+        await db.subscription.updateMany({ where: { stripeSubscriptionId: current.id }, data: { status: stripeSubscriptionStatus(current.status) } });
+        if (current.status === "active" || current.status === "trialing") break;
+      }
       after(async () => {
         try {
           const customerId = invoice.customer as string;
@@ -232,7 +238,8 @@ export async function POST(req: Request) {
                 name: sub.user.name ?? "there",
                 plan: planName,
                 updateUrl: `${APP}/billing`,
-              })
+              }),
+              undefined, `stripe-failed-${invoice.id}`
             );
           }
         } catch (err) {
