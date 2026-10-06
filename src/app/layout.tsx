@@ -6,6 +6,7 @@ import CookieBanner from "@/components/ui/CookieBanner";
 import PWAInstallButton from "@/components/ui/PWAInstallButton";
 import { Suspense } from "react";
 import UTMCapture from "@/components/marketing/UTMCapture";
+import SketricBrandAgent from "@/components/integrations/SketricBrandAgent";
 
 const BASE = "https://www.mansamusainitiative.com";
 
@@ -156,6 +157,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <CookieBanner />
         <PWAInstallButton />
+        <SketricBrandAgent />
       </body>
     </html>
   );
