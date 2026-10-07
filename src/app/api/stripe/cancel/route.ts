@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { subscriptionPeriod } from "@/lib/stripePayload";
 import { requireStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
@@ -27,16 +28,17 @@ export async function POST() {
     const updated = await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
       cancel_at_period_end: true,
     });
+    const period = subscriptionPeriod(updated);
 
     await db.subscription.update({
       where: { userId: session.user.id },
       data: {
         cancelAtPeriodEnd: true,
-        currentPeriodEnd: new Date(updated.current_period_end * 1000),
+        currentPeriodEnd: new Date(period.end * 1000),
       },
     });
 
-    return NextResponse.json({ ok: true, endsAt: updated.current_period_end });
+    return NextResponse.json({ ok: true, endsAt: period.end });
   } catch (err) {
     console.error("[stripe/cancel] error:", (err as Error)?.message);
     return NextResponse.json({ error: "Could not cancel subscription. Please try again." }, { status: 500 });

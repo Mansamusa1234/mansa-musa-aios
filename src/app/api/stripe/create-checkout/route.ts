@@ -74,11 +74,12 @@ export async function POST(req: Request) {
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
-      payment_method_types: ["card"],
+      integration_identifier: "mansamusa-subscription-rktmwxqp",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
-      cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com"}/billing?success=true`,
+      cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com"}/billing?canceled=true`,
       metadata,
+      subscription_data: { metadata, billing_mode: { type: "flexible" } },
       allow_promotion_codes: !discounts,
       ...(discounts ? { discounts } : {}),
     }, {

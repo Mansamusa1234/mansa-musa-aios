@@ -1,4 +1,5 @@
 import { stripeSubscriptionStatus } from "@/lib/stripeSubscriptionStatus";
+import { subscriptionPeriod } from "@/lib/stripePayload";
 import { auth } from "@/lib/auth";
 import { requireStripe, getConfiguredPriceIds } from "@/lib/stripe";
 import { db } from "@/lib/db";
@@ -46,14 +47,15 @@ export async function POST(req: Request) {
       items: [{ id: itemId, price: priceId }],
       proration_behavior: "create_prorations",
     });
+    const period = subscriptionPeriod(updated);
 
     await db.subscription.update({
       where: { userId: session.user.id },
       data: {
         stripePriceId: updated.items.data[0].price.id,
         status: stripeSubscriptionStatus(updated.status),
-        currentPeriodStart: new Date(updated.current_period_start * 1000),
-        currentPeriodEnd: new Date(updated.current_period_end * 1000),
+        currentPeriodStart: new Date(period.start * 1000),
+        currentPeriodEnd: new Date(period.end * 1000),
         cancelAtPeriodEnd: updated.cancel_at_period_end,
       },
     });

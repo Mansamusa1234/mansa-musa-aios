@@ -76,14 +76,19 @@ test('provider failure rejects both the stream and completion instead of hanging
   await assert.rejects(result.stream.getReader().read(), /Provider rejected/);
   await assert.rejects(result.onComplete, /Provider rejected/);
 });
-function webhookFixture(type, providerStatus, previousId = null) {
+function webhookFixture(type, providerStatus, previousId = null, options = {}) {
   const writes = []; const tasks = []; let converted = 0;
   const sub = { id: 'sub1', status: providerStatus, items: { data: [{ price: { id: 'price_test' } }] }, current_period_start: 1, current_period_end: 2 };
-  const object = type === 'checkout.session.completed' ? { mode: 'subscription', subscription: 'sub1', customer: 'customer1', metadata: { userId: 'user1' } } : type.startsWith('invoice.') ? { subscription: 'sub1', customer: 'customer1', id: 'invoice1' } : sub;
-  const db = { subscription: { findUnique: async () => previousId ? { stripeSubscriptionId: previousId } : null, findFirst: async () => null, upsert: async args => { writes.push(args.create); }, updateMany: async args => { writes.push(args.data); } } };
-  const stripe = { webhooks: { constructEvent: () => ({ id: 'evt1', type, data: { object } }) }, subscriptions: { retrieve: async () => sub } };
-  const api = load('src/app/api/stripe/webhook/route.ts', { 'next/server': { ...response, after: fn => tasks.push(fn) }, '@/lib/stripe': { getStripe: () => stripe, findPlanByPriceId: () => null }, '@/lib/db': { db }, '@/lib/referrals': { recordConversion: async () => { converted++; } }, '@/lib/email-automation': { triggerWorkflows: async () => {} }, '@/lib/email': { sendEmail: async () => ({ sent: true }) }, '@/lib/stripeSubscriptionStatus': load('src/lib/stripeSubscriptionStatus.ts', {}) }, { STRIPE_WEBHOOK_SECRET: 'test' });
-  return { run: () => api.POST(new Request('https://app.test/api/stripe/webhook', { method: 'POST', headers: { 'stripe-signature': 'test' }, body: '{}' })), writes, tasks, conversions: () => converted };
+  if (options.modern) { delete sub.current_period_start; delete sub.current_period_end; sub.items.data[0].current_period_start = 1; sub.items.data[0].current_period_end = 2; }
+  const object = type.startsWith('checkout.session.') ? { mode: 'subscription', subscription: 'sub1', customer: 'customer1', payment_status: options.paymentStatus ?? 'paid', metadata: { userId: 'user1' } } : type.startsWith('invoice.') ? { ...(options.modern ? { parent: { subscription_details: { subscription: { id: 'sub1' } } } } : { subscription: 'sub1' }), customer: 'customer1', id: 'invoice1' } : sub;
+  const db = { subscription: { findUnique: async () => previousId ? { stripeSubscriptionId: previousId, userId: 'user1' } : null, findFirst: async () => null, upsert: async args => { writes.push(args.create); }, updateMany: async args => { writes.push(args.data); } } };
+  const event = { id: 'evt1', type, data: { object } };
+  const payload = JSON.stringify(event);
+  const verifier = options.verifySignature ? new (require('stripe'))('sk_test_unused') : null;
+  const signature = verifier ? verifier.webhooks.generateTestHeaderString({ payload, secret: 'test' }) : 'test';
+  const stripe = { webhooks: { constructEvent: verifier ? (body, sig, secret) => verifier.webhooks.constructEvent(body, sig, secret) : () => event }, subscriptions: { retrieve: async () => sub } };
+  const api = load('src/app/api/stripe/webhook/route.ts', { 'next/server': { ...response, after: fn => tasks.push(fn) }, '@/lib/stripe': { getStripe: () => stripe, findPlanByPriceId: () => null }, '@/lib/db': { db }, '@/lib/referrals': { recordConversion: async () => { converted++; } }, '@/lib/email-automation': { triggerWorkflows: async () => {} }, '@/lib/email': { sendEmail: async () => ({ sent: true }) }, '@/lib/stripePayload': load('src/lib/stripePayload.ts', {}), '@/lib/stripeSubscriptionStatus': load('src/lib/stripeSubscriptionStatus.ts', {}) }, { STRIPE_WEBHOOK_SECRET: 'test' });
+  return { run: () => api.POST(new Request('https://app.test/api/stripe/webhook', { method: 'POST', headers: { 'stripe-signature': signature }, body: options.tamper ? payload + ' ' : payload })), writes, tasks, conversions: () => converted };
 }
 test('Stripe checkout does not activate incomplete payments or trigger activation', async () => {
   const f = webhookFixture('checkout.session.completed', 'incomplete'); await f.run(); assert.equal(f.writes[0].status, 'INACTIVE'); assert.equal(f.tasks.length, 0); assert.equal(f.conversions(), 0);
@@ -96,4 +101,34 @@ test('invoice events preserve actual Stripe status, including failed-payment rec
 });
 test('repeated checkout completion does not repeat activation workflow', async () => {
   const f = webhookFixture('checkout.session.completed', 'active', 'sub1'); await f.run(); assert.equal(f.tasks.length, 0); assert.equal(f.writes[0].status, 'ACTIVE');
+});
+
+
+test('Dahlia invoice shapes update renewal and failed-payment entitlements', async () => {
+  for (const [event, status, expected] of [['invoice.payment_succeeded', 'active', 'ACTIVE'], ['invoice.payment_failed', 'past_due', 'PAST_DUE']]) {
+    const f = webhookFixture(event, status, null, { modern: true }); await f.run();
+    assert.equal(f.writes[0].status, expected);
+    if (event === 'invoice.payment_succeeded') assert.equal(f.writes[0].currentPeriodEnd.getTime(), 2000);
+  }
+});
+test('Dahlia cancellation reads item periods instead of storing invalid dates', async () => {
+  const f = webhookFixture('customer.subscription.deleted', 'canceled', null, { modern: true }); await f.run();
+  assert.equal(f.writes[0].currentPeriodEnd.getTime(), 2000); assert.equal(f.writes[0].status, 'CANCELED');
+});
+test('unpaid asynchronous checkout cannot grant access; later success activates it', async () => {
+  const pending = webhookFixture('checkout.session.completed', 'active', null, { paymentStatus: 'unpaid' }); await pending.run();
+  assert.equal(pending.writes.length, 0); assert.equal(pending.tasks.length, 0);
+  const paid = webhookFixture('checkout.session.async_payment_succeeded', 'active', null, { modern: true }); await paid.run();
+  assert.equal(paid.writes[0].status, 'ACTIVE'); assert.equal(paid.writes[0].currentPeriodEnd.getTime(), 2000);
+});
+test('invalid subscription periods fail rather than accepting corrupt billing dates', () => {
+  const { subscriptionPeriod } = load('src/lib/stripePayload.ts', {});
+  assert.throws(() => subscriptionPeriod({ items: { data: [] } }), /no valid billing period/);
+});
+
+test('real SDK verifies signed modern checkout and rejects tampered payload before database writes', async () => {
+  const signed = webhookFixture('checkout.session.completed', 'active', null, { modern: true, verifySignature: true });
+  assert.equal((await signed.run()).status, 200); assert.equal(signed.writes[0].status, 'ACTIVE');
+  const tampered = webhookFixture('checkout.session.completed', 'active', null, { modern: true, verifySignature: true, tamper: true });
+  assert.equal((await tampered.run()).status, 400); assert.equal(tampered.writes.length, 0);
 });

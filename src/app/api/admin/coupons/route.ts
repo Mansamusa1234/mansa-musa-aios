@@ -14,20 +14,22 @@ export async function GET() {
     return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
 
-  const promotionCodes = await stripe.promotionCodes.list({ limit: 100, expand: ["data.coupon"] });
+  const promotionCodes = await stripe.promotionCodes.list({ limit: 100, expand: ["data.promotion.coupon"] });
 
   return NextResponse.json(
-    promotionCodes.data.map((pc) => ({
+    promotionCodes.data.map((pc) => {
+      const coupon = typeof pc.promotion.coupon === "object" ? pc.promotion.coupon : null;
+      return {
       id: pc.id,
       code: pc.code,
       active: pc.active,
       timesRedeemed: pc.times_redeemed,
       maxRedemptions: pc.max_redemptions,
       expiresAt: pc.expires_at,
-      percentOff: pc.coupon.percent_off,
-      amountOff: pc.coupon.amount_off,
-      duration: pc.coupon.duration,
-    }))
+      percentOff: coupon?.percent_off ?? null,
+      amountOff: coupon?.amount_off ?? null,
+      duration: coupon?.duration ?? null,
+    }; })
   );
 }
 
@@ -64,7 +66,7 @@ export async function POST(req: Request) {
     });
 
     const promotionCode = await stripe.promotionCodes.create({
-      coupon: coupon.id,
+      promotion: { type: "coupon", coupon: coupon.id },
       code: code.toUpperCase(),
       max_redemptions: maxRedemptions ? Number(maxRedemptions) : undefined,
       expires_at: expiresInDays ? Math.floor(Date.now() / 1000) + Number(expiresInDays) * 86400 : undefined,

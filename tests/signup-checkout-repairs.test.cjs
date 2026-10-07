@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Node test harness loads isolated TypeScript modules */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -5,9 +6,9 @@ const vm = require('node:vm');
 const ts = require('typescript');
 function load(file, mocks) {
   const output = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-  const module = { exports: {} };
-  vm.runInNewContext(output, { module, exports: module.exports, require: name => name in mocks ? mocks[name] : require(name), process: { env: { NODE_ENV: 'production', NEXT_PUBLIC_APP_URL: 'https://app.test' } }, console: { error() {}, log() {} }, Date });
-  return module.exports;
+  const testModule = { exports: {} };
+  vm.runInNewContext(output, { module: testModule, exports: testModule.exports, require: name => name in mocks ? mocks[name] : require(name), process: { env: { NODE_ENV: 'production', NEXT_PUBLIC_APP_URL: 'https://app.test' } }, console: { error() {}, log() {} }, Date });
+  return testModule.exports;
 }
 const next = { NextResponse: { json: (body, options = {}) => ({ body, status: options.status ?? 200 }) } };
 test('signup normalizes email and completes independent after-response tasks despite one failure', async () => {

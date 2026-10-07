@@ -53,6 +53,7 @@ test('missing availability and invalid business timezone fail closed', async () 
 test('SMS produces exactly one escaped TwiML reply and never claims delivered', async () => {
   let logged;
   const api = load('src/app/api/receptionist/sms/route.ts', {
+    '@/lib/subscription': { getActivePlan: async () => 'starter', hasFeature: () => true },
     '@/lib/db': { db: { receptionist: { findFirst: async () => ({ userId: 'owner', name: 'Receptionist', persona: 'friendly' }) }, whatsAppMessage: { findMany: async () => [], createMany: async ({ data }) => { logged = data; } } } },
     '@/lib/anthropic': { anthropic: { messages: { create: async () => ({ content: [{ type: 'text', text: 'Tea & <cake>' }] }) } } },
     'next/headers': { headers: async () => new Headers() }, '@/lib/twilio': { validateTwilioSignature: () => true },
