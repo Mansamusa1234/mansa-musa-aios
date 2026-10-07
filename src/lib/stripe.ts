@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import type { PricingPlan } from "@/types";
 
-const STRIPE_API_VERSION = "2025-02-24.acacia";
+const STRIPE_API_VERSION = "2026-09-30.endive";
 
 let stripeClient: Stripe | null = null;
 let stripeClientKey: string | null = null;

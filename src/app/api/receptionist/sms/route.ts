@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
 import { headers } from "next/headers";
 import { validateTwilioSignature } from "@/lib/twilio";
+import { getActivePlan, hasFeature } from "@/lib/subscription";
 
 // Twilio SMS webhook
 export async function POST(req: Request) {
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
     where: { twilioNumber: to, isActive: true },
   });
 
-  if (!rec) {
+  if (!rec || !hasFeature(await getActivePlan(rec.userId), "receptionist")) {
     return smsReply("Sorry, this number is not currently active.");
   }
 

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
+import { getActivePlan, hasFeature } from "@/lib/subscription";
 
 export async function GET() {
   const session = await auth();
@@ -12,6 +13,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!hasFeature(await getActivePlan(session.user.id), "receptionist")) {
+    return NextResponse.json({ error: "A Starter or higher plan is required." }, { status: 403 });
+  }
   const { name, greeting, persona, businessHours, widgetColor, isActive } = await req.json();
   const rec = await db.receptionist.upsert({
     where: { userId: session.user.id },

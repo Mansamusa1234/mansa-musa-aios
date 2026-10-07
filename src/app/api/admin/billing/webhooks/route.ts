@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 const BILLING_EVENT_TYPES = [
   "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
   "customer.subscription.created",
   "customer.subscription.updated",
   "customer.subscription.deleted",

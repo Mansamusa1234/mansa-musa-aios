@@ -13,6 +13,7 @@ import {
 } from "@/lib/email";
 import type Stripe from "stripe";
 import { stripeSubscriptionStatus } from "@/lib/stripeSubscriptionStatus";
+import { invoiceSubscriptionId, stripeObjectId, subscriptionPeriod } from "@/lib/stripePayload";
 
 const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
 
@@ -46,30 +47,41 @@ export async function POST(req: Request) {
   }
 
   switch (event.type) {
-    case "checkout.session.completed": {
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.mode !== "subscription" || !session.subscription || !session.metadata?.userId) break;
-      const sub = await stripe.subscriptions.retrieve(session.subscription as string);
-      const previous = await db.subscription.findUnique({ where: { stripeCustomerId: session.customer as string } });
+      if (!["paid", "no_payment_required"].includes(session.payment_status)) break;
+      const customerId = stripeObjectId(session.customer);
+      const subscriptionId = stripeObjectId(session.subscription);
+      if (!customerId || !subscriptionId) break;
+      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      const period = subscriptionPeriod(sub);
+      const previous = await db.subscription.findUnique({ where: { stripeCustomerId: customerId } });
+      if (previous && previous.userId !== session.metadata.userId) {
+        throw new Error("Checkout customer does not match the application user");
+      }
       const active = sub.status === "active" || sub.status === "trialing";
 
       await db.subscription.upsert({
-        where: { stripeCustomerId: session.customer as string },
+        where: { stripeCustomerId: customerId },
         create: {
           userId: session.metadata!.userId,
-          stripeCustomerId: session.customer as string,
+          stripeCustomerId: customerId,
           stripeSubscriptionId: sub.id,
           stripePriceId: sub.items.data[0]?.price.id ?? "",
           status: stripeSubscriptionStatus(sub.status),
-          currentPeriodStart: new Date(sub.current_period_start * 1000),
-          currentPeriodEnd: new Date(sub.current_period_end * 1000),
+          currentPeriodStart: new Date(period.start * 1000),
+          currentPeriodEnd: new Date(period.end * 1000),
+          cancelAtPeriodEnd: sub.cancel_at_period_end,
         },
         update: {
           stripeSubscriptionId: sub.id,
           stripePriceId: sub.items.data[0]?.price.id ?? "",
           status: stripeSubscriptionStatus(sub.status),
-          currentPeriodStart: new Date(sub.current_period_start * 1000),
-          currentPeriodEnd: new Date(sub.current_period_end * 1000),
+          currentPeriodStart: new Date(period.start * 1000),
+          currentPeriodEnd: new Date(period.end * 1000),
+          cancelAtPeriodEnd: sub.cancel_at_period_end,
         },
       });
 
@@ -100,7 +112,7 @@ export async function POST(req: Request) {
                 name: user.name ?? "there",
                 plan: planName,
                 amount: formatAmount(priceItem?.price.unit_amount ?? null, priceItem?.price.currency ?? "gbp"),
-                nextBillDate: formatDate(sub.current_period_end),
+                nextBillDate: formatDate(period.end),
               }),
               undefined, `stripe-started-${sub.id}`
             );
@@ -118,6 +130,7 @@ export async function POST(req: Request) {
     case "customer.subscription.deleted": {
       const payload = event.data.object as Stripe.Subscription;
       const sub = event.type === "customer.subscription.updated" ? await stripe.subscriptions.retrieve(payload.id) : payload;
+      const period = subscriptionPeriod(sub);
 
       const existingSub = await db.subscription.findFirst({
         where: { stripeSubscriptionId: sub.id },
@@ -129,8 +142,8 @@ export async function POST(req: Request) {
         data: {
           status: stripeSubscriptionStatus(sub.status),
           stripePriceId: sub.items.data[0]?.price.id ?? "",
-          currentPeriodStart: new Date(sub.current_period_start * 1000),
-          currentPeriodEnd: new Date(sub.current_period_end * 1000),
+          currentPeriodStart: new Date(period.start * 1000),
+          currentPeriodEnd: new Date(period.end * 1000),
           cancelAtPeriodEnd: sub.cancel_at_period_end,
         },
       });
@@ -145,7 +158,7 @@ export async function POST(req: Request) {
               subscriptionCancelledEmailHtml({
                 name: existingSub.user.name ?? "there",
                 plan: planName,
-                endsAt: formatDate(sub.current_period_end),
+                endsAt: formatDate(period.end),
               }),
               undefined, `stripe-cancelled-${sub.id}`
             );
@@ -162,16 +175,17 @@ export async function POST(req: Request) {
     case "invoice.paid":
     case "invoice.payment_succeeded": {
       const invoice = event.data.object as Stripe.Invoice;
-      const stripeSubId = invoice.subscription as string | null;
+      const stripeSubId = invoiceSubscriptionId(invoice);
 
       if (stripeSubId) {
         const stripeSub = await stripe.subscriptions.retrieve(stripeSubId);
+        const period = subscriptionPeriod(stripeSub);
         await db.subscription.updateMany({
           where: { stripeSubscriptionId: stripeSubId },
           data: {
             status: stripeSubscriptionStatus(stripeSub.status),
-            currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
-            currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+            currentPeriodStart: new Date(period.start * 1000),
+            currentPeriodEnd: new Date(period.end * 1000),
           },
         });
 
@@ -217,8 +231,9 @@ export async function POST(req: Request) {
 
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice;
-      if (invoice.subscription) {
-        const current = await stripe.subscriptions.retrieve(invoice.subscription as string);
+      const subscriptionId = invoiceSubscriptionId(invoice);
+      if (subscriptionId) {
+        const current = await stripe.subscriptions.retrieve(subscriptionId);
         await db.subscription.updateMany({ where: { stripeSubscriptionId: current.id }, data: { status: stripeSubscriptionStatus(current.status) } });
         if (current.status === "active" || current.status === "trialing") break;
       }

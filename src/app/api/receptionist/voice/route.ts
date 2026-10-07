@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
 import { validateTwilioSignature } from "@/lib/twilio";
+import { getActivePlan, hasFeature } from "@/lib/subscription";
 
 const BOOK_APPOINTMENT_TOOL = {
   name: "book_appointment",
@@ -53,7 +54,7 @@ export async function POST(req: Request) {
   }
 
   const rec = await db.receptionist.findUnique({ where: { id: receptionistId } });
-  if (!rec || !rec.isActive) {
+  if (!rec || !rec.isActive || !hasFeature(await getActivePlan(rec.userId), "receptionist")) {
     return twiml(`<Say voice="Polly.Amy">Sorry, the receptionist is currently unavailable. Please try again later.</Say><Hangup/>`);
   }
 
