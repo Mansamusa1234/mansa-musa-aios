@@ -26,20 +26,25 @@ jobs:
           const { chromium } = require('playwright');
           (async () => {
             const browser = await chromium.launch({headless:true});
-            const page = await browser.newPage();
-            const base = process.env.BASE_URL;
-            for (const path of ['/', '/pricing', '/signup']) {
-              const response = await page.goto(base + path, {waitUntil:'domcontentloaded',timeout:30000});
-              console.log(path, 'HTTP', response?.status(), 'TITLE', await page.title());
-              if (!response || response.status() >= 500) throw new Error(path + ' server failure');
-              if (path === '/pricing') {
-                const body = await page.locator('body').innerText();
-                console.log('Pricing includes Free:', /\\bfree\\b/i.test(body));
-                console.log('Pricing includes £0:', /£\\s*0|0\\s*\/\\s*month/i.test(body));
-                if (!/\\bfree\\b/i.test(body)) throw new Error('Free plan missing from pricing page');
+            try {
+              const page = await browser.newPage();
+              const base = process.env.BASE_URL;
+              for (const path of ['/', '/pricing', '/register']) {
+                const response = await page.goto(base + path, {waitUntil:'domcontentloaded',timeout:30000});
+                console.log(path, 'HTTP', response?.status(), 'TITLE', await page.title());
+                if (!response || response.status() >= 400) throw new Error(path + ' HTTP error');
+                if (path === '/pricing') {
+                  const freeButton = page.getByRole('button', {name:'Start free',exact:true});
+                  await freeButton.scrollIntoViewIfNeeded({timeout:15000});
+                  await freeButton.waitFor({state:'visible',timeout:15000});
+                  console.log('Free plan Start free button visible:', await freeButton.isVisible());
+                }
+                if (path === '/register') {
+                  const count = await page.locator('input').count();
+                  console.log('Registration form inputs:',count);
+                  if (!count) throw new Error('Registration form has no inputs');
+                }
               }
-              if (path === '/signup') console.log('Signup form fields:', await page.locator('input').count());
-            }
-            await browser.close();
+            } finally { await browser.close(); }
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
