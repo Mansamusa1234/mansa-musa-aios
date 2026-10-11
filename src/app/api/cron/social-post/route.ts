@@ -27,7 +27,8 @@ export const GET = withCron(async (request) => {
 
   let videoUrl: string | null = null;
 
-  if (process.env.HEYGEN_API_KEY && avatarId && voiceId) {
+  // HeyGen currently returns 402 (insufficient credits). Opt in only after credits are restored.
+  if (process.env.SOCIAL_HEYGEN_ENABLED === "true" && process.env.HEYGEN_API_KEY && avatarId && voiceId) {
     try {
       const videoId = await createHeyGenVideo(script, avatarId, voiceId);
       if (videoId) {
@@ -57,7 +58,7 @@ export const GET = withCron(async (request) => {
       postToInstagram(videoUrl, script),
       postToTikTok(videoUrl, script),
       postToYouTube(videoUrl, script),
-      postToTwitter(videoUrl, script),
+      process.env.SOCIAL_X_ENABLED === "true" ? postToTwitter(videoUrl, script) : Promise.resolve(false),
       postToFacebook(videoUrl, script),
       postToThreads(videoUrl, script),
       postToPinterest(videoUrl, script),
@@ -65,7 +66,7 @@ export const GET = withCron(async (request) => {
     posted = { linkedin, instagram, tiktok, youtube, twitter, facebook, threads, pinterest };
   } else {
     const [twitter, linkedin, facebook, threads] = await Promise.all([
-      postToTwitter("", script),
+      process.env.SOCIAL_X_ENABLED === "true" ? postToTwitter("", script) : Promise.resolve(false),
       postToLinkedInText(script),
       postToFacebookText(script),
       postToThreadsText(script),
@@ -81,5 +82,9 @@ export const GET = withCron(async (request) => {
     videoUrl,
     posted,
     successCount,
+    skippedProviders: {
+      heygen: process.env.SOCIAL_HEYGEN_ENABLED !== "true",
+      twitter: process.env.SOCIAL_X_ENABLED !== "true",
+    },
   };
 });
