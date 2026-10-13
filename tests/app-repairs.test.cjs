@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports -- Node test harness loads isolated TypeScript modules */
+ 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
