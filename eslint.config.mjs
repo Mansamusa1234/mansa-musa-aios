@@ -19,6 +19,14 @@ const eslintConfig = [
       "react/no-unescaped-entities": "off",
     },
   },
+  {
+    // Node test runner files are CommonJS by design.
+    files: ["tests/**/*.cjs"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "@next/next/no-assign-module-variable": "off",
+    },
+  },
 ];
 
 export default eslintConfig;
