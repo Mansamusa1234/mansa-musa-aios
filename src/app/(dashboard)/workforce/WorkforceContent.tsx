@@ -67,8 +67,9 @@ export default function WorkforceContent(props: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: activeRole, messages: [...messages, userMsg] }),
       });
-      const data = await res.json() as { reply: string };
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      const data = await res.json().catch(() => ({})) as { reply?: string; error?: string };
+      const content = res.ok && data.reply ? data.reply : data.error ?? "Sorry, I'm having trouble right now. Please try again.";
+      setMessages((prev) => [...prev, { role: "assistant", content }]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I'm having trouble right now. Please try again." }]);
     } finally {
