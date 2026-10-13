@@ -64,3 +64,22 @@ Bugs fixed by 3815c8b (live if the Stripe endpoint sends modern payloads, which 
 
 ### PR #32 status update
 Webhook fixes are now in #35. What remains unique to #32: the Stripe SDK/API upgrade, coupon `promotion` shape, and receptionist plan gating. The receptionist gating is worth porting next; the SDK upgrade still needs a Stripe test-mode run.
+
+### Further P0 revenue / cost repairs (2026-10-14)
+| Change | Commit | Verification |
+|---|---|---|
+| AI receptionist (chat, config, widget, voice, SMS) requires Starter+; lead email kept alive via `after()`. Ported from #32 | 01372f5 | New tests fail 2/2 on old code; gate green |
+| `/api/workforce/chat`: Starter+ gate (`workforce_csuite` was declared but never enforced), per-user rate limit, zod validation, prototype-key roles rejected; UI shows server errors | 0faa7e8 | New tests fail 2/3 on old code; tsc ✅ eslint 0 errors ✅ tests 37/37 ✅ build ✅ |
+| `CLAUDE.md` + `AGENTS.md` project instructions; `docs/COST_OPTIMISATION.md` | this commit | Docs |
+
+Behaviour change to note before merging #35: Free users lose access to the AI receptionist and the C-suite workforce chat, matching the plan gates declared in `src/lib/subscription.ts`.
+
+### New findings (not yet fixed)
+- `/api/whatsapp/incoming` assigns inbound messages to the user whose **email contains the sender's phone digits**, otherwise to the first ADMIN. The receptionist then replies under that account. This needs a product decision (per-tenant WhatsApp numbers) before code changes.
+- Claude Code account has **extra usage enabled** (possible pay-as-you-go beyond Pro). Owner decision; see COST_OPTIMISATION.md.
+
+### Blockers requiring owner action
+1. The "41-section Powerhouse handover specification" is not on this machine and was not included in any message. Please paste it or commit it to `docs/`.
+2. The Windows Powerhouse machine is not this computer (this is Linux). Abacus, OpenClaw, ECG, Replica, Antigravity, Dora and n8n are not installed here.
+3. Run STEP 1 (read-only) of `prisma/sql/manual_supabase_rls_lockdown.sql` and share the output. #32's audit already reports 62 public tables without RLS, with anon grants on sensitive tables.
+4. Stripe test-mode keys in the Vercel **Preview** environment, so the full checkout → webhook → entitlement journey can be tested on PR previews without real charges.
