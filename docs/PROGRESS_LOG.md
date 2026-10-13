@@ -1,6 +1,6 @@
 # Engineering Progress Log
 
-Branch: `audit/production-readiness-20261013` (from `origin/main` @ 3a3fa85). Not pushed, not deployed.
+Branch: `audit/production-readiness-20261013` (from `origin/main` @ 3a3fa85). Pushed as **draft PR #35** (preview only). Not merged, not deployed to production.
 
 ## 2026-10-13
 
@@ -37,3 +37,30 @@ Gate on this branch: `tsc` ✅ · `eslint` 0 errors ✅ · `test:repairs` 27/27 
 - RLS status in Supabase unknown until STEP 1 of `prisma/sql/manual_supabase_rls_lockdown.sql` is run.
 - Feature completion (Council, Arena, Model Hub, Marketplace, CRM, voice, search), Replica Skill review: not started.
 - Local branch `fix/auth-signup-checkout-build` (eb5da52, never pushed) appears superseded by main; preserved as `backup/eb5da52-local-auth-fixes`.
+
+## 2026-10-14
+
+### Completed and verified
+| Change | Commit | Verification |
+|---|---|---|
+| Pushed branch, opened draft PR #35 (secret scan of diff clean) | — | Preview build only; schema script exits unless `VERCEL_ENV=production`; crons run only in production |
+| **P0 revenue:** Stripe webhook accepts modern (Basil/Dahlia) and legacy (Acacia) payloads on stripe-node 17. Ported from #32 without its SDK 17→23 upgrade, coupon changes or Next.js downgrade | 3815c8b | New tests fail 3/19 on old handler, pass on fix. Gate: tsc ✅ eslint 0 errors ✅ tests 32/32 ✅ build ✅ |
+
+Bugs fixed by 3815c8b (live if the Stripe endpoint sends modern payloads, which #32's audit indicates):
+- `customer.subscription.deleted`: periods moved to items, giving Invalid Date → webhook 500 → **cancelled customers kept paid access**.
+- `invoice.*`: `invoice.subscription` moved to `parent.subscription_details` → renewals, affiliate renewal commissions and failed-payment downgrades silently skipped.
+- `checkout.session.completed` granted access on unpaid async payments; `async_payment_succeeded` (already subscribed live) was ignored.
+
+### Tool inventory (this machine: Linux / Omarchy, not Windows)
+| Tool | State |
+|---|---|
+| Codex CLI | Installed. ECC plugin `affaan-m/ECC` v2.2.3 enabled; its SessionStart hook (runs plugin Node scripts) is **disabled**; left disabled. |
+| Claude Code | Official plugin marketplace only; no third-party plugins. |
+| gh | Authenticated as Mansamusa1234. |
+| docker, node 26, python3 | Installed. |
+| Abacus, OpenClaw, ECG, Replica, Antigravity, Dora, n8n, Vercel/Supabase/Stripe CLIs | **Not installed / no config found** on this machine. |
+| Windows tooling (wsl/cmd/powershell) | Not present. The Windows Powerhouse machine is not this computer. |
+| "Mansa Musa AI" MCP server | Failed to connect (ngrok endpoint 404). |
+
+### PR #32 status update
+Webhook fixes are now in #35. What remains unique to #32: the Stripe SDK/API upgrade, coupon `promotion` shape, and receptionist plan gating. The receptionist gating is worth porting next; the SDK upgrade still needs a Stripe test-mode run.
