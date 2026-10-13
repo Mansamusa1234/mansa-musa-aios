@@ -14,11 +14,11 @@ export async function GET() {
     return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
 
-  const promotionCodes = await stripe.promotionCodes.list({ limit: 100, expand: ["data.promotion.coupon"] });
+  const promotionCodes = await stripe.promotionCodes.list({ limit: 100, expand: ["data.coupon"] });
 
   return NextResponse.json(
     promotionCodes.data.map((pc) => {
-      const coupon = typeof pc.promotion.coupon === "object" ? pc.promotion.coupon : null;
+      const coupon = typeof pc.coupon === "object" ? pc.coupon : null;
       return {
       id: pc.id,
       code: pc.code,
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     });
 
     const promotionCode = await stripe.promotionCodes.create({
-      promotion: { type: "coupon", coupon: coupon.id },
+      coupon: coupon.id,
       code: code.toUpperCase(),
       max_redemptions: maxRedemptions ? Number(maxRedemptions) : undefined,
       expires_at: expiresInDays ? Math.floor(Date.now() / 1000) + Number(expiresInDays) * 86400 : undefined,
