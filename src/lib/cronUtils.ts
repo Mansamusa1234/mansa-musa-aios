@@ -1,13 +1,23 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { recordHospitalFailure } from "@/lib/hospital";
+
+/** Fails closed when CRON_SECRET is unset so "Bearer undefined" can never authorize. */
+export function isAuthorizedCronRequest(req: Request): boolean {
+  const cronSecret = process.env.CRON_SECRET;
+  const header = req.headers.get("authorization");
+  if (!cronSecret || !header) return false;
+  const expected = Buffer.from(`Bearer ${cronSecret}`);
+  const received = Buffer.from(header);
+  return expected.length === received.length && timingSafeEqual(expected, received);
+}
 
 /** Validates the cron secret and wraps the handler in a try/catch. Returns JSON on all outcomes. */
 export function withCron(
   handler: (req: Request) => Promise<Record<string, unknown>>
 ) {
   return async function (req: Request): Promise<NextResponse> {
-    const secret = req.headers.get("authorization");
-    if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (!isAuthorizedCronRequest(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     try {
