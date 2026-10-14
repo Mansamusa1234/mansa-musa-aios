@@ -85,4 +85,12 @@ Not yet verified against real services (credentials required): Stripe test mode,
 
 Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 49/49 ✅ · build ✅
 
+## 2026-10-14: Abacus RouteLLM verified on Preview
+| Change | Commit | Verification |
+|---|---|---|
+| Server-side RouteLLM client (`src/lib/routellm.ts`); the app previously never read `ABACUS_API_KEY` | 7c724e1 | 3 unit tests (no key → no call, request shape, key scrubbed from errors) |
+| Preview-only build diagnostics: one 20-token RouteLLM request, env presence inventory, read-only connection checks; results behind Vercel SSO | 7c724e1 → 5b0e081 | **RouteLLM HTTP 200 on two fresh Preview builds** (7c724e1: 4.2 s, 14 in / 18 out tokens; b46f1ea: 3.2 s), reply "RouteLLM OK", routed model `gpt-6-luna`. Production builds skip the check. |
+
+Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 52/52 ✅ · build ✅
+
 > Operational notes (tooling, accounts, open security items) are kept in the owner's private workspace, not in this public repository.
