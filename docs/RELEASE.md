@@ -42,3 +42,27 @@ YouTube OAuth client, `ABACUS_API_KEY`, `BLOB_READ_WRITE_TOKEN` (also the GitHub
 2. Assess: Vercel logs, Sentry, Stripe events, Supabase logs for the affected window.
 3. Notify: if personal data was exposed, assess UK GDPR breach reporting (ICO within 72 hours where required).
 4. Fix forward through a PR that passes the release gate; record the incident in the progress log.
+
+## This release (PR #35)
+**Database migration: none.** No schema change, so rollback needs no data change.
+
+**Environment variables** (names only; values live in Vercel):
+| Variable | Where | Purpose |
+|---|---|---|
+| `NEXTAUTH_SECRET` or `AUTH_SECRET` | Production, Preview | Session and 2FA challenge signing. 2FA now fails closed without it. |
+| `CRON_SECRET` | Production | Cron routes fail closed without it. |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PROFESSIONAL`, `STRIPE_PRICE_ENTERPRISE` | Production (live), Preview (**test mode only**) | Billing. |
+| `PREVIEW_DATABASE_URL` | Preview | Isolated database; without it Preview is read-only. |
+| `SOCIAL_DIRECT_PUBLISH`, `SOCIAL_PUBLISH_NETWORKS` | Production | Off/empty means approval never posts. Add a network only after approving its first post. |
+| `SOCIAL_VIDEO_BASE_URL` | Production | Public Blob store base URL for the daily video. |
+| `BLOB_READ_WRITE_TOKEN` | GitHub Actions secret | Daily video upload. |
+| `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` (`YOUTUBE_REDIRECT_URI` optional) | Production | YouTube; connect once at `/api/auth` as admin. |
+| `NEXT_PUBLIC_LAUNCH_PROMO_CODE` | Production | Shows the launch banner only once the code exists in Stripe. |
+
+**Behaviour changes customers will notice**
+- Free trial and checkout need a verified email. Unverified users see how to resend the link in Settings. Login is unchanged.
+- Free accounts can still view and delete their CRM, booking, WhatsApp and email-automation data but cannot create new items.
+- The launch banner and its countdown are hidden until a real promotion code is configured.
+
+**Smoke checks after deploy** (no writes to customer data)
+`/`, `/pricing`, `/login`, `/register` return 200 · `/api/health` returns `ok` or `degraded` (never `error`) · `/dashboard` redirects to `/login` when signed out · `/_diagnostics/*` returns 404 · `/api/cron/social-post` without the secret returns 401.

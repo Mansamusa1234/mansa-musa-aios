@@ -112,4 +112,16 @@ Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 57/57 ✅ · test:journey 7
 
 Gate: secret scan ✅ · npm audit 0 ✅ · tsc ✅ · eslint 0 errors ✅ · test:repairs 66/66 ✅ · test:journey 9/9 ✅ · build ✅
 
+## 2026-10-14: Launch hardening (auth, plans, billing, customer experience)
+| Change | Commit | Verification |
+|---|---|---|
+| Verified email required for trial and checkout; resend control; single-use tokens; 2FA rate limit, lockout, replay protection, atomic backup codes; OAuth verified email | c87507c | 12 unit tests (10 fail on old code), journey test |
+| Server-side plan gates (Starter CRM and bookings; Pro WhatsApp and email automation); calendar availability mass-assignment fixed | c87507c | Unit tests, browser |
+| Plan change and cancel use the modern Stripe period; admin YouTube connect flow with OAuth state | 66a1253 | Unit tests |
+| Billing current plan, fake countdown removed, first-login alert, mobile layout, misleading copy | 618f8ad | Browser (desktop and 390px), unit tests |
+| Approval button states the real publishing mode | 0ba6851 | Browser, unit tests |
+
+Browser journey (local production build, throwaway DB): register → login → unverified trial/checkout refused with message → resend → verify link (single use) → trial → CRM lead → trial expiry blocks new leads → admin approval queue → approve (nothing posted).
+Live Stripe (read-only): prices £49/£149/£499 GBP monthly match the app; only coupon 10% × 3 months; webhook on API 2026-05-27.dahlia, 7 events, 0 failed deliveries.
+
 > Operational notes (tooling, accounts, open security items) are kept in the owner's private workspace, not in this public repository.
