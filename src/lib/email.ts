@@ -55,7 +55,7 @@ function wrapper(title: string, bodyHtml: string, footer = "If you didn't reques
 
 const SUPPORT_FOOTER = `Questions? Email <a href="mailto:support@mansamusainitiative.com" style="color:#6366f1;text-decoration:none">support@mansamusainitiative.com</a>`;
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
+// ── Auth + login MFA ─────────────────────────────────────────────────────────
 
 export function passwordResetEmailHtml(resetUrl: string): string {
   return wrapper(
