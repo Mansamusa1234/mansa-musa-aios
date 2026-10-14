@@ -21,6 +21,11 @@ export default function UTMCapture() {
       // First-touch attribution — only write if not already set
       localStorage.setItem("mm_utm", JSON.stringify({ ...utm, captured_at: new Date().toISOString() }));
     }
+    // Mirror first touch into a cookie so checkout can attribute revenue server-side.
+    if (!document.cookie.split("; ").some((c) => c.startsWith("mm_utm="))) {
+      const secure = location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `mm_utm=${encodeURIComponent(JSON.stringify(utm))}; Max-Age=7776000; Path=/; SameSite=Lax${secure}`;
+    }
     // Always write last-touch
     localStorage.setItem("mm_utm_last", JSON.stringify({ ...utm, captured_at: new Date().toISOString() }));
   }, [params]);

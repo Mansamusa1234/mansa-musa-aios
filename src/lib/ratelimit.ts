@@ -42,11 +42,38 @@ export const limiters = {
   forgotPassword:     makeLimiter(3, "1 h", "rl:forgot-password"),
   /** 3 requests / hour — keyed by user ID or IP */
   resendVerification: makeLimiter(3, "1 h", "rl:resend-verification"),
+  /** 3 emails / hour to any one address (verification or reset), whatever the caller's IP */
+  emailPerAddress:    makeLimiter(3, "1 h", "rl:email-address"),
+  /** 5 second-factor attempts / 5 minutes per account */
+  twoFactor:          makeLimiter(5, "5 m", "rl:2fa"),
+  /** 5 trial starts / day per account (one succeeds; the rest are refused) */
+  trial:              makeLimiter(5, "1 d", "rl:trial"),
   /** 20 public form submissions / hour per IP. */
   publicWrite:        makeLimiter(20, "1 h", "rl:public-write"),
   /** 15 public AI responses / 5 minutes per IP to contain model spend abuse. */
   publicAI:           makeLimiter(15, "5 m", "rl:public-ai"),
 };
+
+const localOnce = new Map<string, number>();
+
+/**
+ * Records `key` once for `ttlSeconds`. Returns false if it was already recorded (e.g. a reused 2FA code).
+ * Uses Redis when configured; otherwise a per-instance memory fallback.
+ */
+export async function claimOnce(key: string, ttlSeconds: number): Promise<boolean> {
+  if (redis) {
+    try {
+      return (await redis.set(`once:${key}`, "1", { nx: true, ex: ttlSeconds })) === "OK";
+    } catch (err) {
+      console.error("[ratelimit] Redis error in claimOnce, using memory fallback:", err);
+    }
+  }
+  const now = Date.now();
+  for (const [k, expires] of localOnce) if (expires <= now) localOnce.delete(k);
+  if (localOnce.has(key)) return false;
+  localOnce.set(key, now + ttlSeconds * 1000);
+  return true;
+}
 
 /**
  * Check a rate limit and return a 429 NextResponse if exceeded, or null if allowed.

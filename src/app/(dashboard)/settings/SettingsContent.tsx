@@ -160,6 +160,9 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
   const [emailStatus, setEmailStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [emailSaving, setEmailSaving] = useState(false);
 
+  const [verifyStatus, setVerifyStatus] = useState<{ message: string; isError: boolean } | null>(null);
+  const [verifySending, setVerifySending] = useState(false);
+
   const [twoFAEnabled, setTwoFAEnabled] = useState(initial2FA);
   const [twoFAStep, setTwoFAStep] = useState<"idle" | "setup" | "backup">("idle");
   const [twoFAQR, setTwoFAQR] = useState<string>("");
@@ -241,6 +244,26 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
       setEmailStatus({ message: "Something went wrong. Please try again.", isError: true });
     } finally {
       setEmailSaving(false);
+    }
+  }
+
+  async function resendVerification() {
+    setVerifySending(true);
+    setVerifyStatus(null);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setVerifyStatus(res.ok
+        ? { message: "If your address still needs verifying, a new link is on its way. Check your inbox and spam folder.", isError: false }
+        : { message: data.error ?? "Could not send the email. Please try again later.", isError: true });
+    } catch {
+      setVerifyStatus({ message: "Something went wrong. Please try again.", isError: true });
+    } finally {
+      setVerifySending(false);
     }
   }
 
@@ -372,6 +395,20 @@ export default function SettingsContent({ name: initialName, email, emailVerifie
             <span className="text-amber-400">(unverified)</span>
           )}
         </p>
+        {!emailVerified && (
+          <div className="mb-4 space-y-2">
+            <p className="text-xs text-gray-400">Verify your email to start a free trial or subscribe.</p>
+            <button
+              type="button"
+              onClick={() => void resendVerification()}
+              disabled={verifySending}
+              className="rounded-xl border border-brand-500/40 px-4 py-2 text-sm font-semibold text-brand-300 hover:bg-brand-500/10 transition-colors disabled:opacity-50"
+            >
+              {verifySending ? "Sending..." : "Resend verification email"}
+            </button>
+            {verifyStatus && <Banner {...verifyStatus} />}
+          </div>
+        )}
         <form onSubmit={changeEmail} className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">New email address</label>

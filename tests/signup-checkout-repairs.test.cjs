@@ -26,16 +26,18 @@ test('signup normalizes email and completes independent after-response tasks des
   assert.equal(result.status, 201); assert.equal(created.email, 'buyer@example.com'); assert.equal(tasks.length, 0);
   await callbacks[0](); assert.deepEqual(tasks.sort(), ['affiliate', 'referral', 'verify', 'welcome']);
 });
-function checkoutFixture({ local = null, remote = [], open = [], expireFails = false } = {}) {
-  let created = 0; const expired = []; let idempotency;
+function checkoutFixture({ local = null, remote = [], open = [], expireFails = false, utmCookie = null } = {}) {
+  let created = 0; const expired = []; let idempotency; let lastBody;
   const api = load('src/app/api/stripe/create-checkout/route.ts', {
-    'next/server': next, 'next/headers': { cookies: async () => ({ get: () => null }) },
+    'next/server': next, 'next/headers': { cookies: async () => ({ get: (name) => (name === 'mm_utm' && utmCookie ? { value: utmCookie } : null) }) },
+    '@/lib/attribution': load('src/lib/attribution.ts', {}),
     '@/lib/auth': { auth: async () => ({ user: { id: 'user', email: 'buyer@example.com' } }) },
     '@/lib/ratelimit': { checkRateLimit: async () => null, limiters: {} },
+    '@/lib/accountGuards': { requireVerifiedEmail: async () => null },
     '@/lib/db': { db: { subscription: { findUnique: async () => local } } },
-    '@/lib/stripe': { requireStripe: () => ({ subscriptions: { list: async () => ({ data: remote }) }, checkout: { sessions: { list: async () => ({ data: open }), expire: async (id) => { if (expireFails) throw new Error("Provider could not expire checkout"); expired.push(id); }, create: async (_body, options) => { idempotency = options.idempotencyKey; created++; return { url: 'https://checkout.stripe.test/session' }; } } } }), getOrCreateStripeCustomer: async () => 'cus_test', findPlanByPriceId: () => ({ id: 'starter', annualPriceId: '' }) },
+    '@/lib/stripe': { requireStripe: () => ({ subscriptions: { list: async () => ({ data: remote }) }, checkout: { sessions: { list: async () => ({ data: open }), expire: async (id) => { if (expireFails) throw new Error("Provider could not expire checkout"); expired.push(id); }, create: async (body, options) => { lastBody = body; idempotency = options.idempotencyKey; created++; return { url: 'https://checkout.stripe.test/session' }; } } } }), getOrCreateStripeCustomer: async () => 'cus_test', findPlanByPriceId: () => ({ id: 'starter', annualPriceId: '' }) },
   });
-  return { async post(priceId = 'price_test') { return api.POST(new Request('https://app.test/api/stripe/create-checkout', { method: 'POST', body: JSON.stringify({ priceId }) })); }, created: () => created, expired: () => expired, idempotency: () => idempotency };
+  return { async post(priceId = 'price_test') { return api.POST(new Request('https://app.test/api/stripe/create-checkout', { method: 'POST', body: JSON.stringify({ priceId }) })); }, created: () => created, expired: () => expired, idempotency: () => idempotency, lastBody: () => lastBody };
 }
 test('checkout rejects existing local and webhook-lagged Stripe subscriptions', async () => {
   for (const config of [ { local: { stripeSubscriptionId: 'sub_test', status: 'ACTIVE' } }, { remote: [{ status: 'active' }] }, { remote: [{ status: 'trialing' }] }, { remote: [{ status: 'past_due' }] } ]) {
@@ -57,7 +59,8 @@ test('checkout reuses matching session and expires conflicting customer session 
 
 test('checkout expiration failure prevents replacement; unrelated one-off sessions remain open', async () => {
   const f = checkoutFixture({ expireFails: true, open: [{ id: 'cs_existing', mode: 'subscription', metadata: { planId: 'professional' } }] });
-  assert.equal((await f.post()).status, 500); assert.equal(f.created(), 0);
+  const failed = await f.post(); assert.equal(failed.status, 500); assert.equal(f.created(), 0);
+  assert.doesNotMatch(JSON.stringify(failed.body), /Provider could not expire/, 'provider details stay in the server log');
   const oneOff = checkoutFixture({ open: [{ id: 'cs_payment', mode: 'payment' }] });
   assert.equal((await oneOff.post()).status, 200); assert.deepEqual(oneOff.expired(), []);
 });
@@ -66,4 +69,13 @@ test('switching back to a previously expired plan does not reuse its stale idemp
   const first = checkoutFixture(); await first.post();
   const returning = checkoutFixture({ open: [{ id: 'cs_other_plan', mode: 'subscription', metadata: { planId: 'professional' } }] }); await returning.post();
   assert.notEqual(first.idempotency(), returning.idempotency());
+});
+
+test('checkout carries first-touch social attribution into Stripe and drops unsafe values', async () => {
+  const cookie = encodeURIComponent(JSON.stringify({ utm_source: 'instagram', utm_medium: 'social', utm_campaign: 'cq123', utm_content: '<script>' }));
+  const f = checkoutFixture({ utmCookie: cookie }); assert.equal((await f.post()).status, 200);
+  const body = f.lastBody();
+  assert.equal(body.metadata.utm_source, 'instagram'); assert.equal(body.metadata.utm_campaign, 'cq123'); assert.equal(body.metadata.utm_content, undefined);
+  assert.equal(body.subscription_data.metadata.utm_source, 'instagram'); assert.equal(body.metadata.userId, 'user');
+  const plain = checkoutFixture({ utmCookie: '%7Bbroken' }); assert.equal((await plain.post()).status, 200); assert.equal(plain.lastBody().metadata.utm_source, undefined);
 });

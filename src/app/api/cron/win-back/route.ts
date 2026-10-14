@@ -7,10 +7,10 @@ const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.
 function winBackHtml(name: string, wave: 1 | 2 | 3): string {
   const subject3 =
     wave === 1
-      ? { headline: "We noticed you left — here's what you're missing", body: `Since you cancelled, your competitors are still answering every call with AI. MansaMusaAI captured <strong>thousands of leads</strong> for businesses just like yours this week alone.<br><br>We'd love to have you back. Come back today and we'll give you <strong>30 days free</strong> — no card needed, no pressure.` }
+      ? { headline: "Your MansaMusaAI account is still here", body: `You recently cancelled MansaMusaAI. Your account and data are still here if you want to come back.<br><br>Plans start at £49 a month (Starter: website chat AI receptionist, CRM, appointment booking and your AI executive team), and you can cancel from Billing whenever you like.` }
       : wave === 2
-      ? { headline: "Still thinking about it?", body: `Your old account is waiting. One week ago you cancelled MansaMusaAI — and we get it, timing isn't always right.<br><br>But every missed call is a missed customer. We've added <strong>new features</strong> since you left: better lead scoring, WhatsApp automation, and daily AI intelligence reports.<br><br>Restart your account today. <strong>First month on us.</strong>` }
-      : { headline: "Last chance — your exclusive offer expires soon", body: `It's been a month since you left MansaMusaAI. This is our final email — we don't want to spam you.<br><br>If you ever want to come back, your account is still here and we'll give you <strong>50% off your first 3 months</strong>. Just reply to this email or click below.<br><br>Whatever you decide — good luck with your business. We genuinely mean that.` };
+      ? { headline: "Still thinking about it?", body: `A week ago you cancelled MansaMusaAI — we get it, timing isn't always right.<br><br>If you'd like to tell us what didn't work, just reply to this email. We read every reply.` }
+      : { headline: "This is our last email", body: `It's been a month since you left MansaMusaAI. This is our final email — we don't want to spam you.<br><br>If you ever want to come back, your account is still here. Whatever you decide — good luck with your business. We genuinely mean that.` };
 
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
@@ -36,9 +36,9 @@ function winBackHtml(name: string, wave: 1 | 2 | 3): string {
 }
 
 const subjects: Record<1 | 2 | 3, string> = {
-  1: "We miss you — 30 days free to come back",
-  2: "New features since you left (+ a gift inside)",
-  3: "Your final offer from MansaMusaAI — 50% off 3 months",
+  1: "Your MansaMusaAI account is still here",
+  2: "What didn't work for you?",
+  3: "Our last email from MansaMusaAI",
 };
 
 export const GET = withCron(async () => {

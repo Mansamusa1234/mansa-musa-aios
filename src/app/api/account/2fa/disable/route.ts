@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { verifyTotp } from "@/lib/twoFactor";
 import { logAuditEvent } from "@/lib/audit";
 import bcrypt from "bcryptjs";
+import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -11,7 +12,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { token, password } = await req.json();
+  const limited = await checkRateLimit(limiters.twoFactor, session.user.id);
+  if (limited) return limited;
+  const { token, password } = await req.json().catch(() => ({}));
+  if (typeof token !== "string" || typeof password !== "string") {
+    return NextResponse.json({ error: "Invalid password or OTP code." }, { status: 400 });
+  }
   const user = await db.user.findUnique({ where: { id: session.user.id } });
   if (!user?.twoFactorEnabled) {
     return NextResponse.json({ error: "2FA is not enabled." }, { status: 400 });

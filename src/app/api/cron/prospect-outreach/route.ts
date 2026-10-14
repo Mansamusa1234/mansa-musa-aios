@@ -2,15 +2,16 @@ import { db } from "@/lib/db";
 import { anthropic } from "@/lib/anthropic";
 import { withCron } from "@/lib/cronUtils";
 
+// Pain points and hooks are framed as questions about enquiries, with no invented statistics.
 const INDUSTRIES = [
-  { name: "dental practice", pain: "missed calls cost you £200-£500 per new patient", hook: "your receptionist can't answer every call at once" },
-  { name: "accounting firm", pain: "clients calling after hours get voicemail and go elsewhere", hook: "your competitors are already using AI to capture leads 24/7" },
-  { name: "estate agency", pain: "buyer enquiries come in at all hours and speed wins the instruction", hook: "the fastest to respond wins the listing" },
-  { name: "restaurant", pain: "reservation calls go to answerphone and tables go unfilled", hook: "every missed reservation is £30-£80 straight off your bottom line" },
-  { name: "scaffolding company", pain: "quote requests come in while your team is on site", hook: "you're losing contracts because you can't get back fast enough" },
-  { name: "car dealership", pain: "test drive enquiries need instant responses or buyers go to a competitor", hook: "the dealership that responds in 5 minutes wins the sale" },
-  { name: "solicitors firm", pain: "potential clients call once and never call back if they get voicemail", hook: "your first impression sets the tone for a £3,000+ matter" },
-  { name: "physiotherapy clinic", pain: "appointment booking calls interrupt treatment sessions", hook: "your therapists should be treating patients, not answering phones" },
+  { name: "dental practice", pain: "new-patient enquiries arrive while the front desk is busy", hook: "a website chat that answers common questions and captures the enquiry" },
+  { name: "accounting firm", pain: "enquiries arrive out of hours when nobody can reply", hook: "capturing out-of-hours enquiries from your website" },
+  { name: "estate agency", pain: "buyer enquiries come in at all hours and speed matters", hook: "replying to website enquiries straight away" },
+  { name: "restaurant", pain: "booking questions arrive during the busiest service", hook: "letting a website chat handle common questions while staff look after guests" },
+  { name: "scaffolding company", pain: "quote requests come in while your team is on site", hook: "keeping every quote request in one pipeline" },
+  { name: "car dealership", pain: "test drive enquiries need a quick reply", hook: "capturing and following up website enquiries" },
+  { name: "solicitors firm", pain: "potential clients often contact more than one firm", hook: "making a good first impression on your website" },
+  { name: "physiotherapy clinic", pain: "booking questions interrupt treatment sessions", hook: "letting clients book appointments without a phone call" },
 ];
 
 export const GET = withCron(async () => {
@@ -52,17 +53,17 @@ export const GET = withCron(async () => {
 Industry-specific pain point: ${industry.pain}
 Hook angle: ${industry.hook}
 
-MansaMusaAI is an AI receptionist and business automation platform. Key offer:
-- AI answers every call 24/7, books appointments, captures leads
-- Starter plan from £49/month
-- 14-day free trial, no credit card needed
-- Pays for itself with one extra booking per month
+MansaMusaAI facts (state only these; do not invent statistics, results, prices or features, and do not mention phone answering, SMS or WhatsApp):
+- An AI receptionist for the business's website chat: answers common questions and captures enquirers' details into a CRM
+- Appointment booking and an AI executive team for strategy, sales, finance and marketing questions
+- Free plan available; Starter £49/month, Professional £149/month, Enterprise £499/month
+- Professional can be tried free for 14 days with no card after verifying an email address
 
 Write 4 short paragraphs:
-1. Specific hook about their industry pain (one sentence, bold statement)
-2. What MansaMusaAI does (2 sentences, concrete)
-3. The ROI (specific: costs less than one missed booking/call)
-4. CTA: "Book a free 15-min demo at mansamusainitiative.com/demo" or "Reply YES and I'll send you a free trial link"
+1. A hook about their industry situation (one sentence, no statistics)
+2. What MansaMusaAI does (2 sentences, from the facts above only)
+3. The price and the free plan / trial (from the facts above only)
+4. CTA: "Reply and I'll send you a link to start free at mansamusainitiative.com"
 
 Subject line: make it specific to their industry, not generic.
 Output format: Subject: [subject]\n\n[body]

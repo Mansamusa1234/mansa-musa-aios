@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 import { sendEmail, passwordResetEmailHtml } from "@/lib/email";
 import { logAuditEvent } from "@/lib/audit";
+import { emailKey, normaliseEmail } from "@/lib/accountGuards";
 
 const schema = z.object({ email: z.string().email() });
 
@@ -15,9 +16,11 @@ export async function POST(req: Request) {
   if (limited) return limited;
 
   try {
-    const { email } = schema.parse(await req.json());
+    const email = normaliseEmail(schema.parse(await req.json()).email);
+    const perAddress = await checkRateLimit(limiters.emailPerAddress, `reset:${emailKey(email)}`);
+    if (perAddress) return NextResponse.json({ message: GENERIC_MESSAGE });
 
-    const user = await db.user.findUnique({ where: { email } });
+    const user = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
     if (user?.passwordHash) {
       const token = crypto.randomBytes(32).toString("hex");
       await db.passwordResetToken.create({
@@ -25,7 +28,7 @@ export async function POST(req: Request) {
       });
 
       const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
-      await sendEmail(email, "Reset your MansaMusaAI password", passwordResetEmailHtml(resetUrl));
+      await sendEmail(user.email, "Reset your MansaMusaAI password", passwordResetEmailHtml(resetUrl));
       await logAuditEvent({ userId: user.id, event: "PASSWORD_RESET_REQUESTED", ip: getIP(req) });
     }
 

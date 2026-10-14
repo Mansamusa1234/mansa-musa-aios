@@ -6,31 +6,29 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
 import { fadeUp, stagger } from "@/lib/motion";
 
+// What the receptionist does today: website chat only (phone, SMS and WhatsApp are not offered).
 const CAPABILITIES = [
-  { icon: "📞", title: "Answers calls 24/7", body: "Never miss a caller again. Your AI receptionist picks up instantly — no hold music, no voicemail." },
-  { icon: "🎯", title: "Qualifies leads", body: "Asks the right questions, scores prospects, and routes hot leads to your sales team immediately." },
-  { icon: "📅", title: "Books appointments", body: "Connects to your calendar. Confirms availability and books meetings without any back-and-forth." },
-  { icon: "📩", title: "Handles email & SMS", body: "Works across every channel — phone, email, SMS, and web chat — with a single unified setup." },
-  { icon: "🧠", title: "Learns your business", body: "Train it on your FAQs, pricing, services, and policies. It answers like your best employee would." },
-  { icon: "🌐", title: "Speaks 30+ languages", body: "Serves customers in their native language — automatically, without any extra setup." },
-  { icon: "📊", title: "Full conversation logs", body: "Every call and message transcribed and stored. Review, search, and export anytime." },
-  { icon: "🔌", title: "Integrates with your CRM", body: "Pushes leads and notes directly into Salesforce, HubSpot, Pipedrive, and 200+ other tools." },
+  { icon: "💬", title: "Answers website chat", body: "Replies to visitors on your website chat with the name, greeting and persona you choose." },
+  { icon: "🎯", title: "Captures leads", body: "When a visitor leaves their name and email, it is saved as a new lead in your CRM." },
+  { icon: "🧠", title: "Knows your business", body: "Tell it what your business does, your hours and your tone, and it answers in that style." },
+  { icon: "📊", title: "Conversation history", body: "Chats are saved so you can review what visitors asked." },
+  { icon: "🎨", title: "Matches your brand", body: "Choose the widget colour, name and greeting so it fits your website." },
+  { icon: "📅", title: "Works with your booking calendar", body: "Your booking calendar lets clients book appointments into your availability." },
 ];
 
 const STEPS = [
-  { number: "01", title: "Connect your number", body: "Port your existing number or get a new one. Takes under 2 minutes." },
-  { number: "02", title: "Train on your business", body: "Upload FAQs, pricing, policies. The AI is ready to answer questions about your business." },
-  { number: "03", title: "Set your routing rules", body: "Decide when to escalate to a human, who to alert, and how to follow up." },
-  { number: "04", title: "Go live", body: "Publish with one click. Your AI receptionist is live across all channels instantly." },
+  { number: "01", title: "Name it", body: "Choose a name, greeting and persona for your receptionist." },
+  { number: "02", title: "Describe your business", body: "Add what you do and your opening hours so it can answer questions." },
+  { number: "03", title: "Add it to your website", body: "Put the chat on your site. New enquiries appear in your CRM." },
 ];
 
 const USE_CASES = [
-  { emoji: "🦷", name: "Dentists", desc: "Book appointments, handle cancellations, and answer treatment queries 24/7 — without tying up your receptionist." },
-  { emoji: "🍽️", name: "Restaurants", desc: "Take table reservations, answer menu questions, and handle large-party enquiries automatically." },
-  { emoji: "🏗️", name: "Scaffolding companies", desc: "Capture job enquiries, schedule site surveys, and qualify leads while your crew is on site." },
-  { emoji: "📊", name: "Accountants", desc: "Handle client intake calls, book consultations, and answer deadline FAQs without interrupting your team." },
-  { emoji: "🏡", name: "Estate agents", desc: "Qualify buyers and renters, book viewings, and answer property queries around the clock." },
-  { emoji: "🚗", name: "Car dealerships", desc: "Handle test drive bookings, part-exchange enquiries, and finance questions instantly." },
+  { emoji: "🦷", name: "Dentists", desc: "Answer treatment and opening-hours questions on your website and capture new-patient enquiries." },
+  { emoji: "🍽️", name: "Restaurants", desc: "Answer menu and booking questions on your website while staff look after guests." },
+  { emoji: "🏗️", name: "Scaffolding companies", desc: "Capture job enquiries from your website while your crew is on site." },
+  { emoji: "📊", name: "Accountants", desc: "Answer common questions and capture new-client enquiries without interrupting your team." },
+  { emoji: "🏡", name: "Estate agents", desc: "Capture buyer and renter enquiries from your website, whatever the time." },
+  { emoji: "🚗", name: "Car dealerships", desc: "Capture test drive and part-exchange enquiries from your website." },
 ];
 
 export default function ReceptionistContent() {
@@ -52,7 +50,7 @@ export default function ReceptionistContent() {
                 </span>
               </motion.h1>
               <motion.p variants={fadeUp} className="mt-5 text-lg text-gray-400 max-w-2xl mx-auto">
-                Your AI receptionist answers calls, qualifies leads, books appointments, and handles FAQs — 24 hours a day, 7 days a week, in 30+ languages.
+                Your AI receptionist answers enquiries on your website chat, captures leads into your CRM, and works alongside your booking calendar.
               </motion.p>
               <motion.div variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 <Link href="/register" className="rounded-xl bg-brand-600 px-8 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors">
@@ -63,7 +61,7 @@ export default function ReceptionistContent() {
                 </Link>
               </motion.div>
               <motion.p variants={fadeUp} className="mt-4 text-xs text-gray-500">
-                Join free with no card. Starter includes up to 200 calls/month.
+                Join free with no card. The receptionist is included from Starter (£49/month).
               </motion.p>
             </motion.div>
           </div>
@@ -75,9 +73,8 @@ export default function ReceptionistContent() {
             <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500">
               {[
                 { stat: "£49/mo", label: "starts from" },
-                { stat: "24/7", label: "always on" },
-                { stat: "30+", label: "languages supported" },
-                { stat: "< 2s", label: "average answer time" },
+                { stat: "14 days", label: "free Professional trial" },
+                { stat: "No card", label: "to start free" },
               ].map((s) => (
                 <div key={s.label} className="text-center">
                   <p className="text-2xl font-extrabold text-gray-900">{s.stat}</p>
@@ -93,7 +90,7 @@ export default function ReceptionistContent() {
           <div className="mx-auto max-w-6xl px-6">
             <div className="text-center mb-14">
               <h2 className="text-3xl font-bold text-gray-900">One AI. Every channel. All day.</h2>
-              <p className="mt-3 text-gray-500">Your AI receptionist handles every customer touchpoint — automatically.</p>
+              <p className="mt-3 text-gray-500">Your AI receptionist handles enquiries on your website chat.</p>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {CAPABILITIES.map((c) => (
@@ -116,7 +113,7 @@ export default function ReceptionistContent() {
               <h2 className="text-3xl font-bold">Set up in 4 steps</h2>
               <p className="mt-3 text-gray-400">No code. No developers. No waiting.</p>
             </div>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {STEPS.map((s) => (
                 <motion.div key={s.number} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}
                   className="relative"
@@ -156,8 +153,8 @@ export default function ReceptionistContent() {
         {/* CTA */}
         <section className="bg-gradient-to-br from-brand-600 to-indigo-700 py-20 text-white">
           <div className="mx-auto max-w-3xl px-6 text-center">
-            <h2 className="text-3xl font-bold">Your phone is ringing right now.</h2>
-            <p className="mt-4 text-brand-100">Deploy your AI receptionist today and never let another lead go to voicemail.</p>
+            <h2 className="text-3xl font-bold">Your website visitors have questions right now.</h2>
+            <p className="mt-4 text-brand-100">Set up your website chat AI receptionist today and capture every enquiry in your CRM.</p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link href="/register"
                 className="rounded-xl bg-white px-8 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-50 transition-colors"

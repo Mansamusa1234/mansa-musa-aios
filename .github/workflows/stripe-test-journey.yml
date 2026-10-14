@@ -1,0 +1,92 @@
+name: Stripe test-mode journey
+
+# Real Stripe test mode, end to end, against the app built from this commit: signup, email verification,
+# login, Stripe-hosted checkout with Stripe's published test card, webhooks delivered by the Stripe CLI,
+# paid entitlement, cancel/reactivate, cancellation revokes access.
+# Needs the repository secret STRIPE_TEST_SECRET_KEY (a sandbox/test-mode secret key). It refuses live keys,
+# uses a throwaway CI database, and sends no email (no Resend key here).
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stripe-test-journey-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  journey:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: localtest
+          POSTGRES_DB: mansa_stripe_journey
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      HAS_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY != '' }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      DATABASE_URL: postgresql://postgres:localtest@127.0.0.1:55432/mansa_stripe_journey
+      NEXTAUTH_SECRET: ci-only-not-a-secret
+      AUTH_SECRET: ci-only-not-a-secret
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Skip without a test-mode key
+        if: env.HAS_KEY != 'true'
+        run: echo "::notice::STRIPE_TEST_SECRET_KEY is not set; the real Stripe test journey was NOT run."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.HAS_KEY == 'true'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: env.HAS_KEY == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install app, Playwright 1.63.0 (Chromium) and Stripe CLI 1.52.2 (checksum verified)
+        if: env.HAS_KEY == 'true'
+        run: |
+          npm ci
+          npm install --no-save playwright@1.63.0
+          npx playwright install --with-deps chromium
+          curl -fsSL -o /tmp/stripe.tgz https://github.com/stripe/stripe-cli/releases/download/v1.52.2/stripe_1.52.2_linux_x86_64.tar.gz
+          echo "a0b7951c47479931384f5a1ff535f5b5ca4aaa0628b5d1ffad02abf84abb36ed  /tmp/stripe.tgz" | sha256sum -c -
+          tar -xzf /tmp/stripe.tgz -C /tmp stripe
+      - name: Test-mode price (refuses live keys)
+        if: env.HAS_KEY == 'true'
+        id: price
+        run: node tests/stripe-live/setup.mjs >> "$GITHUB_OUTPUT"
+      - name: Database schema
+        if: env.HAS_KEY == 'true'
+        run: npx prisma db push --skip-generate
+      - name: Build
+        if: env.HAS_KEY == 'true'
+        run: npm run build
+      - name: Start webhook forwarding and the app
+        if: env.HAS_KEY == 'true'
+        run: |
+          WHSEC=$(/tmp/stripe listen --api-key "$STRIPE_SECRET_KEY" --print-secret)
+          echo "::add-mask::$WHSEC"
+          nohup /tmp/stripe listen --api-key "$STRIPE_SECRET_KEY" --forward-to localhost:3000/api/stripe/webhook \
+            --events checkout.session.completed,checkout.session.async_payment_succeeded,customer.subscription.updated,customer.subscription.deleted,invoice.payment_succeeded,invoice.payment_failed \
+            > /tmp/stripe-listen.log 2>&1 &
+          STRIPE_WEBHOOK_SECRET="$WHSEC" STRIPE_PRICE_STARTER_TEST="${{ steps.price.outputs.price_id }}" nohup npx next start -p 3000 > /tmp/app.log 2>&1 &
+          for i in $(seq 1 60); do curl -fs http://localhost:3000/api/health >/dev/null && break; sleep 2; done
+          curl -fs http://localhost:3000/api/health
+      - name: Journey
+        if: env.HAS_KEY == 'true'
+        env:
+          STRIPE_PRICE_STARTER_TEST: ${{ steps.price.outputs.price_id }}
+        run: node tests/stripe-live/journey.mjs
+      - name: Webhook and app logs (on failure)
+        if: failure() && env.HAS_KEY == 'true'
+        run: |
+          tail -n 60 /tmp/stripe-listen.log || true
+          grep -E "webhook|stripe|Error" /tmp/app.log | tail -n 60 || true

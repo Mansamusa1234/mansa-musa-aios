@@ -18,7 +18,7 @@ const timeline = [
   { year: "2024", title: "Idea born", desc: "A vision for an AI operating system that could run entire businesses — not just answer questions." },
   { year: "2025 Q1", title: "First build", desc: "Prototype built with Claude API. Streaming chat, multi-model routing, and subscription billing working end-to-end." },
   { year: "2025 Q3", title: "Agent Hub", desc: "10 specialised AI agents deployed. CEO, Finance, Legal, Marketing, Security — each with domain expertise." },
-  { year: "2026", title: "Scale", desc: "Thousands of users. Fintech-grade infrastructure. Full marketing platform. The AI OS vision becomes reality." },
+  { year: "2026", title: "Launch", desc: "Paid plans, a website chat AI receptionist, CRM, booking calendar and an AI executive team for UK small businesses." },
 ];
 
 export default function AboutContent() {

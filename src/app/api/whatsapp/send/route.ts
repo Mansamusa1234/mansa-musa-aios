@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendWhatsApp } from "@/lib/twilio";
 import { z } from "zod";
+import { requireFeature } from "@/lib/accountGuards";
 
 const schema = z.object({
   to:   z.string().min(7).max(20),
@@ -10,6 +11,8 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  const planGate = await requireFeature("whatsapp");
+  if (planGate) return planGate;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { PLANS, findPlanByPriceId, getStripe } from "@/lib/stripe";
 import BillingDiagnosticsClient from "./BillingDiagnosticsClient";
+import { priceEnv } from "@/lib/stripePrices";
 
 export const dynamic = "force-dynamic";
 
@@ -55,9 +56,9 @@ export default async function AdminBillingPage() {
   const envDiagnostics = {
     STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: !!process.env.STRIPE_WEBHOOK_SECRET,
-    STRIPE_PRICE_STARTER: process.env.STRIPE_PRICE_STARTER ?? process.env.STRIPE_PRICE_BASIC ?? "",
-    STRIPE_PRICE_PROFESSIONAL: process.env.STRIPE_PRICE_PROFESSIONAL ?? process.env.STRIPE_PRICE_PRO ?? "",
-    STRIPE_PRICE_ENTERPRISE: process.env.STRIPE_PRICE_ENTERPRISE ?? "",
+    STRIPE_PRICE_STARTER: priceEnv("STRIPE_PRICE_STARTER", "STRIPE_PRICE_BASIC"),
+    STRIPE_PRICE_PROFESSIONAL: priceEnv("STRIPE_PRICE_PROFESSIONAL", "STRIPE_PRICE_PRO"),
+    STRIPE_PRICE_ENTERPRISE: priceEnv("STRIPE_PRICE_ENTERPRISE"),
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "",
     liveMode: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") ?? false,
   };

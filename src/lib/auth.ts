@@ -9,12 +9,12 @@ import { z } from "zod";
 import { after } from "next/server";
 import { db } from "./db";
 import { authConfig } from "./auth.config";
-import { checkRateLimit, limiters, getIP } from "@/lib/ratelimit";
+import { checkRateLimit, claimOnce, limiters, getIP } from "@/lib/ratelimit";
 import { logAuditEvent } from "@/lib/audit";
 import { sendEmail, suspiciousLoginEmailHtml } from "@/lib/email";
 import { microsoftEntraIdProvider, appleProvider } from "./auth.providers";
 import { verifyChallengeToken } from "./authChallenge";
-import { verifyTotp, verifyBackupCode } from "./twoFactor";
+import { verifyTotpStep, verifyBackupCode } from "./twoFactor";
 
 const githubProvider =
   process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
@@ -45,10 +45,25 @@ const credentialsSchema = z.object({
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
 
+/** True when the identity provider itself vouches for the email address. */
+function providerVerifiedEmail(profile: unknown): boolean {
+  const verified = (profile as { email_verified?: unknown } | undefined)?.email_verified;
+  return verified === true || verified === "true";
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
+  events: {
+    ...authConfig.events,
+    // An OAuth sign-in whose provider confirms the address counts as email verification.
+    async linkAccount({ user, profile }) {
+      if (!user.id || !user.email || !providerVerifiedEmail(profile)) return;
+      if (String((profile as { email?: unknown })?.email ?? "").toLowerCase() !== user.email.toLowerCase()) return;
+      await db.user.updateMany({ where: { id: user.id, emailVerified: null }, data: { emailVerified: new Date() } });
+    },
+  },
   providers: [
     ...githubProvider,
     ...googleProvider,
@@ -61,25 +76,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const userId = verifyChallengeToken(credentials.challengeToken as string);
           if (!userId) return null;
 
+          // Limit guesses per account (not just per IP), and honour the shared lockout.
+          const limitedSecondFactor = await checkRateLimit(limiters.twoFactor, userId).catch(() => null);
+          if (limitedSecondFactor) return null;
           const user = await db.user.findUnique({ where: { id: userId } });
           if (!user?.twoFactorEnabled || !user.twoFactorSecret) return null;
+          if (user.lockedUntil && user.lockedUntil > new Date()) return null;
 
-          const totpValid = verifyTotp(credentials.totp as string, user.twoFactorSecret);
-          if (!totpValid) {
-            // Allow backup code fallback
-            if (user.twoFactorBackupCodes) {
-              const { valid, remaining } = verifyBackupCode(
-                credentials.totp as string,
-                user.twoFactorBackupCodes
-              );
-              if (!valid) return null;
-              await db.user.update({
-                where: { id: user.id },
+          const code = String(credentials.totp).trim();
+          const step = verifyTotpStep(code, user.twoFactorSecret);
+          let secondFactorOk = false;
+          if (step !== null) {
+            // Each authenticator code works once (replay protection across the ±1 step window).
+            secondFactorOk = await claimOnce(`totp:${user.id}:${step}`, 120);
+          } else if (user.twoFactorBackupCodes) {
+            const { valid, remaining } = verifyBackupCode(code, user.twoFactorBackupCodes);
+            if (valid) {
+              // Consume atomically: a backup code cannot be used twice by concurrent requests.
+              const consumed = await db.user.updateMany({
+                where: { id: user.id, twoFactorBackupCodes: user.twoFactorBackupCodes },
                 data: { twoFactorBackupCodes: JSON.stringify(remaining) },
               });
-            } else {
-              return null;
+              secondFactorOk = consumed.count === 1;
             }
+          }
+          if (!secondFactorOk) {
+            const attempts = user.failedLoginAttempts + 1;
+            const shouldLock = attempts >= MAX_FAILED_ATTEMPTS;
+            await db.user.update({
+              where: { id: user.id },
+              data: { failedLoginAttempts: attempts, lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null },
+            });
+            return null;
+          }
+          if (user.failedLoginAttempts > 0) {
+            await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null } });
           }
 
           const rememberMe = credentials.rememberMe === "true";
@@ -137,9 +168,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const rememberMe = parsed.data.rememberMe === "true";
         const jti = crypto.randomUUID();
 
-        const priorSuccessFromThisIp =
-          ip !== "anonymous" ? await db.auditLog.findFirst({ where: { userId: user.id, event: "LOGIN_SUCCESS", ip } }) : null;
-        const isNewIp = ip !== "anonymous" && !priorSuccessFromThisIp;
+        // Alert on a new location only when there is an earlier sign-in to compare with
+        // (a brand-new account's first sign-in is not suspicious).
+        const [priorSuccessFromThisIp, anyPriorSuccess] = ip !== "anonymous"
+          ? await Promise.all([
+            db.auditLog.findFirst({ where: { userId: user.id, event: "LOGIN_SUCCESS", ip } }),
+            db.auditLog.findFirst({ where: { userId: user.id, event: "LOGIN_SUCCESS" } }),
+          ])
+          : [null, null];
+        const isNewIp = ip !== "anonymous" && !!anyPriorSuccess && !priorSuccessFromThisIp;
 
         await Promise.all([
           db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null } }),

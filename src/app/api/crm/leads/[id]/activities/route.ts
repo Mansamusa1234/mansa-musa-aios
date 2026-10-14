@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireFeature } from "@/lib/accountGuards";
 
 const schema = z.object({
   type: z.enum(["NOTE", "EMAIL", "CALL", "MEETING", "TASK"]).default("NOTE"),
@@ -24,6 +25,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const planGate = await requireFeature("crm");
+  if (planGate) return planGate;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;

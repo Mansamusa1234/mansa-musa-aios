@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -10,7 +10,11 @@ function VerifyEmailInner() {
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
   const [error, setError] = useState("");
 
+  // A verification link is single-use: never submit it twice (e.g. React strict-mode double effects).
+  const submitted = useRef(false);
   useEffect(() => {
+    if (submitted.current) return;
+    submitted.current = true;
     const token = searchParams.get("token");
     if (!token) {
       setStatus("error");

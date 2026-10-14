@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { triggerWorkflows } from "@/lib/email-automation";
+import { requireFeature } from "@/lib/accountGuards";
 
 const createSchema = z.object({
   name: z.string().min(1).max(200),
@@ -27,6 +28,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const planGate = await requireFeature("crm");
+  if (planGate) return planGate;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const parsed = createSchema.safeParse(await req.json());

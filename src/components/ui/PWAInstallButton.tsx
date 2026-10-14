@@ -11,10 +11,15 @@ export default function PWAInstallButton() {
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  // Wait for the cookie choice so the two prompts never stack over the page (notably on mobile).
+  const [consentDecided, setConsentDecided] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("mm_pwa_dismissed");
     if (stored) setDismissed(true);
+    if (localStorage.getItem("mm_cookie_consent")) setConsentDecided(true);
+    const onConsent = () => setConsentDecided(true);
+    window.addEventListener("mm-cookie-consent", onConsent);
 
     const handler = (e: Event) => {
       e.preventDefault();
@@ -24,7 +29,10 @@ export default function PWAInstallButton() {
 
     window.addEventListener("appinstalled", () => setInstalled(true));
 
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("mm-cookie-consent", onConsent);
+    };
   }, []);
 
   async function handleInstall() {
@@ -40,7 +48,7 @@ export default function PWAInstallButton() {
     setPrompt(null);
   }
 
-  if (!prompt || installed || dismissed) return null;
+  if (!prompt || installed || dismissed || !consentDecided) return null;
 
   return (
     <div className="fixed bottom-20 right-4 z-50 flex max-w-xs items-start gap-3 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0f0f1e] p-4 shadow-2xl shadow-black/20 md:bottom-4">

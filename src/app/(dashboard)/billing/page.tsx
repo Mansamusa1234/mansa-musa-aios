@@ -41,7 +41,10 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
     ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
     : null;
 
-  const currentPlan = plans.find((p) => p.priceId === subscription?.stripePriceId || p.annualPriceId === subscription?.stripePriceId);
+  // Only a live Stripe subscription is a "current plan"; a cancelled or expired one must not block re-subscribing.
+  const liveSubscription = subscription?.stripeSubscriptionId && ["ACTIVE", "TRIALING", "PAST_DUE"].includes(subscription.status) ? subscription : null;
+  const onCardFreeTrial = isTrialing && !subscription?.stripePriceId;
+  const currentPlan = liveSubscription ? plans.find((p) => p.priceId === liveSubscription.stripePriceId || p.annualPriceId === liveSubscription.stripePriceId) : undefined;
   const currentPrice = currentPlan?.price ?? 0;
 
   const endsAtFormatted = currentPeriodEnd
@@ -98,12 +101,13 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           <BillingClient
             key={plan.id}
             plan={plan}
-            currentPriceId={subscription?.stripePriceId ?? null}
+            currentPriceId={liveSubscription?.stripePriceId ?? null}
+            onTrial={onCardFreeTrial}
             currentPrice={currentPrice}
             index={i}
             cancelAtPeriodEnd={cancelAtPeriodEnd}
             currentPeriodEnd={currentPeriodEnd}
-            subscriptionId={subscription?.stripeSubscriptionId ?? null}
+            subscriptionId={liveSubscription?.stripeSubscriptionId ?? null}
           />
         ))}
       </div>

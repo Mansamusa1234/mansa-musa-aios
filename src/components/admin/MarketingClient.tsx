@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { ChannelStatus, ChannelState } from "@/lib/marketingStatus";
 
 interface LeaderRow {
   name: string | null;
@@ -19,6 +20,7 @@ interface Campaign {
 }
 
 interface Props {
+  channels: ChannelStatus[];
   leaderboard: LeaderRow[];
   subscriberCount: number;
   pushSubscriberCount: number;
@@ -36,7 +38,22 @@ function StatCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-export default function MarketingClient({ leaderboard, subscriberCount, pushSubscriberCount, couponCount, totalReferrals, totalAffiliates }: Props) {
+const STATE_LABEL: Record<ChannelState, string> = {
+  connected: "Connected",
+  ready: "Ready",
+  reconnect: "Reconnect required",
+  setup: "Setup required",
+  coming_soon: "Coming soon",
+};
+const STATE_STYLE: Record<ChannelState, string> = {
+  connected: "bg-green-500/15 text-green-400",
+  ready: "bg-blue-500/15 text-blue-300",
+  reconnect: "bg-amber-500/15 text-amber-300",
+  setup: "bg-white/8 text-gray-300",
+  coming_soon: "bg-purple-500/15 text-purple-300",
+};
+
+export default function MarketingClient({ channels, leaderboard, subscriberCount, pushSubscriberCount, couponCount, totalReferrals, totalAffiliates }: Props) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignForm, setCampaignForm] = useState({ subject: "", bodyHtml: "" });
   const [sendingCampaign, setSendingCampaign] = useState(false);
@@ -95,7 +112,7 @@ export default function MarketingClient({ leaderboard, subscriberCount, pushSubs
     <div className="mx-auto max-w-5xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Marketing</h1>
-        <p className="mt-1 text-sm text-gray-500">Newsletter, push notifications, and the referral leaderboard.</p>
+        <p className="mt-1 text-sm text-gray-500">Channel status, newsletter, push notifications, and the referral leaderboard.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -104,6 +121,24 @@ export default function MarketingClient({ leaderboard, subscriberCount, pushSubs
         <StatCard label="Promo codes" value={couponCount} />
         <StatCard label="Total referrals" value={totalReferrals} />
         <StatCard label="Total affiliates" value={totalAffiliates} />
+      </div>
+
+      {/* Channel status */}
+      <div>
+        <h2 className="mb-1 text-sm font-bold text-white">📡 Marketing channels</h2>
+        <p className="mb-3 text-xs text-gray-500">Checked when this page loads. Nothing is posted or sent from here.</p>
+        <div className="overflow-hidden rounded-2xl border border-white/8 bg-white/3 divide-y divide-white/5">
+          {channels.map((ch) => (
+            <div key={ch.key} className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">{ch.name} <span className="ml-1 text-[10px] font-normal uppercase tracking-wider text-gray-500">{ch.group}</span></p>
+                <p className="text-xs text-gray-400">{ch.detail}</p>
+                {ch.action && <p className="mt-0.5 text-xs text-gray-500">{ch.action}</p>}
+              </div>
+              <span className={`shrink-0 self-start rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATE_STYLE[ch.state]}`}>{STATE_LABEL[ch.state]}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Leaderboard */}

@@ -1,85 +1,97 @@
-import {
-  getTodaysScript,
-  MANSA_INTRO_SCRIPT,
-  createHeyGenVideo,
-  getHeyGenVideoUrl,
-  postToLinkedIn,
-  postToInstagram,
-  postToTikTok,
-  postToYouTube,
-  postToTwitter,
-  postToFacebook,
-  postToThreads,
-  postToPinterest,
-  postToLinkedInText,
-  postToFacebookText,
-  postToThreadsText,
-} from "@/lib/social-automation";
+import { getTodaysScript, MANSA_INTRO_SCRIPT, createHeyGenVideo, getHeyGenVideoUrl } from "@/lib/social-automation";
 import { withCron } from "@/lib/cronUtils";
+import { db } from "@/lib/db";
+import { SOCIAL_NETWORKS } from "@/lib/metricool";
 
 export const maxDuration = 300;
 
+export type SocialDraftMetadata = {
+  kind: "daily_video";
+  day: string; // YYYY-MM-DD (Europe/London)
+  scriptTitle: string;
+  script: string;
+  hashtags: string[];
+  networks: string[];
+  videoId?: string | null;
+  videoUrl?: string | null;
+  videoError?: string;
+  metricool?: unknown;
+};
+
+/** Daily video rendered by the GitHub Actions workflow and stored at <base>/social/<day>.mp4. */
+async function renderedVideoUrl(day: string): Promise<string | null> {
+  const base = process.env.SOCIAL_VIDEO_BASE_URL?.replace(/\/$/, "");
+  if (!base) return null;
+  const url = `${base}/social/${day}.mp4`;
+  try {
+    const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(10000) });
+    return res.ok ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function londonDay(date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+}
+
+// Daily content pipeline step 1: campaign idea → script → (video) → captions → approval queue.
+// Nothing is published here. Publication happens only after an admin approves the draft.
 export const GET = withCron(async (request) => {
-  const avatarId = process.env.HEYGEN_AVATAR_ID ?? "";
-  const voiceId = process.env.HEYGEN_VOICE_ID ?? "";
   const campaign = new URL(request.url).searchParams.get("campaign");
   const script = campaign === "intro" ? MANSA_INTRO_SCRIPT : getTodaysScript();
+  const day = londonDay();
 
-  let videoUrl: string | null = null;
-
-  if (process.env.HEYGEN_API_KEY && avatarId && voiceId) {
+  // Attach finished videos to earlier drafts still waiting on HeyGen.
+  const rendering = await db.contentQueue.findMany({ where: { type: "social_post", status: "PENDING", platform: "multi" }, take: 20 });
+  let videosAttached = 0;
+  for (const item of rendering) {
+    let meta: SocialDraftMetadata;
+    try { meta = JSON.parse(item.metadata ?? "{}"); } catch { continue; }
+    if (meta.kind !== "daily_video" || meta.videoUrl) continue;
     try {
-      const videoId = await createHeyGenVideo(script, avatarId, voiceId);
-      if (videoId) {
-        // Keep polling comfortably inside Vercel's 300-second function limit so
-        // there is still time to publish (or fall back to text) before timeout.
-        for (let i = 0; i < 8; i++) {
-          await new Promise(r => setTimeout(r, 15000));
-          videoUrl = await getHeyGenVideoUrl(videoId);
-          if (videoUrl) break;
-        }
-      }
-    } catch (error) {
-      console.warn("[social:heygen] using campaign fallback video", error instanceof Error ? error.message : String(error));
+      const url = meta.videoId ? await getHeyGenVideoUrl(meta.videoId) : await renderedVideoUrl(meta.day);
+      if (!url) continue;
+      meta.videoUrl = url; videosAttached++;
+    } catch (err) {
+      meta.videoError = err instanceof Error ? err.message : String(err);
     }
+    await db.contentQueue.update({ where: { id: item.id }, data: { metadata: JSON.stringify(meta) } });
   }
 
-  if (!videoUrl && campaign === "intro") {
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://mansamusainitiative.com").replace(/\/$/, "");
-    videoUrl = `${appUrl}/media/mansamusa-intro.mp4`;
+  const existing = await db.contentQueue.findFirst({
+    where: { type: "social_post", platform: "multi", metadata: { contains: `"day":"${day}"` } },
+    select: { id: true },
+  });
+  if (existing) return { queued: false, reason: "Today's draft already exists", draftId: existing.id, videosAttached };
+
+  const avatarId = process.env.HEYGEN_AVATAR_ID ?? "";
+  const voiceId = process.env.HEYGEN_VOICE_ID ?? "";
+  let videoId: string | null = null;
+  let videoError: string | undefined;
+  // HeyGen spends credits: opt in explicitly.
+  if (process.env.SOCIAL_HEYGEN_ENABLED === "true" && process.env.HEYGEN_API_KEY && avatarId && voiceId) {
+    try { videoId = await createHeyGenVideo(script, avatarId, voiceId); }
+    catch (err) { videoError = err instanceof Error ? err.message : String(err); }
   }
+  const initialVideoUrl = campaign === "intro"
+    ? `${(process.env.NEXT_PUBLIC_APP_URL || "https://www.mansamusainitiative.com").replace(/\/$/, "")}/media/mansamusa-intro.mp4`
+    : videoId ? null : await renderedVideoUrl(day);
 
-  let posted: Record<string, boolean>;
-
-  if (videoUrl) {
-    const [linkedin, instagram, tiktok, youtube, twitter, facebook, threads, pinterest] = await Promise.all([
-      postToLinkedIn(videoUrl, script),
-      postToInstagram(videoUrl, script),
-      postToTikTok(videoUrl, script),
-      postToYouTube(videoUrl, script),
-      postToTwitter(videoUrl, script),
-      postToFacebook(videoUrl, script),
-      postToThreads(videoUrl, script),
-      postToPinterest(videoUrl, script),
-    ]);
-    posted = { linkedin, instagram, tiktok, youtube, twitter, facebook, threads, pinterest };
-  } else {
-    const [twitter, linkedin, facebook, threads] = await Promise.all([
-      postToTwitter("", script),
-      postToLinkedInText(script),
-      postToFacebookText(script),
-      postToThreadsText(script),
-    ]);
-    posted = { twitter, linkedin, facebook, threads, instagram: false, tiktok: false, youtube: false, pinterest: false };
-  }
-
-  const successCount = Object.values(posted).filter(Boolean).length;
-
-  return {
-    script: script.title,
-    mode: videoUrl ? "video" : "text",
-    videoUrl,
-    posted,
-    successCount,
+  const metadata: SocialDraftMetadata = {
+    kind: "daily_video", day, scriptTitle: script.title, script: script.script, hashtags: script.hashtags,
+    networks: [...SOCIAL_NETWORKS], videoId, videoUrl: initialVideoUrl, ...(videoError ? { videoError } : {}),
   };
+  const draft = await db.contentQueue.create({
+    data: {
+      type: "social_post",
+      platform: "multi",
+      title: `${day} · ${script.title}`,
+      content: `${script.caption}\n\n${script.hashtags.join(" ")}`,
+      metadata: JSON.stringify(metadata),
+      status: "PENDING",
+    },
+  });
+
+  return { queued: true, draftId: draft.id, video: videoId ? "rendering" : initialVideoUrl ? "attached" : "none", videosAttached };
 });

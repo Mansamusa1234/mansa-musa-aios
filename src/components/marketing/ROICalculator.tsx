@@ -26,7 +26,7 @@ export default function ROICalculator() {
         <div className="text-center mb-12">
           <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">· ROI Calculator ·</p>
           <h2 className="text-4xl font-extrabold text-white">
-            How much are missed calls costing you?
+            How much are missed enquiries costing you?
           </h2>
           <p className="mt-4 text-gray-400 text-lg">
             Move the sliders — see your real losses in real time.
@@ -38,7 +38,7 @@ export default function ROICalculator() {
           <div className="space-y-8 rounded-2xl border border-white/8 bg-white/5 p-8">
             <div>
               <div className="flex justify-between mb-2">
-                <label className="text-sm font-medium text-gray-300">Calls per month</label>
+                <label className="text-sm font-medium text-gray-300">Enquiries per month</label>
                 <span className="text-brand-400 font-bold">{calls}</span>
               </div>
               <input
@@ -64,7 +64,7 @@ export default function ROICalculator() {
 
             <div>
               <div className="flex justify-between mb-2">
-                <label className="text-sm font-medium text-gray-300">Calls you currently miss</label>
+                <label className="text-sm font-medium text-gray-300">Enquiries you currently miss</label>
                 <span className="text-red-400 font-bold">{miss}%</span>
               </div>
               <input
@@ -91,7 +91,7 @@ export default function ROICalculator() {
                   {fmt(monthlyLoss)}
                 </motion.p>
               </AnimatePresence>
-              <p className="mt-2 text-sm text-red-300/70">{missedCalls} missed calls × £{value} each</p>
+              <p className="mt-2 text-sm text-red-300/70">{missedCalls} missed enquiries × £{value} each</p>
             </div>
 
             <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
@@ -110,7 +110,7 @@ export default function ROICalculator() {
             </div>
 
             <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-6">
-              <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-1">MansaMusaAI pays for itself</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-green-400 mb-1">If you captured those enquiries</p>
               <AnimatePresence mode="wait">
                 <motion.p
                   key={monthlyROI}
@@ -122,7 +122,7 @@ export default function ROICalculator() {
                   {fmt(Math.max(0, monthlyROI))} net gain / mo
                 </motion.p>
               </AnimatePresence>
-              <p className="mt-1 text-xs text-green-300/70">After £{planCost}/mo Professional plan</p>
+              <p className="mt-1 text-xs text-green-300/70">After £{planCost}/mo Professional plan. Illustrative estimate from your inputs, not a guarantee.</p>
             </div>
 
             <Link

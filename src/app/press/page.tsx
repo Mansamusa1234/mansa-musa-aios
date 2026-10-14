@@ -18,7 +18,7 @@ const stats = [
 const faqs = [
   {
     q: "What is MansaMusaAI?",
-    a: "MansaMusaAI is an AI Operating System for modern business. It lets companies deploy AI agents that handle calls, automate admin, qualify leads, and run 24/7 — without hiring more staff.",
+    a: "MansaMusaAI is an AI Operating System for modern business. It gives small businesses a website chat AI receptionist, a CRM, a booking calendar and an AI executive team in one platform.",
   },
   {
     q: "Who founded MansaMusaAI?",
@@ -71,7 +71,7 @@ export default function PressPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-8">Key Messages</h2>
           <ul className="space-y-4">
             {[
-              "The average UK SME loses £30,000/year to missed calls and slow follow-up. MansaMusaAI eliminates that gap.",
+              "An AI receptionist for website chat, a CRM, a booking calendar and an AI executive team in one platform for UK small businesses.",
               "AI agents trained on your business data, not generic chatbots. Every response is on-brand and accurate.",
               "From AI receptionist to full workflow automation — one platform, one subscription, no per-seat pricing.",
               "Built on Claude AI by Anthropic — the most capable and safest AI models available to business today.",

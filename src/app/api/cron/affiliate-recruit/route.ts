@@ -13,7 +13,7 @@ const AFFILIATE_PROFILES = [
     type: "digital marketing agency",
     audience: "SMB clients who need automation",
     angle: "add MansaMusaAI to your service stack and earn recurring revenue without doing any extra work",
-    earningsExample: "White-label our AI receptionist to your clients and earn 20% on every subscription — no tech work required",
+    earningsExample: "Refer your clients to MansaMusaAI and earn 20% recurring commission on their subscriptions — no tech work required",
   },
   {
     type: "accountant or bookkeeper",

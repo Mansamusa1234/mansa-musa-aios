@@ -7,16 +7,16 @@ const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.
 function nudgeHtml(name: string, wave: 1 | 2 | 3): string {
   const content = {
     1: {
-      headline: "Your AI receptionist is waiting — 2 minutes to set up",
-      body: `You signed up for MansaMusaAI yesterday — brilliant move.<br><br>You haven't set up your AI receptionist yet. It takes <strong>under 2 minutes</strong> and once it's live, it answers every call and captures every lead automatically — even at 2am.<br><br>Here's what happens after setup:<br><br>Every missed call gets answered<br>Leads are captured into your CRM<br>Appointments book themselves<br>WhatsApp replies go out instantly<br><br>Let's get you live.`,
+      headline: "Your AI receptionist is waiting — a few minutes to set up",
+      body: `You signed up for MansaMusaAI yesterday — welcome.<br><br>You haven't set up your AI receptionist yet. Give it a name, a greeting and a persona, then add it to your website chat. It answers questions about your business and captures enquirers' details into your CRM.<br><br>Remember to verify your email: it unlocks the free 14-day Professional trial (no card needed).`,
     },
     2: {
-      headline: "Still missing calls? Let's fix that right now",
-      body: `Three days in and your AI receptionist still isn't live.<br><br>Every day without it, you're losing leads to businesses that are already using AI. The setup literally takes 2 minutes — just give it a name, a greeting, and you're live.<br><br><strong>UK businesses using MansaMusaAI see on average:</strong><br><br>3x more leads captured<br>40% more appointments booked<br>60%+ revenue increase within 90 days<br><br>Don't leave money on the table.`,
+      headline: "Your website chat receptionist isn't live yet",
+      body: `Three days in and your AI receptionist still isn't set up.<br><br>Setup takes a few minutes: give it a name and a greeting, then add the chat to your website. New enquiries then appear in your CRM, and you can book appointments into your calendar.`,
     },
     3: {
-      headline: "One week in — you're still not set up. Here's why that matters.",
-      body: `It's been a week since you joined MansaMusaAI and your AI receptionist still isn't active.<br><br>I want to be straight with you — if you're not set up in the next few days, your trial will expire and you'll lose access.<br><br>If there's anything stopping you — confusion, a question, anything — just reply to this email. A real human will help you get live within the hour.<br><br>You're this close. Let's finish it.`,
+      headline: "One week in — need a hand getting set up?",
+      body: `It's been a week since you joined MansaMusaAI and your AI receptionist still isn't active.<br><br>If anything is stopping you — a question, confusion, anything — just reply to this email and we'll help you get set up.`,
     },
   }[wave];
 
@@ -35,7 +35,7 @@ function nudgeHtml(name: string, wave: 1 | 2 | 3): string {
       <a href="${APP}/onboarding" style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:15px">
         Set up my AI receptionist
       </a>
-      <p style="margin:24px 0 0;color:#94a3b8;font-size:13px">Need help? Just reply — we respond within 2 hours.</p>
+      <p style="margin:24px 0 0;color:#94a3b8;font-size:13px">Need help? Just reply to this email.</p>
     </div>
   </div>
   <p style="text-align:center;color:#cbd5e1;font-size:12px;margin-top:16px">MansaMusaAI · mansamusainitiative.com</p>

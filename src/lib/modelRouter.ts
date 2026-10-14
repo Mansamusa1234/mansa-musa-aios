@@ -2,8 +2,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Mistral } from "@mistralai/mistralai";
+import { isRouteLlmConfigured, routeLlmChat } from "@/lib/routellm";
 
-export type ModelProvider = "anthropic" | "openai" | "grok" | "gemini" | "mistral" | "openrouter";
+export type ModelProvider = "anthropic" | "openai" | "grok" | "gemini" | "mistral" | "openrouter" | "abacus";
 export type RoutingMode = "auto" | "manual";
 
 export interface ModelDef {
@@ -279,6 +280,19 @@ export const MODEL_CATALOG: ModelDef[] = [
     badge: "Pro",
     available: () => !!process.env.MISTRAL_API_KEY,
   },
+  // ── Abacus RouteLLM (last, so it only becomes the auto model when no other provider is configured) ──
+  {
+    provider: "abacus",
+    modelId: "route-llm",
+    displayName: "Abacus RouteLLM",
+    description: "Routes each request to a suitable model via Abacus",
+    planGate: "free",
+    contextWindow: 128000,
+    // Billed against Abacus credits rather than per token; not metered here.
+    costPer1kInMicro: 0,
+    costPer1kOutMicro: 0,
+    available: isRouteLlmConfigured,
+  },
 ];
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -335,6 +349,7 @@ export function routeMessage(
     case "gemini":      return routeGemini(model, messages, system);
     case "mistral":     return routeMistral(model, messages, system);
     case "openrouter":  return routeOpenRouter(model, messages, system);
+    case "abacus":      return routeAbacus(model, messages, system);
   }
 }
 
@@ -562,6 +577,36 @@ function routeOpenRouter(model: ModelDef, messages: ChatMessage[], system: strin
         }
         controller.close();
         resolveFn!({ inputTokens, outputTokens, costUsdMicro: Math.round(inputTokens * model.costPer1kInMicro / 1000 + outputTokens * model.costPer1kOutMicro / 1000), model: model.modelId, provider: "openrouter" });
+      } catch (err) {
+        rejectFn!(err);
+        controller.error(err);
+      }
+    },
+  });
+
+  return { stream, onComplete };
+}
+
+/* ── Abacus RouteLLM (non-streaming; the reply is sent as one chunk) ───────── */
+function routeAbacus(model: ModelDef, messages: ChatMessage[], system: string): RouteResult {
+  const encoder = new TextEncoder();
+  let resolveFn: (v: { inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }) => void;
+  let rejectFn: (error: unknown) => void;
+  const onComplete = new Promise<{ inputTokens: number; outputTokens: number; costUsdMicro: number; model: string; provider: string }>(
+    (resolve, reject) => { resolveFn = resolve; rejectFn = reject; }
+  );
+
+  void onComplete.catch(() => {});
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        const result = await routeLlmChat({ messages: [{ role: "system", content: system }, ...messages], maxTokens: 2048 });
+        if (!result.ok || result.content === null) throw new Error(`RouteLLM request failed (status ${result.status})`);
+        controller.enqueue(encoder.encode(result.content));
+        controller.close();
+        const inputTokens = result.usage?.input_tokens ?? result.usage?.prompt_tokens ?? 0;
+        const outputTokens = result.usage?.output_tokens ?? result.usage?.completion_tokens ?? 0;
+        resolveFn!({ inputTokens, outputTokens, costUsdMicro: 0, model: result.model ?? model.modelId, provider: "abacus" });
       } catch (err) {
         rejectFn!(err);
         controller.error(err);

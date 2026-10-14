@@ -36,6 +36,8 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
   const [cols, setCols] = useState(pipeline);
   const [showAdd, setShowAdd] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const reportFailure = async (res: Response, fallback: string) => { const d = await res.json().catch(() => ({})); setActionError(d.error ?? fallback); };
   const [form, setForm] = useState({ name: "", email: "", company: "", phone: "", value: "0", source: "", notes: "", stage: "NEW" as Stage });
   const [dragId, setDragId] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -64,7 +66,8 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
     if (!selectedLead || !actNote.trim()) return;
     setSavingAct(true);
     const res = await fetch(`/api/crm/leads/${selectedLead.id}/activities`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: actType, note: actNote.trim() }) });
-    if (res.ok) { const data = await res.json(); setActivities((prev) => [data.activity, ...prev]); setActNote(""); }
+    if (res.ok) { const data = await res.json(); setActivities((prev) => [data.activity, ...prev]); setActNote(""); setActionError(""); }
+    else await reportFailure(res, "Could not add the activity.");
     setSavingAct(false);
   }
 
@@ -75,9 +78,10 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
       const res = await fetch("/api/crm/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, value: parseInt(form.value, 10) * 100 }) });
       if (res.ok) {
         const data = await res.json();
-        if (data.lead) { setCols((prev) => prev.map((col) => col.stage === data.lead.stage ? { ...col, leads: [data.lead, ...col.leads] } : col)); setShowAdd(false); setForm({ name: "", email: "", company: "", phone: "", value: "0", source: "", notes: "", stage: "NEW" }); }
-      }
-    } finally { setAdding(false); }
+        if (data.lead) { setCols((prev) => prev.map((col) => col.stage === data.lead.stage ? { ...col, leads: [data.lead, ...col.leads] } : col)); setShowAdd(false); setForm({ name: "", email: "", company: "", phone: "", value: "0", source: "", notes: "", stage: "NEW" }); setActionError(""); }
+      } else await reportFailure(res, "Could not add the lead.");
+    } catch { setActionError("Could not connect. Please try again."); }
+    finally { setAdding(false); }
   }
 
   async function moveLead(leadId: string, toStage: Stage) {
@@ -85,7 +89,7 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
     if (res.ok) {
       setCols((prev) => { let moved: LeadRow | undefined; const next = prev.map((col) => { const leads = col.leads.filter((l) => { if (l.id === leadId) { moved = l; return false; } return true; }); return { ...col, leads }; }); return next.map((col) => col.stage === toStage && moved ? { ...col, leads: [{ ...moved }, ...col.leads] } : col); });
       if (selectedLead?.id === leadId) setSelectedLead((prev) => prev ? { ...prev } : null);
-    }
+    } else await reportFailure(res, "Could not move the lead.");
   }
 
   async function deleteLead(id: string) {
@@ -103,6 +107,11 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
           <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· CRM ·</p>
           <h1 className="text-2xl font-extrabold text-white sm:text-3xl">Lead Pipeline</h1>
           <p className="mt-1 text-sm text-gray-500">Track your leads from first contact to closed deal.</p>
+          {actionError && (
+            <p role="alert" className="mt-2 text-sm text-red-300">
+              {actionError}{/upgrade/i.test(actionError) && <> <a href="/billing" className="underline">Open Billing</a></>}
+            </p>
+          )}
         </div>
         <button onClick={() => setShowAdd(true)} className="rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors shrink-0">+ Add Lead</button>
       </motion.div>
@@ -214,6 +223,11 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
                 <input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="Source" className="rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none" />
               </div>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notes" rows={2} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none resize-none" />
+              {actionError && (
+                <p role="alert" className="text-sm text-red-300">
+                  {actionError}{/upgrade/i.test(actionError) && <> <a href="/billing" className="underline">Open Billing</a></>}
+                </p>
+              )}
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={adding} className="flex-1 rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">{adding ? "Adding..." : "Add lead"}</button>
                 <button type="button" onClick={() => setShowAdd(false)} className="rounded-xl border border-white/8 px-4 py-2.5 text-sm text-gray-400 hover:text-white">Cancel</button>

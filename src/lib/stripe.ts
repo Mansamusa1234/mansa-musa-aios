@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import type { PricingPlan } from "@/types";
+import { priceEnv } from "@/lib/stripePrices";
 
 const STRIPE_API_VERSION = "2025-02-24.acacia";
 
@@ -14,11 +15,28 @@ export function getStripe(): Stripe | null {
     stripeClient = new Stripe(apiKey, {
       apiVersion: STRIPE_API_VERSION,
       typescript: true,
+      ...localMockHost(apiKey),
     });
     stripeClientKey = apiKey;
   }
 
   return stripeClient;
+}
+
+/**
+ * Local testing only: STRIPE_MOCK_URL (e.g. http://127.0.0.1:12111 for stripe-mock) is honoured
+ * solely for a loopback address with a test-mode key, so it can never redirect live traffic.
+ */
+function localMockHost(apiKey: string): { host: string; port: number; protocol: "http" | "https" } | Record<string, never> {
+  const raw = process.env.STRIPE_MOCK_URL?.trim();
+  if (!raw || !apiKey.startsWith("sk_test_")) return {};
+  try {
+    const url = new URL(raw);
+    if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) return {};
+    return { host: url.hostname, port: Number(url.port || (url.protocol === "https:" ? 443 : 80)), protocol: url.protocol === "https:" ? "https" : "http" };
+  } catch {
+    return {};
+  }
 }
 
 export function requireStripe(): Stripe {
@@ -49,15 +67,15 @@ export const PLANS: PricingPlan[] = [
     name: "Starter",
     price: 49,
     currency: "gbp",
-    priceId: process.env.STRIPE_PRICE_STARTER ?? process.env.STRIPE_PRICE_BASIC ?? "",
-    annualPriceId: process.env.STRIPE_PRICE_STARTER_ANNUAL ?? "",
+    priceId: priceEnv("STRIPE_PRICE_STARTER", "STRIPE_PRICE_BASIC"),
+    annualPriceId: priceEnv("STRIPE_PRICE_STARTER_ANNUAL"),
     annualPrice: 470.4,
     description: "For small businesses",
     features: [
-      "1 AI receptionist",
-      "Up to 200 calls / month",
-      "Appointment booking",
+      "Website chat AI receptionist",
       "Lead capture & CRM",
+      "Appointment booking",
+      "AI executive team",
       "Email support",
     ],
     highlighted: false,
@@ -68,14 +86,12 @@ export const PLANS: PricingPlan[] = [
     name: "Professional",
     price: 149,
     currency: "gbp",
-    priceId: process.env.STRIPE_PRICE_PROFESSIONAL ?? process.env.STRIPE_PRICE_PRO ?? "",
-    annualPriceId: process.env.STRIPE_PRICE_PROFESSIONAL_ANNUAL ?? "",
+    priceId: priceEnv("STRIPE_PRICE_PROFESSIONAL", "STRIPE_PRICE_PRO"),
+    annualPriceId: priceEnv("STRIPE_PRICE_PROFESSIONAL_ANNUAL"),
     annualPrice: 1430.4,
     description: "For growing businesses",
     features: [
-      "3 AI receptionists",
-      "Unlimited calls",
-      "CRM + WhatsApp integration",
+      "Everything in Starter",
       "Email automation sequences",
       "Business Research Desk",
       "Affiliate programme access",
@@ -89,17 +105,13 @@ export const PLANS: PricingPlan[] = [
     name: "Enterprise",
     price: 499,
     currency: "gbp",
-    priceId: process.env.STRIPE_PRICE_ENTERPRISE ?? "",
-    annualPriceId: process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL ?? "",
+    priceId: priceEnv("STRIPE_PRICE_ENTERPRISE"),
+    annualPriceId: priceEnv("STRIPE_PRICE_ENTERPRISE_ANNUAL"),
     annualPrice: 4790.4,
     description: "For larger teams",
     features: [
-      "Unlimited AI receptionists",
-      "Unlimited calls",
-      "Custom training & branding",
-      "Business automation workflows",
-      "Business Research Desk",
-      "SSO / SAML",
+      "Everything in Professional",
+      "Most capable AI models (incl. Claude Fable 5)",
       "Dedicated account manager",
       "SLA guarantee",
     ],

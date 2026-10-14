@@ -59,7 +59,7 @@ export default function AgentDashboardContent({ totalConversations, totalMessage
             Welcome back, {userName}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            {deployedAgents.length} agents active · monitoring your business 24/7
+            {deployedAgents.length} agents active
           </p>
         </motion.div>
 
