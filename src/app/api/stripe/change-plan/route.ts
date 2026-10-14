@@ -2,6 +2,7 @@ import { stripeSubscriptionStatus } from "@/lib/stripeSubscriptionStatus";
 import { auth } from "@/lib/auth";
 import { requireStripe, getConfiguredPriceIds } from "@/lib/stripe";
 import { db } from "@/lib/db";
+import { subscriptionPeriod } from "@/lib/stripePayload";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -10,8 +11,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { priceId } = await req.json();
-  if (!priceId) {
+  const { priceId } = await req.json().catch(() => ({}));
+  if (typeof priceId !== "string" || !priceId) {
     return NextResponse.json({ error: "Missing priceId" }, { status: 400 });
   }
 
@@ -47,21 +48,22 @@ export async function POST(req: Request) {
       proration_behavior: "create_prorations",
     });
 
+    // Period fields live on the subscription (older API versions) or its items (newer ones).
+    const period = subscriptionPeriod(updated);
     await db.subscription.update({
       where: { userId: session.user.id },
       data: {
         stripePriceId: updated.items.data[0].price.id,
         status: stripeSubscriptionStatus(updated.status),
-        currentPeriodStart: new Date(updated.current_period_start * 1000),
-        currentPeriodEnd: new Date(updated.current_period_end * 1000),
+        currentPeriodStart: new Date(period.start * 1000),
+        currentPeriodEnd: new Date(period.end * 1000),
         cancelAtPeriodEnd: updated.cancel_at_period_end,
       },
     });
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    const msg = (err as Error)?.message ?? "Unknown error";
-    console.error("[stripe/change-plan] error:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("[stripe/change-plan] error:", (err as Error)?.message ?? err);
+    return NextResponse.json({ error: "Your plan could not be changed. Please try again or use Manage billing." }, { status: 500 });
   }
 }

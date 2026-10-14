@@ -581,10 +581,19 @@ export async function postToPinterest(videoUrl: string, script: VideoScript): Pr
   return res.ok;
 }
 
+/** Where the admin YouTube connection (/api/auth) stores its refresh token. */
+export const YOUTUBE_ACCOUNT = { provider: "youtube-social", providerAccountId: "channel" } as const;
+
+/** Refresh token from the admin connection, falling back to the YOUTUBE_REFRESH_TOKEN variable. */
+export async function youtubeRefreshToken(): Promise<string | null> {
+  const stored = await db.account.findUnique({ where: { provider_providerAccountId: YOUTUBE_ACCOUNT }, select: { refresh_token: true } }).catch(() => null);
+  return stored?.refresh_token ?? process.env.YOUTUBE_REFRESH_TOKEN ?? null;
+}
+
 export async function postToYouTube(videoUrl: string, script: VideoScript): Promise<PostReceipt | false> {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
-  const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
+  const refreshToken = await youtubeRefreshToken();
   if (!clientId || !clientSecret || !refreshToken) return false;
 
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {

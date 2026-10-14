@@ -1,6 +1,6 @@
 // Publishes an approved daily draft through the platforms' own APIs (no Metricool API needed).
 // Only called from the admin approval route, never from a cron.
-import { postToFacebook, postToFacebookText, postToInstagram, postToTikTok, postToYouTube, type VideoScript } from "@/lib/social-automation";
+import { postToFacebook, postToFacebookText, postToInstagram, postToTikTok, postToYouTube, youtubeRefreshToken, type VideoScript } from "@/lib/social-automation";
 import { utmLink, type SocialNetwork } from "@/lib/metricool";
 
 export function directPublishEnabled(): boolean {
@@ -17,13 +17,13 @@ export function networkEnabled(network: SocialNetwork): boolean {
 }
 
 /** Whether the app holds its own credentials for a network (Metricool's connections are separate). */
-export function networkConfigured(network: SocialNetwork): boolean {
+export async function networkConfigured(network: SocialNetwork): Promise<boolean> {
   const env = process.env;
   switch (network) {
     case "facebook": return Boolean(env.FACEBOOK_PAGE_ACCESS_TOKEN && env.FACEBOOK_PAGE_ID);
     case "instagram": return Boolean(env.INSTAGRAM_USER_ID);
     case "tiktok": return Boolean(env.TIKTOK_ACCESS_TOKEN);
-    case "youtube": return Boolean(env.YOUTUBE_CLIENT_ID && env.YOUTUBE_CLIENT_SECRET && env.YOUTUBE_REFRESH_TOKEN);
+    case "youtube": return Boolean(env.YOUTUBE_CLIENT_ID && env.YOUTUBE_CLIENT_SECRET && await youtubeRefreshToken());
   }
 }
 
@@ -48,7 +48,7 @@ export async function publishDraft(input: {
 
 async function publishOne(network: SocialNetwork, input: { draftId: string; title: string; script: string; caption: string; videoUrl?: string | null }): Promise<PublishResult> {
   if (!networkEnabled(network)) return { network, ok: false, skipped: "not_enabled" };
-  if (!networkConfigured(network)) return { network, ok: false, skipped: "not_connected" };
+  if (!await networkConfigured(network)) return { network, ok: false, skipped: "not_connected" };
   if (!input.videoUrl && network !== "facebook") return { network, ok: false, skipped: "needs_video" };
   // Hashtags are already part of the approved caption; the UTM link attributes leads and revenue.
   const script: VideoScript = {

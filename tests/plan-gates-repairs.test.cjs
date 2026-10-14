@@ -116,3 +116,27 @@ test('the free trial is refused to unverified emails and to accounts with any St
   assert.deepEqual(await run({ existing: { status: 'PAST_DUE', stripeSubscriptionId: 'sub_2', trialUsed: false } }), { status: 409, upserts: 0 });
   assert.deepEqual(await run(), { status: 201, upserts: 1 });
 });
+
+test('plan change and cancellation store a valid billing period from modern Stripe payloads and hide provider errors', async () => {
+  const modern = { id: 'sub_1', status: 'active', cancel_at_period_end: false, items: { data: [{ id: 'si_1', price: { id: 'price_pro' }, current_period_start: 1_760_000_000, current_period_end: 1_762_592_000 }] } };
+  const writes = [];
+  const common = (stripe) => ({
+    'next/server': response, '@/lib/auth': { auth: async () => ({ user: { id: 'u1' } }) },
+    '@/lib/stripePayload': load('src/lib/stripePayload.ts', {}),
+    '@/lib/stripeSubscriptionStatus': load('src/lib/stripeSubscriptionStatus.ts', {}),
+    '@/lib/stripe': { requireStripe: () => stripe, getConfiguredPriceIds: () => ['price_starter', 'price_pro'] },
+    '@/lib/db': { db: { subscription: { findUnique: async () => ({ stripeSubscriptionId: 'sub_1', stripePriceId: 'price_starter', status: 'ACTIVE', cancelAtPeriodEnd: false }), update: async ({ data }) => { writes.push(data); } } } },
+  });
+  const okStripe = { subscriptions: { retrieve: async () => modern, update: async () => ({ ...modern, cancel_at_period_end: true }) } };
+  const change = load('src/app/api/stripe/change-plan/route.ts', common(okStripe));
+  const res = await change.POST(new Request('https://app.test', { method: 'POST', body: JSON.stringify({ priceId: 'price_pro' }) }));
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(writes[0].stripePriceId, 'price_pro'); assert.equal(writes[0].currentPeriodEnd.getTime(), 1_762_592_000_000);
+  const cancel = load('src/app/api/stripe/cancel/route.ts', common(okStripe));
+  const c = await cancel.POST();
+  assert.equal(c.status, 200); assert.equal(writes[1].currentPeriodEnd.getTime(), 1_762_592_000_000);
+  const failing = load('src/app/api/stripe/change-plan/route.ts', common({ subscriptions: { retrieve: async () => { throw new Error('sk_live_secret-ish provider detail'); } } }));
+  const bad = await failing.POST(new Request('https://app.test', { method: 'POST', body: JSON.stringify({ priceId: 'price_pro' }) }));
+  assert.equal(bad.status, 500); assert.doesNotMatch(JSON.stringify(bad.body), /provider detail/);
+  assert.equal((await change.POST(new Request('https://app.test', { method: 'POST', body: JSON.stringify({ priceId: 'price_unknown' }) }))).status, 400);
+});
