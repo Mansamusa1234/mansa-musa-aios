@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { withCron } from "@/lib/cronUtils";
+import { priceEnv } from "@/lib/stripePrices";
 
 const APP = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.mansamusainitiative.com";
-const STARTER_PRICE = process.env.STRIPE_PRICE_STARTER ?? process.env.STRIPE_PRICE_BASIC ?? "";
+const STARTER_PRICE = priceEnv("STRIPE_PRICE_STARTER", "STRIPE_PRICE_BASIC");
 
 export const GET = withCron(async () => {
   const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);

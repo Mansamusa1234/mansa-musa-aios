@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
+import { priceEnv } from "@/lib/stripePrices";
 
 export type Plan = "free" | "starter" | "pro" | "enterprise";
 
-const ENTERPRISE_IDS = [process.env.STRIPE_PRICE_ENTERPRISE, process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL].filter(Boolean) as string[];
-const PRO_IDS = [process.env.STRIPE_PRICE_PROFESSIONAL, process.env.STRIPE_PRICE_PRO, process.env.STRIPE_PRICE_PROFESSIONAL_ANNUAL].filter(Boolean) as string[];
-const STARTER_IDS = [process.env.STRIPE_PRICE_STARTER, process.env.STRIPE_PRICE_BASIC, process.env.STRIPE_PRICE_STARTER_ANNUAL].filter(Boolean) as string[];
+// Price IDs for the active Stripe mode (test-mode _TEST variables in a Preview test environment).
+const ENTERPRISE_IDS = [priceEnv("STRIPE_PRICE_ENTERPRISE"), priceEnv("STRIPE_PRICE_ENTERPRISE_ANNUAL")].filter(Boolean);
+const PRO_IDS = [priceEnv("STRIPE_PRICE_PROFESSIONAL"), priceEnv("STRIPE_PRICE_PRO"), priceEnv("STRIPE_PRICE_PROFESSIONAL_ANNUAL")].filter(Boolean);
+const STARTER_IDS = [priceEnv("STRIPE_PRICE_STARTER"), priceEnv("STRIPE_PRICE_BASIC"), priceEnv("STRIPE_PRICE_STARTER_ANNUAL")].filter(Boolean);
 
 const PLAN_ORDER: Plan[] = ["free", "starter", "pro", "enterprise"];
 

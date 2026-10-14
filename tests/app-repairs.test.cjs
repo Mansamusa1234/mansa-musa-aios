@@ -53,7 +53,8 @@ test('Vercel KV credentials enable Redis limiters', () => {
 });
 
 test('subscription recognises annual prices, live card-free trials, and expiry', () => {
-  const { resolveSubscriptionPlan: plan } = load('src/lib/subscription.ts', { '@/lib/db': { db: {} } }, { STRIPE_PRICE_PROFESSIONAL_ANNUAL: 'annual-pro', STRIPE_PRICE_STARTER: 'starter' });
+  const env = { STRIPE_PRICE_PROFESSIONAL_ANNUAL: 'annual-pro', STRIPE_PRICE_STARTER: 'starter' };
+  const { resolveSubscriptionPlan: plan } = load('src/lib/subscription.ts', { '@/lib/db': { db: {} }, '@/lib/stripePrices': load('src/lib/stripePrices.ts', {}, env) }, env);
   assert.equal(plan({ status: 'ACTIVE', stripePriceId: 'annual-pro' }), 'pro');
   assert.equal(plan({ status: 'TRIALING', stripePriceId: null, trialEndsAt: new Date(Date.now() + 86400000) }), 'pro');
   assert.equal(plan({ status: 'TRIALING', stripePriceId: null, trialEndsAt: new Date(0) }), 'free');

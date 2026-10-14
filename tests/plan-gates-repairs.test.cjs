@@ -13,7 +13,7 @@ function load(file, mocks, env = {}) {
 const response = { NextResponse: { json: (body, init = {}) => ({ status: init.status ?? 200, body }) } };
 
 function guards({ plan = 'free', role = 'USER', verified = true } = {}) {
-  const subscription = load('src/lib/subscription.ts', { '@/lib/db': { db: {} } });
+  const subscription = load('src/lib/subscription.ts', { '@/lib/db': { db: {} }, '@/lib/stripePrices': load('src/lib/stripePrices.ts', {}) });
   return load('src/lib/accountGuards.ts', {
     'next/server': response,
     '@/lib/db': { db: { user: { findUnique: async () => ({ emailVerified: verified ? new Date() : null }) } } },
@@ -143,10 +143,23 @@ test('plan change and cancellation store a valid billing period from modern Stri
 
 test('STRIPE_MOCK_URL only redirects a test-mode key to a loopback address', () => {
   const seen = [];
-  const load2 = (env) => load('src/lib/stripe.ts', { stripe: class { constructor(key, opts) { seen.push(opts); } } }, env);
+  const load2 = (env) => load('src/lib/stripe.ts', { stripe: class { constructor(key, opts) { seen.push(opts); } }, '@/lib/stripePrices': load('src/lib/stripePrices.ts', {}, env) }, env);
   load2({ STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_MOCK_URL: 'http://127.0.0.1:12111' }).getStripe();
   load2({ STRIPE_SECRET_KEY: 'sk_live_x', STRIPE_MOCK_URL: 'http://127.0.0.1:12111' }).getStripe();
   load2({ STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_MOCK_URL: 'https://attacker.example' }).getStripe();
   // One client per module load (cached); only the test key with a loopback URL is redirected.
   assert.deepEqual(seen.map((o) => o.host ?? 'api.stripe.com'), ['127.0.0.1', 'api.stripe.com', 'api.stripe.com']);
+});
+
+test('test-mode keys use STRIPE_PRICE_*_TEST; live keys always use the live price variables', () => {
+  const env = { STRIPE_PRICE_STARTER: 'price_live_starter', STRIPE_PRICE_STARTER_TEST: 'price_test_starter', STRIPE_PRICE_ENTERPRISE: 'price_live_ent' };
+  const live = load('src/lib/stripePrices.ts', {}, { ...env, STRIPE_SECRET_KEY: 'sk_live_x' });
+  const test = load('src/lib/stripePrices.ts', {}, { ...env, STRIPE_SECRET_KEY: 'sk_test_x' });
+  assert.equal(live.priceEnv('STRIPE_PRICE_STARTER'), 'price_live_starter');
+  assert.equal(test.priceEnv('STRIPE_PRICE_STARTER'), 'price_test_starter');
+  assert.equal(test.priceEnv('STRIPE_PRICE_ENTERPRISE'), 'price_live_ent', 'falls back when no _TEST variable is set');
+  assert.equal(live.priceEnv('STRIPE_PRICE_MISSING', 'STRIPE_PRICE_STARTER'), 'price_live_starter');
+  const subEnv = { ...env, STRIPE_SECRET_KEY: 'sk_test_x' };
+  const sub = load('src/lib/subscription.ts', { '@/lib/db': { db: {} }, '@/lib/stripePrices': load('src/lib/stripePrices.ts', {}, subEnv) }, subEnv);
+  assert.equal(sub.resolveSubscriptionPlan({ status: 'ACTIVE', stripePriceId: 'price_test_starter' }), 'starter');
 });

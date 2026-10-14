@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import type { PricingPlan } from "@/types";
+import { priceEnv } from "@/lib/stripePrices";
 
 const STRIPE_API_VERSION = "2025-02-24.acacia";
 
@@ -66,8 +67,8 @@ export const PLANS: PricingPlan[] = [
     name: "Starter",
     price: 49,
     currency: "gbp",
-    priceId: process.env.STRIPE_PRICE_STARTER ?? process.env.STRIPE_PRICE_BASIC ?? "",
-    annualPriceId: process.env.STRIPE_PRICE_STARTER_ANNUAL ?? "",
+    priceId: priceEnv("STRIPE_PRICE_STARTER", "STRIPE_PRICE_BASIC"),
+    annualPriceId: priceEnv("STRIPE_PRICE_STARTER_ANNUAL"),
     annualPrice: 470.4,
     description: "For small businesses",
     features: [
@@ -85,8 +86,8 @@ export const PLANS: PricingPlan[] = [
     name: "Professional",
     price: 149,
     currency: "gbp",
-    priceId: process.env.STRIPE_PRICE_PROFESSIONAL ?? process.env.STRIPE_PRICE_PRO ?? "",
-    annualPriceId: process.env.STRIPE_PRICE_PROFESSIONAL_ANNUAL ?? "",
+    priceId: priceEnv("STRIPE_PRICE_PROFESSIONAL", "STRIPE_PRICE_PRO"),
+    annualPriceId: priceEnv("STRIPE_PRICE_PROFESSIONAL_ANNUAL"),
     annualPrice: 1430.4,
     description: "For growing businesses",
     features: [
@@ -106,8 +107,8 @@ export const PLANS: PricingPlan[] = [
     name: "Enterprise",
     price: 499,
     currency: "gbp",
-    priceId: process.env.STRIPE_PRICE_ENTERPRISE ?? "",
-    annualPriceId: process.env.STRIPE_PRICE_ENTERPRISE_ANNUAL ?? "",
+    priceId: priceEnv("STRIPE_PRICE_ENTERPRISE"),
+    annualPriceId: priceEnv("STRIPE_PRICE_ENTERPRISE_ANNUAL"),
     annualPrice: 4790.4,
     description: "For larger teams",
     features: [
