@@ -64,5 +64,5 @@ YouTube OAuth client, `ABACUS_API_KEY`, `BLOB_READ_WRITE_TOKEN` (also the GitHub
 - Free accounts can still view and delete their CRM, booking, WhatsApp and email-automation data but cannot create new items.
 - The launch banner and its countdown are hidden until a real promotion code is configured.
 
-**Smoke checks after deploy** (no writes to customer data)
+**Smoke checks after deploy** (no writes to customer data): run `node scripts/smoke-check.mjs https://www.mansamusainitiative.com` (exit code 1 on any failure), covering:
 `/`, `/pricing`, `/login`, `/register` return 200 · `/api/health` returns `ok` or `degraded` (never `error`) · `/dashboard` redirects to `/login` when signed out · `/_diagnostics/*` returns 404 · `/api/cron/social-post` without the secret returns 401.
