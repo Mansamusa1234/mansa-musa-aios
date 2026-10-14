@@ -1,8 +1,8 @@
 // Preview builds only: one tiny RouteLLM request to prove the Preview ABACUS_API_KEY works,
 // plus read-only env, connection and database checks.
-// Writes a sanitised result (never the key) to the build log and public/_diagnostics/routellm.json.
+// Results (never secret values) go to the Vercel build log only, which needs team access. Nothing is written
+// under public/, so no report is ever served by the deployment.
 // No-op for Production and local builds. Never fails the build.
-import { mkdirSync, writeFileSync } from "node:fs";
 
 if (process.env.VERCEL_ENV !== "preview") {
   console.log("[routellm-check] skipped (not a Vercel Preview build)");
@@ -32,8 +32,6 @@ if (!key) {
 }
 const record = { checkedAt: new Date().toISOString(), commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null, ...result };
 console.log("[routellm-check]", JSON.stringify(record));
-mkdirSync("public/_diagnostics", { recursive: true });
-writeFileSync("public/_diagnostics/routellm.json", JSON.stringify(record, null, 2));
 
 // Which integrations Preview can exercise: presence only, never values.
 const NAMES = ["DATABASE_URL", "NEXTAUTH_SECRET", "CRON_SECRET", "ANTHROPIC_API_KEY", "ABACUS_API_KEY", "ABACUS_WORKER_URL", "ABACUS_WORKER_TOKEN",
@@ -49,7 +47,6 @@ const env = {
   set: Object.fromEntries(NAMES.map((name) => [name, Boolean(process.env[name]?.trim())])),
 };
 console.log("[env-inventory]", JSON.stringify(env));
-writeFileSync("public/_diagnostics/env.json", JSON.stringify(env, null, 2));
 
 // Read-only connection checks (identity / balance only; nothing is posted or spent).
 const secrets = ["FACEBOOK_PAGE_ACCESS_TOKEN", "INSTAGRAM_ACCESS_TOKEN", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN", "HEYGEN_API_KEY"]
@@ -90,7 +87,6 @@ const connections = {
   }),
 };
 console.log("[connections]", JSON.stringify(connections));
-writeFileSync("public/_diagnostics/connections.json", JSON.stringify(connections, null, 2));
 
 // Read-only database audit (counts and catalog metadata only, never row contents).
 // Answers: does Preview point at a database holding real customers, and which public tables lack RLS?
@@ -130,6 +126,5 @@ if (process.env.DATABASE_URL) {
     database = { ok: false, error: String(err instanceof Error ? err.message : err).split(process.env.DATABASE_URL).join("[redacted]").slice(0, 240) };
   }
   const report = { checkedAt: record.checkedAt, commit: record.commit, ...database };
-  console.log("[database]", JSON.stringify({ ...report, withoutRls: report.withoutRls?.length }));
-  writeFileSync("public/_diagnostics/database.json", JSON.stringify(report, null, 2));
+  console.log("[database]", JSON.stringify(report));
 }

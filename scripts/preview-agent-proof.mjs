@@ -1,7 +1,7 @@
 // Preview builds only, and only when the commit message contains "[agent-proof]": asks the app's own
 // C-suite agents (their real system prompts) to complete one concrete task per department via RouteLLM.
-// Writes public/_diagnostics/agents.json. Never fails the build; never prints the key.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+// Output goes to the Vercel build log only (team access). Never fails the build; never prints the key.
+import { readFileSync } from "node:fs";
 import ts from "typescript";
 
 if (process.env.VERCEL_ENV !== "preview" || !(process.env.VERCEL_GIT_COMMIT_MESSAGE ?? "").includes("[agent-proof]")) {
@@ -50,6 +50,4 @@ for (const [department, role, task] of TASKS) {
   }
 }
 const report = { checkedAt: new Date().toISOString(), commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null, passed: results.filter((r) => r.ok && r.output).length, of: results.length, results };
-console.log("[agent-proof]", JSON.stringify({ passed: report.passed, of: report.of }));
-mkdirSync("public/_diagnostics", { recursive: true });
-writeFileSync("public/_diagnostics/agents.json", JSON.stringify(report, null, 2));
+console.log("[agent-proof]", JSON.stringify(report));
