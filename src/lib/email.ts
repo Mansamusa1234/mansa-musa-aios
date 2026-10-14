@@ -73,6 +73,16 @@ export function verificationEmailHtml(verifyUrl: string): string {
   );
 }
 
+export function loginCodeEmailHtml(code: string): string {
+  return wrapper(
+    "Your sign-in code",
+    `<p style="color:#4b5563;font-size:14px;line-height:1.6">Use this one-time code to finish signing in to MansaMusaAI. It expires in 10 minutes.</p>
+     <p style="margin:20px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:30px;letter-spacing:0.3em;font-weight:700;color:#111827">${esc(code)}</p>
+     <p style="color:#4b5563;font-size:13px;line-height:1.6">Never share this code with anyone.</p>`,
+    "If you didn't attempt to sign in, change your password and review your account security."
+  );
+}
+
 export async function createAndSendVerificationEmail(userId: string, email: string): Promise<SendResult> {
   try {
     const token = crypto.randomBytes(32).toString("hex");
