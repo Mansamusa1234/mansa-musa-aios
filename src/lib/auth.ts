@@ -44,6 +44,7 @@ const credentialsSchema = z.object({
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const REMEMBERED_SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 /** True when the identity provider itself vouches for the email address. */
 function providerVerifiedEmail(profile: unknown): boolean {
@@ -54,7 +55,8 @@ function providerVerifiedEmail(profile: unknown): boolean {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(db),
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: REMEMBERED_SESSION_MAX_AGE_SECONDS },
+  jwt: { maxAge: REMEMBERED_SESSION_MAX_AGE_SECONDS },
   events: {
     ...authConfig.events,
     // An OAuth sign-in whose provider confirms the address counts as email verification.
@@ -80,24 +82,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const limitedSecondFactor = await checkRateLimit(limiters.twoFactor, userId).catch(() => null);
           if (limitedSecondFactor) return null;
           const user = await db.user.findUnique({ where: { id: userId } });
-          if (!user?.twoFactorEnabled || !user.twoFactorSecret) return null;
+          if (!user) return null;
           if (user.lockedUntil && user.lockedUntil > new Date()) return null;
 
           const code = String(credentials.totp).trim();
-          const step = verifyTotpStep(code, user.twoFactorSecret);
           let secondFactorOk = false;
-          if (step !== null) {
-            // Each authenticator code works once (replay protection across the ±1 step window).
-            secondFactorOk = await claimOnce(`totp:${user.id}:${step}`, 120);
-          } else if (user.twoFactorBackupCodes) {
-            const { valid, remaining } = verifyBackupCode(code, user.twoFactorBackupCodes);
-            if (valid) {
-              // Consume atomically: a backup code cannot be used twice by concurrent requests.
-              const consumed = await db.user.updateMany({
-                where: { id: user.id, twoFactorBackupCodes: user.twoFactorBackupCodes },
-                data: { twoFactorBackupCodes: JSON.stringify(remaining) },
-              });
-              secondFactorOk = consumed.count === 1;
+
+          if (user.twoFactorEnabled) {
+            if (!user.twoFactorSecret) return null;
+            const step = verifyTotpStep(code, user.twoFactorSecret);
+            if (step !== null) {
+              // Each authenticator code works once (replay protection across the ±1 step window).
+              secondFactorOk = await claimOnce(`totp:${user.id}:${step}`, 120);
+            } else if (user.twoFactorBackupCodes) {
+              const { valid, remaining } = verifyBackupCode(code, user.twoFactorBackupCodes);
+              if (valid) {
+                // Consume atomically: a backup code cannot be used twice by concurrent requests.
+                const consumed = await db.user.updateMany({
+                  where: { id: user.id, twoFactorBackupCodes: user.twoFactorBackupCodes },
+                  data: { twoFactorBackupCodes: JSON.stringify(remaining) },
+                });
+                secondFactorOk = consumed.count === 1;
+              }
+            }
+          } else if (/^\d{6}$/.test(code)) {
+            // Accounts without authenticator 2FA still require a one-time email code.
+            const identifier = `login:${user.id}`;
+            const token = crypto.createHash("sha256").update(code).digest("hex");
+            const consumed = await db.verificationToken.deleteMany({
+              where: { identifier, token, expires: { gt: new Date() } },
+            });
+            secondFactorOk = consumed.count === 1;
+            if (secondFactorOk) {
+              // Remove any stale codes for this sign-in identity after a successful claim.
+              await db.verificationToken.deleteMany({ where: { identifier } });
             }
           }
           if (!secondFactorOk) {

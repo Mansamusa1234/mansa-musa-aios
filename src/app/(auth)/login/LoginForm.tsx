@@ -41,6 +41,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [challengeToken, setChallengeToken] = useState("");
+  const [secondFactorMethod, setSecondFactorMethod] = useState<"totp" | "email">("totp");
   const [totp, setTotp] = useState("");
   const [isBackupMode, setIsBackupMode] = useState(false);
   const [error, setError] = useState("");
@@ -98,6 +99,8 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     if (data.requires2FA) {
       setLoading(false);
       setChallengeToken(data.challengeToken);
+      setSecondFactorMethod(data.method === "email" ? "email" : "totp");
+      setIsBackupMode(false);
       setPhase("totp");
       return;
     }
@@ -123,7 +126,9 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     e.preventDefault();
     const code = totp.replace(/[\s-]/g, "");
     if (!isBackupMode && code.length < 6) {
-      setError("Enter the 6-digit code from your authenticator app.");
+      setError(secondFactorMethod === "email"
+        ? "Enter the 6-digit code sent to your email."
+        : "Enter the 6-digit code from your authenticator app.");
       return;
     }
     setLoading(true);
@@ -138,7 +143,13 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
     });
     setLoading(false);
     if (result?.error) {
-      setError(isBackupMode ? "Invalid backup code. Check it and try again." : "Invalid code. Check your authenticator app and try again.");
+      setError(
+        isBackupMode
+          ? "Invalid backup code. Check it and try again."
+          : secondFactorMethod === "email"
+            ? "Invalid or expired email code. Request a new sign-in code and try again."
+            : "Invalid code. Check your authenticator app and try again."
+      );
       setTotp("");
     } else {
       router.push(callbackUrl);
@@ -184,12 +195,16 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
               Two-step verification
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {isBackupMode ? "Enter one of your saved backup codes" : "Enter the 6-digit code from your authenticator app"}
+              {isBackupMode
+                ? "Enter one of your saved backup codes"
+                : secondFactorMethod === "email"
+                  ? "Enter the 6-digit code we sent to your email"
+                  : "Enter the 6-digit code from your authenticator app"}
             </p>
           </div>
 
           <div className="rounded-2xl bg-white dark:bg-[#09091a] p-8 shadow-card dark:shadow-none border border-gray-100 dark:border-white/8">
-            {!isBackupMode && (
+            {secondFactorMethod === "totp" && !isBackupMode && (
               <div className="mb-6 flex justify-center gap-6 text-xs text-gray-400 dark:text-gray-500">
                 <span className="flex items-center gap-1.5">
                   <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" aria-hidden="true">
@@ -228,7 +243,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
 
               <div>
                 <label htmlFor="totp-code" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {isBackupMode ? "Backup code" : "Authenticator code"}
+                  {isBackupMode ? "Backup code" : secondFactorMethod === "email" ? "Email code" : "Authenticator code"}
                 </label>
                 <input
                   ref={totpRef}
@@ -250,7 +265,7 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
                   className={[inputBase, isBackupMode ? "" : "text-center text-2xl font-mono tracking-[0.5em]"].join(" ")}
                   placeholder={isBackupMode ? "xxxx-xxxx-xxxx" : "000000"}
                   autoComplete="one-time-code"
-                  aria-label={isBackupMode ? "Backup recovery code" : "6-digit authenticator code"}
+                  aria-label={isBackupMode ? "Backup recovery code" : secondFactorMethod === "email" ? "6-digit email sign-in code" : "6-digit authenticator code"}
                 />
               </div>
 
@@ -270,18 +285,20 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
               </button>
             </form>
 
-            {/* Backup code toggle — prominent CTA, not a footnote */}
-            <div className="mt-4 border-t border-gray-100 dark:border-white/8 pt-4 text-center">
-              <button
-                onClick={() => { setIsBackupMode((v) => !v); setTotp(""); setError(""); }}
-                className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline"
-              >
-                {isBackupMode ? "Use authenticator app instead" : "Use a backup code instead"}
-              </button>
-            </div>
+            {/* Backup code toggle only applies to authenticator-app MFA. */}
+            {secondFactorMethod === "totp" && (
+              <div className="mt-4 border-t border-gray-100 dark:border-white/8 pt-4 text-center">
+                <button
+                  onClick={() => { setIsBackupMode((v) => !v); setTotp(""); setError(""); }}
+                  className="text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline"
+                >
+                  {isBackupMode ? "Use authenticator app instead" : "Use a backup code instead"}
+                </button>
+              </div>
+            )}
 
             <button
-              onClick={() => { setPhase("credentials"); setTotp(""); setError(""); setChallengeToken(""); setIsBackupMode(false); }}
+              onClick={() => { setPhase("credentials"); setTotp(""); setError(""); setChallengeToken(""); setSecondFactorMethod("totp"); setIsBackupMode(false); }}
               className="mt-3 w-full text-center text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
               ← Back to sign in
@@ -513,14 +530,30 @@ export default function LoginForm({ showGithub, showGoogle, showMicrosoft, showA
               </div>
             </div>
 
-            <label className="flex items-center gap-2.5 text-sm text-gray-400 cursor-pointer">
+            <label className="flex items-center gap-2.5 text-sm text-gray-400 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 dark:border-white/20 text-brand-500 focus:ring-brand-500/30 bg-white dark:bg-white/5"
+                className="sr-only"
               />
-              Stay signed in for 30 days
+              <span
+                aria-hidden="true"
+                className={[
+                  "flex h-5 w-5 items-center justify-center rounded border transition-colors",
+                  rememberMe
+                    ? "border-brand-500 bg-brand-500 text-white"
+                    : "border-gray-300 dark:border-white/20 bg-white dark:bg-white/5 text-transparent",
+                ].join(" ")}
+              >
+                <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <path d="m5 10 3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <span className="flex-1">Stay signed in for 30 days</span>
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                {rememberMe ? "On" : "Off"}
+              </span>
             </label>
 
             <button

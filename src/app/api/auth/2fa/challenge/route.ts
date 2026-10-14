@@ -1,9 +1,11 @@
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 import { createChallengeToken } from "@/lib/authChallenge";
+import { loginCodeEmailHtml, sendEmail } from "@/lib/email";
 
 const schema = z.object({
   email: z.string().trim().email().transform((value) => value.toLowerCase()),
@@ -46,12 +48,42 @@ export async function POST(req: Request) {
       await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null } });
     }
 
-    if (!user.twoFactorEnabled) {
-      return NextResponse.json({ requires2FA: false });
+    const challengeToken = createChallengeToken(user.id);
+
+    if (user.twoFactorEnabled) {
+      return NextResponse.json({ requires2FA: true, challengeToken, method: "totp" });
     }
 
-    const challengeToken = createChallengeToken(user.id);
-    return NextResponse.json({ requires2FA: true, challengeToken });
+    // Every password sign-in requires a second factor. Users without an
+    // authenticator app receive a one-time code at their verified account email.
+    const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
+    const identifier = `login:${user.id}`;
+    const token = crypto.createHash("sha256").update(code).digest("hex");
+
+    await db.verificationToken.deleteMany({ where: { identifier } });
+    await db.verificationToken.create({
+      data: {
+        identifier,
+        token,
+        expires: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
+
+    const sent = await sendEmail(
+      user.email,
+      "Your MansaMusaAI sign-in code",
+      loginCodeEmailHtml(code)
+    );
+
+    if (!sent.sent) {
+      await db.verificationToken.deleteMany({ where: { identifier } });
+      return NextResponse.json(
+        { error: "We couldn't send your sign-in code. Please try again." },
+        { status: 503 }
+      );
+    }
+
+    return NextResponse.json({ requires2FA: true, challengeToken, method: "email" });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.issues[0].message }, { status: 400 });
