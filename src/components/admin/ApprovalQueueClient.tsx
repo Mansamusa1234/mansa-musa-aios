@@ -41,10 +41,16 @@ export default function ApprovalQueueClient() {
     {message && <p role="status" className="mb-4 text-green-400">{message}</p>}
     {!busy && !error && items.length === 0 && <p className="text-gray-400">No {status.toLowerCase()} drafts.</p>}
     <div className="space-y-5">{items.map(item => {
-      let recipient = ""; try { recipient = JSON.parse(item.metadata ?? "{}").toEmail ?? ""; } catch { /* API validates before approval. */ }
+      let recipient = ""; let video: { url?: string | null; rendering: boolean; error?: string } | null = null;
+      try {
+        const meta = JSON.parse(item.metadata ?? "{}");
+        recipient = meta.toEmail ?? "";
+        if (meta.kind === "daily_video") video = { url: meta.videoUrl, rendering: !!meta.videoId && !meta.videoUrl, error: meta.videoError };
+      } catch { /* API validates before approval. */ }
       const email = ["email", "lead_followup", "cold_outreach"].includes(item.type) && !!recipient;
       return <article key={item.id} className="rounded-xl border border-white/15 bg-white/5 p-5">
         <h2 className="font-semibold">{item.title}</h2><p className="my-2 text-sm text-gray-400">{item.type} · {recipient ? `To: ${recipient}` : item.platform ?? "Manual publication"}</p>
+        {video && <p className="mb-2 text-sm">{video.url ? <a href={video.url} target="_blank" rel="noreferrer" className="text-indigo-300 underline">Preview video</a> : video.rendering ? <span className="text-amber-300">Video still rendering. Approve once it is attached.</span> : <span className="text-gray-400">Text only: will be scheduled to Facebook.</span>}{video.error && <span className="ml-2 text-red-400">{video.error}</span>}</p>}
         <textarea aria-label={`Draft: ${item.title}`} value={item.content} readOnly={item.status !== "PENDING"} onChange={event => setItems(previous => previous.map(entry => entry.id === item.id ? { ...entry, content: event.target.value } : entry))} className="min-h-48 w-full rounded-lg bg-slate-950 border border-white/20 p-3 text-base" />
         {item.status === "PENDING" && <div className="mt-3 flex flex-wrap gap-3">
           <button disabled={busy || !item.content.trim()} onClick={() => void act(item, "edit")} className="rounded-lg border border-white/20 px-4 py-2 disabled:opacity-50">Save draft</button>
