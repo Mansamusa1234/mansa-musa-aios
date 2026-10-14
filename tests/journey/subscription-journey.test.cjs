@@ -10,9 +10,15 @@ const ts = require('typescript');
 const RealStripe = require('stripe');
 
 const MOCK_PRICE = 'price_1PgafmB7WZ01zgkW6dKueIc5'; // stripe-mock fixture price
+// This suite creates and deletes users. It only ever runs against a local throwaway database.
+const JOURNEY_DB = process.env.JOURNEY_DATABASE_URL || 'postgresql://postgres:localtest@127.0.0.1:55432/mansa_journey';
+if (!['127.0.0.1', 'localhost', '[::1]'].includes(new URL(JOURNEY_DB).hostname)) {
+  throw new Error('Refusing to run the journey suite against a non-local database.');
+}
+delete process.env.VERCEL_ENV; delete process.env.PREVIEW_DATABASE_URL;
 Object.assign(process.env, {
   NODE_ENV: 'test',
-  DATABASE_URL: process.env.JOURNEY_DATABASE_URL || 'postgresql://postgres:localtest@127.0.0.1:55432/mansa_journey',
+  DATABASE_URL: JOURNEY_DB,
   STRIPE_SECRET_KEY: 'sk_test_123',
   STRIPE_WEBHOOK_SECRET: 'whsec_local_journey',
   STRIPE_PRICE_STARTER: MOCK_PRICE,
@@ -159,4 +165,22 @@ test('7. cancellation webhook (modern shape) revokes paid access', async () => {
   assert.equal((await db.subscription.findUnique({ where: { userId } })).status, 'CANCELED');
   assert.equal(await getActivePlan(userId), 'free');
   assert.equal((await askCeo()).status, 403); assert.equal(aiCalls, 1);
+});
+
+test('8. tenant isolation: another customer cannot read or delete this account\'s AI conversations, and cannot approve content', async () => {
+  const other = await db.user.create({ data: { email: `other-${Date.now()}@journey.test`, name: 'Other Tenant' } });
+  const own = sessionUser;
+  try {
+    sessionUser = { id: other.id, email: other.email, role: 'USER' };
+    const read = await (await workforce.GET(new Request('http://localhost/api/workforce/chat?role=ceo'))).json();
+    assert.deepEqual(read.messages, [], 'no cross-tenant chat history');
+    await workforce.DELETE(new Request('http://localhost/api/workforce/chat?role=ceo', { method: 'DELETE' }));
+    assert.equal(await db.workforceChat.count({ where: { userId } }), 1, 'the other tenant could not delete it');
+    const queue = load('src/app/api/content-queue/[id]/route.ts');
+    const res = await queue.PATCH(new Request('http://localhost/api/content-queue/x', { method: 'PATCH', body: JSON.stringify({ action: 'approve' }) }), { params: Promise.resolve({ id: 'x' }) });
+    assert.equal(res.status, 403, 'only admins can approve publishing');
+  } finally {
+    sessionUser = own;
+    await db.user.delete({ where: { id: other.id } });
+  }
 });
