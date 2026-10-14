@@ -15,7 +15,7 @@
     "test:repairs": "node --test tests/*repairs.test.cjs",
     "journey:up": "docker run -d --rm --name mm-stripe-mock -p 127.0.0.1:12111:12111 stripe/stripe-mock:v0.205.0 && docker run -d --rm --name mm-journey-db -e POSTGRES_PASSWORD=localtest -e POSTGRES_DB=mansa_journey -p 127.0.0.1:55432:5432 postgres:16-alpine && sleep 4 && DATABASE_URL=postgresql://postgres:localtest@127.0.0.1:55432/mansa_journey prisma db push --skip-generate",
     "journey:down": "docker rm -f mm-stripe-mock mm-journey-db",
-    "test:journey": "node --test tests/journey/"
+    "test:journey": "node --test tests/journey/*.test.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
