@@ -76,4 +76,13 @@ Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 44/44 ✅ · test:journey 7
 
 Not yet verified against real services (credentials required): Stripe test mode, Metricool API, HeyGen render, Anthropic/Abacus calls.
 
+## 2026-10-14: Publishing without Metricool API, free video production
+| Change | Commit | Verification |
+|---|---|---|
+| Approval → direct publish via existing Facebook/Instagram/TikTok/YouTube integrations (`SOCIAL_DIRECT_PUBLISH=true`), per-network UTM, SENT only if a platform accepts | 12c0a39 | 4 new tests (connected-only, all-reject stays pending, text-only → Facebook, flag off never publishes) |
+| Free daily video: ffmpeg captioned 1080x1920 render in GitHub Actions 07:30 UTC → Vercel Blob `social/<day>.mp4`; 09:00 cron attaches it | fc00bf7 | GitHub Actions run 38519159675 ✅ rendered today's script (1080x1920, 40.6 s, H.264/AAC); attach logic tested |
+| RouteLLM connectivity check script | fd96262 | Runs; awaiting key |
+
+Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 49/49 ✅ · build ✅
+
 > Operational notes (tooling, accounts, open security items) are kept in the owner's private workspace, not in this public repository.
