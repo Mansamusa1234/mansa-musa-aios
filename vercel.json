@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "prisma generate && node scripts/apply-research-schema.mjs && next build",
+  "buildCommand": "prisma generate && node scripts/apply-research-schema.mjs && node scripts/preview-routellm-check.mjs && next build",
   "crons": [
     {
       "path": "/api/cron/email-workflows",
