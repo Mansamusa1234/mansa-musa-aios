@@ -11,7 +11,8 @@ export type RouteLlmResult = {
   ms: number;
   model: string | null;
   content: string | null;
-  usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null;
+  // RouteLLM reports input_tokens/output_tokens (verified on Preview); OpenAI-style names kept for other routes.
+  usage: { input_tokens?: number; output_tokens?: number; reasoning_tokens?: number; prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null;
   error: string | null;
 };
 
