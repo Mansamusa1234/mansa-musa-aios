@@ -26,7 +26,7 @@ function memoryDb() {
   return { contentQueue };
 }
 
-function cron(db, env = {}, heygen = {}) {
+function cron(db, env = {}, heygen = {}, fetchImpl) {
   const calls = { create: 0 };
   const social = {
     getTodaysScript: () => ({ title: 'Missed Calls', script: 'Script text', caption: 'Caption', hashtags: ['#AI'], platform: 'instagram' }),
@@ -36,7 +36,7 @@ function cron(db, env = {}, heygen = {}) {
   };
   const cronUtils = load('src/lib/cronUtils.ts', { 'next/server': response, '@/lib/hospital': { recordHospitalFailure: async () => {} } }, { CRON_SECRET: 's' });
   const metricool = load('src/lib/metricool.ts', {}, {});
-  const api = load('src/app/api/cron/social-post/route.ts', { '@/lib/social-automation': social, '@/lib/cronUtils': cronUtils, '@/lib/db': { db }, '@/lib/metricool': metricool }, env);
+  const api = load('src/app/api/cron/social-post/route.ts', { '@/lib/social-automation': social, '@/lib/cronUtils': cronUtils, '@/lib/db': { db }, '@/lib/metricool': metricool }, env, fetchImpl);
   const run = () => api.GET(new Request('https://app.test/api/cron/social-post', { headers: { authorization: 'Bearer s' } }));
   return { run, calls };
 }
@@ -61,12 +61,15 @@ test('HeyGen spends credits only when explicitly enabled, then the video is atta
   assert.equal(JSON.parse(on.contentQueue.rows[0].metadata).videoUrl, 'https://cdn.heygen.test/v.mp4');
 });
 
-function approve(row, { env = {}, fetchOk = true } = {}) {
-  const db = memoryDb(); db.contentQueue.rows.push(row); const sent = [];
+function approve(row, { env = {}, fetchOk = true, platformOk = {} } = {}) {
+  const db = memoryDb(); db.contentQueue.rows.push(row); const sent = []; const posted = [];
+  const post = (network) => async (videoUrl, script) => { posted.push({ network, videoUrl, script }); return platformOk[network] ?? true; };
+  const social = { postToFacebook: post('facebook'), postToInstagram: post('instagram'), postToTikTok: post('tiktok'), postToYouTube: post('youtube'), postToFacebookText: async (script) => { posted.push({ network: 'facebook', videoUrl: null, script }); return platformOk.facebook ?? true; } };
   const fetchImpl = async (url, init) => { sent.push({ url: String(url), headers: init.headers, body: JSON.parse(init.body) }); return { ok: fetchOk, status: fetchOk ? 200 : 403, json: async () => (fetchOk ? { data: { id: 1000 + sent.length } } : { error: 'forbidden' }) }; };
   const metricool = load('src/lib/metricool.ts', {}, env, fetchImpl);
-  const api = load('src/app/api/content-queue/[id]/route.ts', { 'next/server': response, '@/lib/auth': { auth: async () => ({ user: { id: 'admin', role: 'ADMIN' } }) }, '@/lib/db': { db }, '@/lib/email': { sendEmail: async () => ({ sent: true }) }, '@/lib/metricool': metricool, zod: require('zod') }, env);
-  return { db, sent, run: () => api.PATCH(new Request(`https://app.test/api/content-queue/${row.id}`, { method: 'PATCH', body: JSON.stringify({ action: 'approve' }) }), { params: Promise.resolve({ id: row.id }) }) };
+  const publisher = load('src/lib/socialPublisher.ts', { '@/lib/social-automation': social, '@/lib/metricool': metricool }, env);
+  const api = load('src/app/api/content-queue/[id]/route.ts', { 'next/server': response, '@/lib/auth': { auth: async () => ({ user: { id: 'admin', role: 'ADMIN' } }) }, '@/lib/db': { db }, '@/lib/email': { sendEmail: async () => ({ sent: true }) }, '@/lib/metricool': metricool, '@/lib/socialPublisher': publisher, zod: require('zod') }, env);
+  return { db, sent, posted, run: () => api.PATCH(new Request(`https://app.test/api/content-queue/${row.id}`, { method: 'PATCH', body: JSON.stringify({ action: 'approve' }) }), { params: Promise.resolve({ id: row.id }) }) };
 }
 const draft = (meta) => ({ id: 'cq9', type: 'social_post', platform: 'multi', title: 'Day', content: 'Caption #AI', status: 'PENDING', updatedAt: new Date(), metadata: JSON.stringify({ kind: 'daily_video', day: '2026-10-14', networks: ['facebook', 'instagram', 'tiktok', 'youtube'], ...meta }) });
 const MC = { METRICOOL_USER_TOKEN: 'tok', METRICOOL_USER_ID: 'u1', METRICOOL_BLOG_ID: 'b1', NEXT_PUBLIC_APP_URL: 'https://www.mansamusainitiative.com' };
@@ -102,4 +105,51 @@ test('text-only drafts go to Facebook only; auto-publish requires explicit opt-i
 test('Metricool rejection leaves the draft pending', async () => {
   const a = approve(draft({ videoUrl: 'https://cdn.heygen.test/v.mp4' }), { env: MC, fetchOk: false });
   assert.equal((await a.run()).status, 502); assert.equal(a.db.contentQueue.rows[0].status, 'PENDING');
+});
+
+const DIRECT = { SOCIAL_DIRECT_PUBLISH: 'true', NEXT_PUBLIC_APP_URL: 'https://www.mansamusainitiative.com', FACEBOOK_PAGE_ACCESS_TOKEN: 't', FACEBOOK_PAGE_ID: 'p', INSTAGRAM_USER_ID: 'ig' };
+
+test('direct publishing (no Metricool API) posts only to connected networks, with per-network UTM, and marks SENT', async () => {
+  const a = approve(draft({ videoUrl: 'https://cdn.test/v.mp4', script: 'Spoken script', scriptTitle: 'Missed Calls' }), { env: DIRECT });
+  const res = await a.run();
+  assert.equal(res.status, 200, JSON.stringify(res.body)); assert.equal(res.body.status, 'SENT');
+  assert.deepEqual(a.posted.map(p => p.network).sort(), ['facebook', 'instagram']);
+  for (const p of a.posted) { assert.equal(p.videoUrl, 'https://cdn.test/v.mp4'); assert.match(p.script.caption, new RegExp(`utm_source=${p.network}&utm_medium=social&utm_campaign=cq9`)); assert.equal(p.script.title, 'Missed Calls'); }
+  const byNet = Object.fromEntries(res.body.results.map(r => [r.network, r]));
+  assert.equal(byNet.tiktok.skipped, 'not_connected'); assert.equal(byNet.youtube.skipped, 'not_connected');
+  const row = a.db.contentQueue.rows[0]; assert.equal(row.status, 'SENT'); assert.ok(row.sentAt instanceof Date);
+  assert.equal(JSON.parse(row.metadata).published.results.length, 4);
+});
+
+test('direct publishing keeps the draft pending when every platform rejects it', async () => {
+  const a = approve(draft({ videoUrl: 'https://cdn.test/v.mp4' }), { env: DIRECT, platformOk: { facebook: false, instagram: false } });
+  const res = await a.run(); assert.equal(res.status, 502);
+  assert.equal(a.db.contentQueue.rows[0].status, 'PENDING'); assert.equal(a.db.contentQueue.rows[0].sentAt, undefined);
+});
+
+test('text-only drafts publish to Facebook only; video networks are reported as needing video', async () => {
+  const a = approve(draft({ videoUrl: null }), { env: { ...DIRECT, TIKTOK_ACCESS_TOKEN: 'tt' } });
+  const res = await a.run(); assert.equal(res.body.status, 'SENT');
+  assert.deepEqual(a.posted.map(p => [p.network, p.videoUrl]), [['facebook', null]]);
+  assert.equal(res.body.results.find(r => r.network === 'tiktok').skipped, 'needs_video');
+});
+
+test('without the opt-in flag, approval never publishes', async () => {
+  const a = approve(draft({ videoUrl: 'https://cdn.test/v.mp4' }), { env: { ...DIRECT, SOCIAL_DIRECT_PUBLISH: 'false' } });
+  const res = await a.run(); assert.equal(res.body.status, 'APPROVED'); assert.equal(a.posted.length, 0);
+});
+
+test('free rendered video (GitHub Actions → Blob) is attached by day, and late renders are picked up later', async () => {
+  const base = 'https://store.public.blob.vercel-storage.com';
+  let available = false; const heads = [];
+  const fetchImpl = async (url, init) => { heads.push([init.method, String(url)]); return { ok: available }; };
+  const db = memoryDb(); const env = { SOCIAL_VIDEO_BASE_URL: base + '/' };
+  await cron(db, env, {}, fetchImpl).run();
+  const day = JSON.parse(db.contentQueue.rows[0].metadata).day;
+  assert.equal(JSON.parse(db.contentQueue.rows[0].metadata).videoUrl, null);
+  available = true;
+  const res = await cron(db, env, {}, fetchImpl).run();
+  assert.equal(res.body.videosAttached, 1);
+  assert.equal(JSON.parse(db.contentQueue.rows[0].metadata).videoUrl, `${base}/social/${day}.mp4`);
+  assert.ok(heads.every(([method]) => method === 'HEAD'));
 });

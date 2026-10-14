@@ -1,0 +1,57 @@
+name: Daily social video
+
+# Renders today's captioned 9:16 video for the approval queue (free; no HeyGen credits).
+# Runs in GitHub's cloud, so the owner's laptop can be off. Nothing is published here:
+# the app's 09:00 UTC cron attaches the video to the day's draft, and an admin approves it.
+on:
+  schedule:
+    - cron: "30 7 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/daily-social-video.yml"
+      - "scripts/render-social-video.mjs"
+      - "scripts/todays-social-script.mjs"
+      - "src/lib/social-automation.ts"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-social-video
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      # Pull requests only prove the render works; uploads happen on schedule/manual runs.
+      CAN_UPLOAD: ${{ github.event_name != 'pull_request' && secrets.BLOB_READ_WRITE_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Install ffmpeg, font and script tooling
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          npm install --no-save --ignore-scripts typescript@5 @vercel/blob@2.8.0
+      - name: Today's script
+        id: script
+        run: |
+          node scripts/todays-social-script.mjs out
+          echo "day=$(node -p 'require("./out/meta.json").day')" >> "$GITHUB_OUTPUT"
+      - name: Render video
+        run: node scripts/render-social-video.mjs --script out/script.txt --out out/video.mp4
+      - name: Upload to Vercel Blob
+        if: env.CAN_UPLOAD == 'true'
+        env:
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: node scripts/upload-social-video.mjs out/video.mp4 "${{ steps.script.outputs.day }}"
+      - name: Keep a copy as a workflow artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: social-video-${{ steps.script.outputs.day }}
+          path: out/
+          retention-days: 7

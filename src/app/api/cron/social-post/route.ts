@@ -18,6 +18,19 @@ export type SocialDraftMetadata = {
   metricool?: unknown;
 };
 
+/** Daily video rendered by the GitHub Actions workflow and stored at <base>/social/<day>.mp4. */
+async function renderedVideoUrl(day: string): Promise<string | null> {
+  const base = process.env.SOCIAL_VIDEO_BASE_URL?.replace(/\/$/, "");
+  if (!base) return null;
+  const url = `${base}/social/${day}.mp4`;
+  try {
+    const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(10000) });
+    return res.ok ? url : null;
+  } catch {
+    return null;
+  }
+}
+
 function londonDay(date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
 }
@@ -35,10 +48,11 @@ export const GET = withCron(async (request) => {
   for (const item of rendering) {
     let meta: SocialDraftMetadata;
     try { meta = JSON.parse(item.metadata ?? "{}"); } catch { continue; }
-    if (meta.kind !== "daily_video" || !meta.videoId || meta.videoUrl) continue;
+    if (meta.kind !== "daily_video" || meta.videoUrl) continue;
     try {
-      const url = await getHeyGenVideoUrl(meta.videoId);
-      if (url) { meta.videoUrl = url; videosAttached++; }
+      const url = meta.videoId ? await getHeyGenVideoUrl(meta.videoId) : await renderedVideoUrl(meta.day);
+      if (!url) continue;
+      meta.videoUrl = url; videosAttached++;
     } catch (err) {
       meta.videoError = err instanceof Error ? err.message : String(err);
     }
@@ -60,13 +74,13 @@ export const GET = withCron(async (request) => {
     try { videoId = await createHeyGenVideo(script, avatarId, voiceId); }
     catch (err) { videoError = err instanceof Error ? err.message : String(err); }
   }
-  const introVideo = campaign === "intro"
+  const initialVideoUrl = campaign === "intro"
     ? `${(process.env.NEXT_PUBLIC_APP_URL || "https://www.mansamusainitiative.com").replace(/\/$/, "")}/media/mansamusa-intro.mp4`
-    : null;
+    : videoId ? null : await renderedVideoUrl(day);
 
   const metadata: SocialDraftMetadata = {
     kind: "daily_video", day, scriptTitle: script.title, script: script.script, hashtags: script.hashtags,
-    networks: [...SOCIAL_NETWORKS], videoId, videoUrl: introVideo, ...(videoError ? { videoError } : {}),
+    networks: [...SOCIAL_NETWORKS], videoId, videoUrl: initialVideoUrl, ...(videoError ? { videoError } : {}),
   };
   const draft = await db.contentQueue.create({
     data: {
@@ -79,5 +93,5 @@ export const GET = withCron(async (request) => {
     },
   });
 
-  return { queued: true, draftId: draft.id, video: videoId ? "rendering" : introVideo ? "intro" : "none", videosAttached };
+  return { queued: true, draftId: draft.id, video: videoId ? "rendering" : initialVideoUrl ? "attached" : "none", videosAttached };
 });
