@@ -28,5 +28,5 @@ test('Preview diagnostics go to the build log only: nothing is written under pub
     const a = await run('scripts/preview-agent-proof.mjs', { VERCEL_ENV: 'preview', VERCEL_GIT_COMMIT_MESSAGE: 'x [agent-proof]' });
     assert.equal(fs.existsSync(path.join(a.cwd, 'public')), false);
   } finally { server.close(); }
-  for (const f of ['scripts/preview-routellm-check.mjs', 'scripts/preview-agent-proof.mjs']) assert.doesNotMatch(fs.readFileSync(f, "utf8"), /writeFileSync|mkdirSync|"public\//);
+  for (const f of ['scripts/preview-routellm-check.mjs', 'scripts/preview-agent-proof.mjs', 'scripts/preview-email-check.mjs', 'scripts/preview-db-prepare.mjs']) assert.doesNotMatch(fs.readFileSync(f, "utf8"), /writeFileSync|mkdirSync|"public\//);
 });
