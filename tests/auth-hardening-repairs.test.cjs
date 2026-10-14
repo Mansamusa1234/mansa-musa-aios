@@ -131,3 +131,18 @@ test('the first sign-in of a new account sends no "new sign-in" alert; a later s
   assert.deepEqual(later.emails, ['New sign-in to your MansaMusaAI account']);
   assert.deepEqual((await run([{ ip: '9.9.9.9' }])).emails, []);
 });
+
+test('the owner email is promoted to ADMIN only once that address is verified', async () => {
+  const run = async (dbUser) => {
+    const updates = [];
+    const { authConfig } = load('src/lib/auth.config.ts', {
+      '@/lib/sessionSecurity': { isTrustedSessionRevoked: async () => false },
+      '@/lib/db': { db: { user: { findUnique: async () => dbUser, updateMany: async (a) => { updates.push(a); return { count: 1 }; } } } },
+    }, { OWNER_EMAIL: 'owner@test.local' });
+    const token = await authConfig.callbacks.jwt({ token: {}, user: { id: 'u1', email: 'Owner@test.local', role: 'USER' } });
+    return { role: token.role, updates: updates.length };
+  };
+  assert.deepEqual(await run({ email: 'owner@test.local', emailVerified: null }), { role: 'USER', updates: 0 }, 'unverified owner address: no admin');
+  assert.deepEqual(await run({ email: 'owner@test.local', emailVerified: new Date() }), { role: 'ADMIN', updates: 1 });
+  assert.deepEqual(await run({ email: 'someone@test.local', emailVerified: new Date() }), { role: 'USER', updates: 0 });
+});

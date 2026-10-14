@@ -41,9 +41,14 @@ export const authConfig = {
         .toLowerCase();
       const signedInEmail = String(user?.email ?? token.email ?? "").trim().toLowerCase();
       if (ownerEmail && signedInEmail === ownerEmail && token.role !== "ADMIN") {
-        token.role = "ADMIN";
         const userId = String(user?.id ?? token.id ?? "");
-        if (userId) {
+        // Only a verified owner address is promoted: otherwise anyone who registered the owner's
+        // email first (without access to the mailbox) would become an administrator.
+        const owner = userId
+          ? await db.user.findUnique({ where: { id: userId }, select: { email: true, emailVerified: true } }).catch(() => null)
+          : null;
+        if (owner?.emailVerified && owner.email.trim().toLowerCase() === ownerEmail) {
+          token.role = "ADMIN";
           await db.user.updateMany({
             where: { id: userId, role: "USER" },
             data: { role: "ADMIN" },

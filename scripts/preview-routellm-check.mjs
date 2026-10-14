@@ -109,7 +109,9 @@ if (process.env.DATABASE_URL) {
         const [people] = await tx.$queryRawUnsafe(`
           SELECT (SELECT count(*)::int FROM "User") AS users,
                  (SELECT max("createdAt") FROM "User") AS "newestUser",
-                 (SELECT count(*)::int FROM "Subscription") AS subscriptions`);
+                 (SELECT count(*)::int FROM "Subscription") AS subscriptions,
+                 (SELECT count(*)::int FROM "User" WHERE role = 'ADMIN') AS admins,
+                 (SELECT count(*)::int FROM "User" WHERE role = 'ADMIN' AND "emailVerified" IS NOT NULL) AS "adminsVerified"`);
         return {
           ok: true,
           ...people,
