@@ -1,6 +1,6 @@
 name: Daily social video
 
-# Renders today's captioned 9:16 video for the approval queue (free; no HeyGen credits).
+# Renders today's captioned, voiced 9:16 video for the approval queue (free; no HeyGen credits).
 # Runs in GitHub's cloud, so the owner's laptop can be off. Nothing is published here:
 # the app's 09:00 UTC cron attaches the video to the day's draft, and an admin approves it.
 on:
@@ -35,7 +35,7 @@ jobs:
           node-version: 22
       - name: Install ffmpeg, font and script tooling
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core espeak-ng
           npm install --no-save --ignore-scripts typescript@5 @vercel/blob@2.8.0
       - name: Today's script
         id: script
@@ -43,7 +43,7 @@ jobs:
           node scripts/todays-social-script.mjs out
           echo "day=$(node -p 'require("./out/meta.json").day')" >> "$GITHUB_OUTPUT"
       - name: Render video
-        run: node scripts/render-social-video.mjs --script out/script.txt --out out/video.mp4
+        run: node scripts/render-social-video.mjs --script out/script.txt --out out/video.mp4 --voice espeak
       - name: Upload to Vercel Blob
         if: env.CAN_UPLOAD == 'true'
         env:

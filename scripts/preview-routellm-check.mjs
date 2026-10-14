@@ -1,4 +1,5 @@
-// Preview builds only: one tiny RouteLLM request to prove the Preview ABACUS_API_KEY works.
+// Preview builds only: one tiny RouteLLM request to prove the Preview ABACUS_API_KEY works,
+// plus read-only env, connection and database checks.
 // Writes a sanitised result (never the key) to the build log and public/_diagnostics/routellm.json.
 // No-op for Production and local builds. Never fails the build.
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -90,3 +91,45 @@ const connections = {
 };
 console.log("[connections]", JSON.stringify(connections));
 writeFileSync("public/_diagnostics/connections.json", JSON.stringify(connections, null, 2));
+
+// Read-only database audit (counts and catalog metadata only, never row contents).
+// Answers: does Preview point at a database holding real customers, and which public tables lack RLS?
+if (process.env.DATABASE_URL) {
+  let database;
+  try {
+    const { PrismaClient } = await import("@prisma/client");
+    const db = new PrismaClient();
+    try {
+      database = await db.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET TRANSACTION READ ONLY");
+        const tables = await tx.$queryRawUnsafe(`
+          SELECT c.relname AS name, c.relrowsecurity AS rls,
+                 (SELECT count(*)::int FROM pg_policies p WHERE p.schemaname = 'public' AND p.tablename = c.relname) AS policies
+          FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p') ORDER BY c.relname`);
+        const grants = await tx.$queryRawUnsafe(`
+          SELECT grantee, count(DISTINCT table_name)::int AS tables FROM information_schema.role_table_grants
+          WHERE table_schema = 'public' AND grantee IN ('anon', 'authenticated') GROUP BY grantee`);
+        const [people] = await tx.$queryRawUnsafe(`
+          SELECT (SELECT count(*)::int FROM "User") AS users,
+                 (SELECT max("createdAt") FROM "User") AS "newestUser",
+                 (SELECT count(*)::int FROM "Subscription") AS subscriptions`);
+        return {
+          ok: true,
+          ...people,
+          tables: tables.length,
+          withoutRls: tables.filter((t) => !t.rls).map((t) => t.name),
+          rlsWithoutPolicies: tables.filter((t) => t.rls && t.policies === 0).length,
+          apiRoleGrants: Object.fromEntries(grants.map((g) => [g.grantee, g.tables])),
+        };
+      }, { maxWait: 10000, timeout: 30000 });
+    } finally {
+      await db.$disconnect();
+    }
+  } catch (err) {
+    database = { ok: false, error: String(err instanceof Error ? err.message : err).split(process.env.DATABASE_URL).join("[redacted]").slice(0, 240) };
+  }
+  const report = { checkedAt: record.checkedAt, commit: record.commit, ...database };
+  console.log("[database]", JSON.stringify({ ...report, withoutRls: report.withoutRls?.length }));
+  writeFileSync("public/_diagnostics/database.json", JSON.stringify(report, null, 2));
+}
