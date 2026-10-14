@@ -85,6 +85,8 @@ const register = load('src/app/api/auth/register/route.ts');
 const checkout = load('src/app/api/stripe/create-checkout/route.ts');
 const webhook = load('src/app/api/stripe/webhook/route.ts');
 const workforce = load('src/app/api/workforce/chat/route.ts');
+const trial = load('src/app/api/subscription/start-trial/route.ts');
+const verifyEmail = load('src/app/api/auth/verify-email/route.ts');
 const signer = new RealStripe('sk_test_123');
 const email = `journey+${Date.now()}@example.test`;
 
@@ -98,7 +100,7 @@ const askCeo = () => workforce.POST(new Request('http://localhost/api/workforce/
 before(async () => { await db.$queryRaw`SELECT 1`; });
 afterAll(async () => {
   const user = await db.user.findUnique({ where: { email } });
-  if (user) { await db.subscription.deleteMany({ where: { userId: user.id } }); await db.workforceChat.deleteMany({ where: { userId: user.id } }); await db.user.delete({ where: { id: user.id } }).catch(() => {}); }
+  if (user) { await db.emailVerificationToken.deleteMany({ where: { userId: user.id } }); await db.subscription.deleteMany({ where: { userId: user.id } }); await db.workforceChat.deleteMany({ where: { userId: user.id } }); await db.user.delete({ where: { id: user.id } }).catch(() => {}); }
   await db.$disconnect();
 });
 
@@ -115,6 +117,21 @@ test('1. signup creates a Free account', async () => {
 test('2. Free account cannot use the paid AI executive team', async () => {
   const res = await askCeo();
   assert.equal(res.status, 403); assert.equal(aiCalls, 0);
+});
+
+test('2b. an unverified email cannot start checkout or the free trial; the emailed link verifies once', async () => {
+  const checkoutRes = await checkout.POST(new Request('http://localhost/api/stripe/create-checkout', { method: 'POST', body: JSON.stringify({ priceId: MOCK_PRICE }) }));
+  assert.equal(checkoutRes.status, 403); assert.equal((await checkoutRes.json()).code, 'EMAIL_NOT_VERIFIED');
+  const trialRes = await trial.POST();
+  assert.equal(trialRes.status, 403);
+  assert.equal(await db.subscription.count({ where: { userId } }), 0, 'no Stripe customer or trial created');
+  // The verification email carries a single-use token (created here as the email would).
+  const token = 'journey-verify-' + Date.now();
+  await db.emailVerificationToken.create({ data: { userId, email, token, expiresAt: new Date(Date.now() + 3600_000) } });
+  const verify = () => verifyEmail.POST(new Request('http://localhost/api/auth/verify-email', { method: 'POST', body: JSON.stringify({ token }) }));
+  const [first, second] = await Promise.all([verify(), verify()]);
+  assert.deepEqual([first.status, second.status].sort(), [200, 400], 'concurrent reuse of one link: exactly one succeeds');
+  assert.ok((await db.user.findUnique({ where: { id: userId } })).emailVerified instanceof Date);
 });
 
 test('3. checkout creates a Stripe customer and subscription checkout session', async () => {

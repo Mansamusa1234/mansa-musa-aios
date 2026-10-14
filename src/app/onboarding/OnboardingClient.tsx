@@ -35,6 +35,7 @@ export default function OnboardingClient({
 
   // Step 2 — Trial
   const [trialStarted, setTrialStarted] = useState(subscriptionStatus === "TRIALING");
+  const [trialError, setTrialError] = useState("");
 
   async function saveReceptionist() {
     setSaving(true);
@@ -53,13 +54,22 @@ export default function OnboardingClient({
 
   async function startTrial() {
     setSaving(true);
+    setTrialError("");
     try {
       const res = await fetch("/api/subscription/start-trial", { method: "POST" });
-      if (res.ok) setTrialStarted(true);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // Stay on this step and say why (e.g. the email still needs verifying).
+        setTrialError(data.error ?? "The trial could not be started. Please try again.");
+        return;
+      }
+      setTrialStarted(true);
+      setStep(3);
+    } catch {
+      setTrialError("Could not connect. Please try again.");
     } finally {
       setSaving(false);
     }
-    setStep(3);
   }
 
   async function complete() {
@@ -197,6 +207,12 @@ export default function OnboardingClient({
                 className="w-full rounded-xl bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-40 transition-colors">
                 {saving ? "Starting…" : "Start 14-day free trial"}
               </button>
+            )}
+            {trialError && (
+              <p role="alert" className="text-sm text-red-300">
+                {trialError}{" "}
+                {/verify/i.test(trialError) && <Link href="/settings" className="underline">Open Settings</Link>}
+              </p>
             )}
 
             <div className="border-t border-gray-800 pt-4">

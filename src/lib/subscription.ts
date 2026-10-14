@@ -22,7 +22,23 @@ const FEATURE_GATES: Record<string, Plan> = {
   agent_marketplace: "free",
   receptionist: "starter",
   wisdom_arena: "starter",
+  // Sold on the pricing page: Starter "Appointment booking", "Lead capture & CRM";
+  // Professional "CRM + WhatsApp integration", "Email automation sequences". (The Research Desk has its own check.)
+  crm: "starter",
+  bookings: "starter",
+  whatsapp: "pro",
+  email_automation: "pro",
 };
+
+export const FEATURE_LABELS: Record<string, string> = {
+  crm: "The CRM", bookings: "Appointment booking", whatsapp: "WhatsApp messaging",
+  email_automation: "Email automation",
+};
+
+/** The lowest plan that includes a feature. */
+export function requiredPlan(feature: string): Plan {
+  return FEATURE_GATES[feature] ?? "enterprise";
+}
 
 export function planDisplayName(plan: Plan): string {
   return PLAN_DISPLAY[plan] ?? plan;

@@ -56,15 +56,21 @@ export function getTotpUri(email: string, secret: string): string {
 }
 
 export function verifyTotp(token: string, secret: string): boolean {
+  return verifyTotpStep(token, secret) !== null;
+}
+
+/** Returns the matching 30-second time step (for replay protection), or null. */
+export function verifyTotpStep(token: string, secret: string): number | null {
   try {
+    if (!/^\d{6}$/.test(token)) return null;
     const key = base32Decode(secret);
     const t = Math.floor(Date.now() / 1000 / STEP);
     for (let i = -WINDOW; i <= WINDOW; i++) {
-      if (hotp(key, t + i) === token) return true;
+      if (hotp(key, t + i) === token) return t + i;
     }
-    return false;
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 

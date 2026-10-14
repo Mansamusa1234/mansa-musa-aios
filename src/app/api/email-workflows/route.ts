@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
+import { requireFeature } from "@/lib/accountGuards";
 
 const stepSchema = z.object({
   stepOrder:  z.number().int().min(0),
@@ -31,6 +32,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const planGate = await requireFeature("email_automation");
+  if (planGate) return planGate;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

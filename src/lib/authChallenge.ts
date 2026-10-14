@@ -1,7 +1,11 @@
 import crypto from "crypto";
 
 function secret() {
-  return process.env.NEXTAUTH_SECRET ?? "dev-secret";
+  const value = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+  if (value) return value;
+  // A guessable signing key would let anyone mint 2FA challenge tokens.
+  if (process.env.NODE_ENV === "production") throw new Error("NEXTAUTH_SECRET/AUTH_SECRET is not set");
+  return "dev-secret";
 }
 
 /** Creates a short-lived HMAC-signed challenge token for 2FA completion. */

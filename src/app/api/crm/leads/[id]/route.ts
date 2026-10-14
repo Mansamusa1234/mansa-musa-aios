@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireFeature } from "@/lib/accountGuards";
 
 const patchSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -16,6 +17,8 @@ const patchSchema = z.object({
 }).strict();
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const planGate = await requireFeature("crm");
+  if (planGate) return planGate;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;

@@ -33,6 +33,7 @@ function checkoutFixture({ local = null, remote = [], open = [], expireFails = f
     '@/lib/attribution': load('src/lib/attribution.ts', {}),
     '@/lib/auth': { auth: async () => ({ user: { id: 'user', email: 'buyer@example.com' } }) },
     '@/lib/ratelimit': { checkRateLimit: async () => null, limiters: {} },
+    '@/lib/accountGuards': { requireVerifiedEmail: async () => null },
     '@/lib/db': { db: { subscription: { findUnique: async () => local } } },
     '@/lib/stripe': { requireStripe: () => ({ subscriptions: { list: async () => ({ data: remote }) }, checkout: { sessions: { list: async () => ({ data: open }), expire: async (id) => { if (expireFails) throw new Error("Provider could not expire checkout"); expired.push(id); }, create: async (body, options) => { lastBody = body; idempotency = options.idempotencyKey; created++; return { url: 'https://checkout.stripe.test/session' }; } } } }), getOrCreateStripeCustomer: async () => 'cus_test', findPlanByPriceId: () => ({ id: 'starter', annualPriceId: '' }) },
   });
@@ -58,7 +59,8 @@ test('checkout reuses matching session and expires conflicting customer session 
 
 test('checkout expiration failure prevents replacement; unrelated one-off sessions remain open', async () => {
   const f = checkoutFixture({ expireFails: true, open: [{ id: 'cs_existing', mode: 'subscription', metadata: { planId: 'professional' } }] });
-  assert.equal((await f.post()).status, 500); assert.equal(f.created(), 0);
+  const failed = await f.post(); assert.equal(failed.status, 500); assert.equal(f.created(), 0);
+  assert.doesNotMatch(JSON.stringify(failed.body), /Provider could not expire/, 'provider details stay in the server log');
   const oneOff = checkoutFixture({ open: [{ id: 'cs_payment', mode: 'payment' }] });
   assert.equal((await oneOff.post()).status, 200); assert.deepEqual(oneOff.expired(), []);
 });

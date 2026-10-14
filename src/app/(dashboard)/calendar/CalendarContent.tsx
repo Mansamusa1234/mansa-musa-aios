@@ -18,24 +18,32 @@ export default function CalendarContent({ bookings: initialBookings, availabilit
   const [avail, setAvail] = useState(initialAvail);
   const [tab, setTab] = useState<"bookings" | "availability" | "new">("bookings");
   const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
   const [form, setForm] = useState({ guestName: "", guestEmail: "", guestPhone: "", title: "Meeting", notes: "", startAt: "", endAt: "" });
   const [copiedLink, setCopiedLink] = useState(false);
 
   const bookingLink = typeof window !== "undefined" ? `${window.location.origin}/book/${userId}` : "";
 
   async function saveAvailability() {
-    setSaving(true);
-    try { await fetch("/api/calendar/availability", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(avail) }); }
+    setSaving(true); setNotice(null);
+    try {
+      const res = await fetch("/api/calendar/availability", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(avail) });
+      const data = await res.json().catch(() => ({}));
+      setNotice(res.ok ? { text: "Availability saved.", error: false } : { text: data.error ?? "Could not save availability.", error: true });
+    } catch { setNotice({ text: "Could not connect. Please try again.", error: true }); }
     finally { setSaving(false); }
   }
 
   async function addBooking(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    const res = await fetch("/api/calendar/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, startAt: new Date(form.startAt).toISOString(), endAt: new Date(form.endAt).toISOString() }) });
-    const data = await res.json();
-    if (res.ok) { setBookings((p) => [...p, data.booking]); setTab("bookings"); setForm({ guestName: "", guestEmail: "", guestPhone: "", title: "Meeting", notes: "", startAt: "", endAt: "" }); }
-    setSaving(false);
+    setSaving(true); setNotice(null);
+    try {
+      const res = await fetch("/api/calendar/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, startAt: new Date(form.startAt).toISOString(), endAt: new Date(form.endAt).toISOString() }) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) { setBookings((p) => [...p, data.booking]); setTab("bookings"); setForm({ guestName: "", guestEmail: "", guestPhone: "", title: "Meeting", notes: "", startAt: "", endAt: "" }); }
+      else setNotice({ text: data.error ?? "Could not add the booking.", error: true });
+    } catch { setNotice({ text: "Could not connect. Please try again.", error: true }); }
+    finally { setSaving(false); }
   }
 
   async function cancelBooking(id: string) {
@@ -55,6 +63,11 @@ export default function CalendarContent({ bookings: initialBookings, availabilit
         <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-1">· Calendar ·</p>
         <h1 className="text-2xl font-extrabold text-white sm:text-3xl">Bookings & Availability</h1>
         <p className="mt-1 text-sm text-gray-500">Manage your schedule and let guests book time with you.</p>
+        {notice && (
+          <p role={notice.error ? "alert" : "status"} className={`mt-3 text-sm ${notice.error ? "text-red-300" : "text-green-400"}`}>
+            {notice.text}{notice.error && /upgrade/i.test(notice.text) && <> <a href="/billing" className="underline">Open Billing</a></>}
+          </p>
+        )}
       </motion.div>
       <motion.div variants={fadeUp} className="rounded-2xl border border-brand-500/20 bg-brand-500/5 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div><p className="text-xs font-bold text-brand-300 mb-0.5">Your public booking link</p><p className="text-xs text-gray-400 font-mono break-all">{bookingLink || "/book/…"}</p></div>

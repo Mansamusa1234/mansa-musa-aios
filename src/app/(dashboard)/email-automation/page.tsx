@@ -52,7 +52,7 @@ export default function EmailAutomationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) { setError("Failed to save workflow"); return; }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error ?? "Failed to save workflow"); return; }
       setName(""); setTrigger("LEAD_CREATED"); setSteps([blankStep()]); setCreating(false);
       await load();
     } finally {
@@ -61,11 +61,12 @@ export default function EmailAutomationPage() {
   }
 
   async function toggleActive(id: string, current: boolean) {
-    await fetch(`/api/email-workflows/${id}`, {
+    const res = await fetch(`/api/email-workflows/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !current }),
     });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error ?? "Could not update the workflow."); }
     await load();
   }
 

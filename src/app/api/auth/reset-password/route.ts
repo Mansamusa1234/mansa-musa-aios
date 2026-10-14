@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getIP } from "@/lib/ratelimit";
+import { checkRateLimit, getIP, limiters } from "@/lib/ratelimit";
 import { meetsMinimumRequirements } from "@/lib/passwordStrength";
 import { isPasswordBreached } from "@/lib/passwordBreach";
 import { logAuditEvent } from "@/lib/audit";
@@ -13,6 +13,8 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  const limited = await checkRateLimit(limiters.login, getIP(req));
+  if (limited) return limited;
   try {
     const { token, password } = schema.parse(await req.json());
 
@@ -31,17 +33,26 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    await db.$transaction([
-      db.user.update({
+    const now = new Date();
+    const reset = await db.$transaction(async (tx) => {
+      // Claim atomically so a link works once, then retire every other outstanding link for this account.
+      const claim = await tx.passwordResetToken.updateMany({
+        where: { id: resetToken.id, usedAt: null, expiresAt: { gt: now } },
+        data: { usedAt: now },
+      });
+      if (claim.count !== 1) return false;
+      await tx.passwordResetToken.updateMany({ where: { userId: resetToken.userId, usedAt: null }, data: { usedAt: now } });
+      await tx.user.update({
         where: { id: resetToken.userId },
         data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
-      }),
-      db.passwordResetToken.update({ where: { id: resetToken.id }, data: { usedAt: new Date() } }),
-      db.trustedSession.updateMany({
+      });
+      await tx.trustedSession.updateMany({
         where: { userId: resetToken.userId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      }),
-    ]);
+        data: { revokedAt: now },
+      });
+      return true;
+    });
+    if (!reset) return NextResponse.json({ error: "This reset link is invalid or has expired." }, { status: 400 });
 
     await logAuditEvent({ userId: resetToken.userId, event: "PASSWORD_RESET_COMPLETED", ip: getIP(req) });
 

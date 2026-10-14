@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { getOrCreateStripeCustomer } from "@/lib/stripe";
 import { sendEmail } from "@/lib/email";
 import { triggerWorkflows } from "@/lib/email-automation";
+import { requireVerifiedEmail } from "@/lib/accountGuards";
+import { checkRateLimit, limiters } from "@/lib/ratelimit";
 
 const TRIAL_DAYS = 14;
 
@@ -16,12 +18,19 @@ export async function POST() {
   const userId = session.user.id;
   const email = session.user.email;
 
+  const limited = await checkRateLimit(limiters.trial, userId);
+  if (limited) return limited;
+  // The trial grants Professional (paid AI usage): only for a verified email address.
+  const unverified = await requireVerifiedEmail(userId);
+  if (unverified) return unverified;
+
   const existing = await db.subscription.findUnique({ where: { userId } });
   if (existing?.trialUsed) {
     return NextResponse.json({ error: "Trial already used" }, { status: 409 });
   }
-  if (existing?.status === "ACTIVE") {
-    return NextResponse.json({ error: "Already subscribed" }, { status: 409 });
+  // A Stripe subscription (active, past due or cancelled) is managed in Billing, never replaced by a trial.
+  if (existing?.status === "ACTIVE" || existing?.stripeSubscriptionId) {
+    return NextResponse.json({ error: "Already subscribed. Manage your plan from Billing." }, { status: 409 });
   }
 
   const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
@@ -69,7 +78,7 @@ function trialStartedEmailHtml({ name, trialEndDate }: { name: string; trialEndD
 <html>
 <body style="font-family:sans-serif;background:#f9fafb;padding:40px 20px;">
 <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:40px;">
-  <h1 style="color:#111;font-size:24px;margin-bottom:8px;">Welcome to your free trial, ${name}!</h1>
+  <h1 style="color:#111;font-size:24px;margin-bottom:8px;">Welcome to your free trial, ${name.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c)}!</h1>
   <p style="color:#555;font-size:16px;line-height:1.6;">
     Your 14-day trial of MansaMusaAI Professional is now active.
     You have full access to the AI receptionist, CRM, appointment booking,

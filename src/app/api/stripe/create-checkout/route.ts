@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { UTM_COOKIE, utmMetadata } from "@/lib/attribution";
+import { requireVerifiedEmail } from "@/lib/accountGuards";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -13,6 +14,8 @@ export async function POST(req: Request) {
 
   const limited = await checkRateLimit(limiters.checkout, session.user.id);
   if (limited) return limited;
+  const unverified = await requireVerifiedEmail(session.user.id);
+  if (unverified) return unverified;
 
   const payload = await req.json().catch(() => null) as { priceId?: unknown } | null;
   const priceId = payload?.priceId;
@@ -94,8 +97,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: checkoutSession.url });
   } catch (err) {
-    const msg = (err as Error)?.message ?? "Unknown error";
-    console.error("[stripe/create-checkout] error:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("[stripe/create-checkout] error:", (err as Error)?.message ?? err);
+    // Provider details stay in the server log.
+    return NextResponse.json({ error: "Checkout could not be started. Please try again shortly." }, { status: 500 });
   }
 }

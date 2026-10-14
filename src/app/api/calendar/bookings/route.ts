@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { NextResponse } from "next/server";
+import { requireFeature } from "@/lib/accountGuards";
 
 const schema = z.object({
   guestName: z.string().min(1),
@@ -27,6 +28,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const planGate = await requireFeature("bookings");
+  if (planGate) return planGate;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const parsed = schema.safeParse(await req.json());
