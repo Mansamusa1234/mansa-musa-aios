@@ -71,8 +71,8 @@ const connections = {
     return res.ok ? { ok: true, page: body.name } : { ok: false, status: res.status, error: scrub(JSON.stringify(body.error ?? body)) };
   }),
   instagram: !e.INSTAGRAM_ACCESS_TOKEN ? { ok: false, error: "not configured" } : await probe(async () => {
-    const { res, body } = await getJson(`https://graph.instagram.com/v25.0/me?fields=id,username&access_token=${encodeURIComponent(e.INSTAGRAM_ACCESS_TOKEN)}`);
-    return res.ok ? { ok: true, username: body.username, matchesUserId: body.id === e.INSTAGRAM_USER_ID } : { ok: false, status: res.status, error: scrub(JSON.stringify(body.error ?? body)) };
+    const { res, body } = await getJson(`https://graph.instagram.com/v25.0/me?fields=id,user_id,username&access_token=${encodeURIComponent(e.INSTAGRAM_ACCESS_TOKEN)}`);
+    return res.ok ? { ok: true, username: body.username, idMatches: body.id === e.INSTAGRAM_USER_ID, userIdMatches: String(body.user_id ?? "") === e.INSTAGRAM_USER_ID } : { ok: false, status: res.status, error: scrub(JSON.stringify(body.error ?? body)) };
   }),
   youtube: !(e.YOUTUBE_CLIENT_ID && e.YOUTUBE_CLIENT_SECRET && e.YOUTUBE_REFRESH_TOKEN) ? { ok: false, error: "not configured" } : await probe(async () => {
     const token = await getJson("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
