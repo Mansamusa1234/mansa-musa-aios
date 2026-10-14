@@ -119,7 +119,9 @@ test('direct publishing (no Metricool API) posts only to connected networks, wit
   const byNet = Object.fromEntries(res.body.results.map(r => [r.network, r]));
   assert.equal(byNet.tiktok.skipped, 'not_connected'); assert.equal(byNet.youtube.skipped, 'not_connected');
   const row = a.db.contentQueue.rows[0]; assert.equal(row.status, 'SENT'); assert.ok(row.sentAt instanceof Date);
-  assert.equal(JSON.parse(row.metadata).published.results.length, 4);
+  const recorded = JSON.parse(row.metadata).published.networks;
+  assert.deepEqual(Object.keys(recorded).sort(), ['facebook', 'instagram', 'tiktok', 'youtube']);
+  assert.equal(recorded.instagram.postId, 'instagram-post-1'); assert.equal(recorded.tiktok.skipped, 'not_connected');
   assert.equal(byNet.instagram.postId, 'instagram-post-1'); assert.equal(byNet.instagram.url, 'https://instagram.test/p/1');
 });
 
@@ -186,4 +188,41 @@ test('platform functions return the real post id and URL, or false when rejected
   vm.runInNewContext(source, { module: mod, exports: mod.exports, require: n => n === '@/lib/db' ? { db: { account: { findUnique: async () => null } } } : require(n), process: { env: { INSTAGRAM_USER_ID: 'ig1', INSTAGRAM_ACCESS_TOKEN: 'tok' } }, console: { error() {}, warn() {}, log() {} }, Buffer, URL, URLSearchParams, JSON, Promise, Math, Date, fetch: igFetch, setTimeout: (fn) => fn() });
   assert.deepEqual({ ...(await mod.exports.postToInstagram('https://cdn.test/v.mp4', script)) }, { id: 'media7', url: 'https://www.instagram.com/reel/abc/' });
   assert.ok(calls.some(u => u.endsWith('/media_publish')));
+});
+
+test('partial failure records each platform; a retry posts only the failed platform, never the successful one again', async () => {
+  const platformOk = { instagram: false };
+  const a = approve(draft({ videoUrl: 'https://cdn.test/v.mp4' }), { env: { ...DIRECT, SOCIAL_PUBLISH_NETWORKS: 'facebook,instagram' }, platformOk });
+  const first = await a.run();
+  assert.equal(first.status, 502); assert.equal(first.body.status, 'PARTIAL'); assert.match(first.body.error, /retry only instagram/);
+  const row = a.db.contentQueue.rows[0]; assert.equal(row.status, 'PENDING');
+  let rec = JSON.parse(row.metadata).published.networks;
+  assert.equal(rec.facebook.ok, true); assert.equal(rec.facebook.postId, 'facebook-post-1'); assert.equal(rec.instagram.ok, false);
+  platformOk.instagram = true;
+  const second = await a.run();
+  assert.equal(second.status, 200, JSON.stringify(second.body)); assert.equal(second.body.status, 'SENT');
+  assert.deepEqual(a.posted.map(p => p.network).sort(), ['facebook', 'instagram', 'instagram']);
+  rec = JSON.parse(row.metadata).published.networks;
+  assert.equal(rec.facebook.postId, 'facebook-post-1'); assert.equal(rec.instagram.postId, 'instagram-post-1');
+});
+
+test('an interrupted publish can be resumed only after it is stale, and only for unposted platforms', async () => {
+  const published = { startedAt: '2026-10-14T09:00:00Z', networks: { facebook: { network: 'facebook', ok: true, postId: 'fb-1', at: '2026-10-14T09:00:05Z' } } };
+  const fresh = approve({ ...draft({ videoUrl: 'https://cdn.test/v.mp4', published }), status: 'APPROVED', approvedAt: new Date() }, { env: { ...DIRECT, SOCIAL_PUBLISH_NETWORKS: 'facebook,instagram' } });
+  assert.equal((await fresh.run()).status, 409); assert.equal(fresh.posted.length, 0);
+  const stale = approve({ ...draft({ videoUrl: 'https://cdn.test/v.mp4', published }), status: 'APPROVED', approvedAt: new Date(Date.now() - 10 * 60 * 1000) }, { env: { ...DIRECT, SOCIAL_PUBLISH_NETWORKS: 'facebook,instagram' } });
+  const res = await stale.run();
+  assert.equal(res.body.status, 'SENT'); assert.deepEqual(stale.posted.map(p => p.network), ['instagram']);
+  const metricoolApproved = approve({ ...draft({ videoUrl: 'https://cdn.test/v.mp4' }), status: 'APPROVED', approvedAt: new Date(0) }, { env: { ...DIRECT } });
+  assert.equal((await metricoolApproved.run()).status, 409, 'drafts without a direct-publish record are never re-sent');
+});
+
+test('the daily cron only queues a PENDING draft and never calls a publishing function, even with publishing enabled', async () => {
+  const src = fs.readFileSync('src/app/api/cron/social-post/route.ts', 'utf8');
+  assert.doesNotMatch(src, /postTo|publishDraft|schedulePost|socialPublisher/);
+  const db = memoryDb();
+  const env = { ...DIRECT, SOCIAL_VIDEO_BASE_URL: 'https://store.test', METRICOOL_AUTO_PUBLISH: 'true' };
+  const res = await cron(db, env, {}, async () => ({ ok: true })).run();
+  assert.equal(res.status, 200);
+  assert.equal(db.contentQueue.rows.length, 1); assert.equal(db.contentQueue.rows[0].status, 'PENDING'); assert.equal(db.contentQueue.rows[0].sentAt, undefined);
 });

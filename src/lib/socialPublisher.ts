@@ -36,28 +36,36 @@ export async function publishDraft(input: {
   caption: string;
   videoUrl?: string | null;
   networks: SocialNetwork[];
+  /** Called as each network finishes, so results are recorded even if a later network hangs. */
+  onResult?: (result: PublishResult) => Promise<void> | void;
 }): Promise<PublishResult[]> {
-  return Promise.all(input.networks.map(async (network): Promise<PublishResult> => {
-    if (!networkEnabled(network)) return { network, ok: false, skipped: "not_enabled" };
-    if (!networkConfigured(network)) return { network, ok: false, skipped: "not_connected" };
-    if (!input.videoUrl && network !== "facebook") return { network, ok: false, skipped: "needs_video" };
-    // Hashtags are already part of the approved caption; the UTM link attributes leads and revenue.
-    const script: VideoScript = {
-      title: input.title,
-      script: input.script,
-      caption: `${input.caption}\n\n${utmLink(network, input.draftId)}`,
-      hashtags: [],
-      platform: network === "facebook" ? "instagram" : network,
-    };
-    try {
-      const receipt = input.videoUrl
-        ? await ({ facebook: postToFacebook, instagram: postToInstagram, tiktok: postToTikTok, youtube: postToYouTube }[network])(input.videoUrl, script)
-        : await postToFacebookText({ ...script, script: script.caption });
-      return receipt
-        ? { network, ok: true, postId: receipt.id, url: receipt.url }
-        : { network, ok: false, error: "Platform rejected the post (see server logs)" };
-    } catch (err) {
-      return { network, ok: false, error: err instanceof Error ? err.message : String(err) };
-    }
+  return Promise.all(input.networks.map(async (network) => {
+    const result = await publishOne(network, input);
+    await input.onResult?.(result);
+    return result;
   }));
+}
+
+async function publishOne(network: SocialNetwork, input: { draftId: string; title: string; script: string; caption: string; videoUrl?: string | null }): Promise<PublishResult> {
+  if (!networkEnabled(network)) return { network, ok: false, skipped: "not_enabled" };
+  if (!networkConfigured(network)) return { network, ok: false, skipped: "not_connected" };
+  if (!input.videoUrl && network !== "facebook") return { network, ok: false, skipped: "needs_video" };
+  // Hashtags are already part of the approved caption; the UTM link attributes leads and revenue.
+  const script: VideoScript = {
+    title: input.title,
+    script: input.script,
+    caption: `${input.caption}\n\n${utmLink(network, input.draftId)}`,
+    hashtags: [],
+    platform: network === "facebook" ? "instagram" : network,
+  };
+  try {
+    const receipt = input.videoUrl
+      ? await ({ facebook: postToFacebook, instagram: postToInstagram, tiktok: postToTikTok, youtube: postToYouTube }[network])(input.videoUrl, script)
+      : await postToFacebookText({ ...script, script: script.caption });
+    return receipt
+      ? { network, ok: true, postId: receipt.id, url: receipt.url }
+      : { network, ok: false, error: "Platform rejected the post (see server logs)" };
+  } catch (err) {
+    return { network, ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
 }

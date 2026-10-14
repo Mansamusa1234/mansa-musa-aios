@@ -3,11 +3,15 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-import { directPublishEnabled, publishDraft } from "@/lib/socialPublisher";
+import { directPublishEnabled, publishDraft, type PublishResult } from "@/lib/socialPublisher";
 import { isMetricoolConfigured, metricoolDraftMode, schedulePost, utmLink, SOCIAL_NETWORKS, type SocialNetwork } from "@/lib/metricool";
 
 // Direct publishing waits for platform video processing (Instagram, YouTube upload).
 export const maxDuration = 300;
+
+type PublishRecord = PublishResult & { at: string };
+// A direct-publish run longer than this (function limit + margin) is treated as interrupted and may be resumed.
+const STALE_PUBLISH_MS = 6 * 60 * 1000;
 
 const schema = z.object({ action: z.enum(["approve", "reject", "edit"]), content: z.string().min(1).max(50000).optional() });
 const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -22,12 +26,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { action, content } = parsed.data;
   const item = await db.contentQueue.findUnique({ where: { id } });
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (item.status !== "PENDING") return NextResponse.json({ error: "This item has already been processed. Refresh the queue." }, { status: 409 });
   if (action === "edit" && !content) return NextResponse.json({ error: "Content is required." }, { status: 400 });
-  let metadata: { toEmail?: string; subject?: string; kind?: string; videoId?: string | null; videoUrl?: string | null; networks?: string[]; script?: string; scriptTitle?: string } = {};
+  let metadata: { toEmail?: string; subject?: string; kind?: string; videoId?: string | null; videoUrl?: string | null; networks?: string[]; script?: string; scriptTitle?: string; published?: { startedAt?: string; networks?: Record<string, PublishRecord> } } = {};
   try { metadata = JSON.parse(item.metadata ?? "{}"); } catch {
+    if (item.status !== "PENDING") return NextResponse.json({ error: "This item has already been processed. Refresh the queue." }, { status: 409 });
     return NextResponse.json({ error: "Item metadata is invalid. Repair the draft before approval." }, { status: 400 });
   }
+  // A direct-publish run that was cut off (e.g. function timeout) stays APPROVED; allow resuming it once it is stale.
+  const interruptedPublish = item.status === "APPROVED" && action === "approve" && directPublishEnabled() && !!metadata.published
+    && !!item.approvedAt && Date.now() - item.approvedAt.getTime() > STALE_PUBLISH_MS;
+  if (item.status !== "PENDING" && !interruptedPublish) return NextResponse.json({ error: "This item has already been processed. Refresh the queue." }, { status: 409 });
   const sendsEmail = ["email", "lead_followup", "cold_outreach"].includes(item.type) && !!metadata?.toEmail;
   if (action === "approve" && ["email", "lead_followup"].includes(item.type) && !sendsEmail) {
     return NextResponse.json({ error: "No recipient is configured for this email draft." }, { status: 400 });
@@ -42,7 +50,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const status = action === "approve" ? "APPROVED" : action === "reject" ? "REJECTED" : "PENDING";
   // Claim the pending draft atomically: double clicks cannot send it twice.
   const claimed = await db.contentQueue.updateMany({
-    where: { id, status: "PENDING", updatedAt: item.updatedAt },
+    where: { id, status: item.status, updatedAt: item.updatedAt },
     data: { status, ...(action === "approve" ? { approvedAt: new Date() } : {}), ...(action === "reject" ? { rejectedAt: new Date() } : {}), ...(content ? { content } : {}) },
   });
   if (!claimed.count) return NextResponse.json({ error: "This draft changed. Refresh before trying again." }, { status: 409 });
@@ -79,16 +87,35 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (action === "approve" && dailyVideo && directPublishEnabled()) {
     const networks = (metadata.networks ?? [...SOCIAL_NETWORKS])
       .filter((n): n is SocialNetwork => (SOCIAL_NETWORKS as readonly string[]).includes(n));
-    const results = await publishDraft({ draftId: id, title: metadata.scriptTitle ?? item.title, script: metadata.script ?? item.content,
-      caption: content ?? item.content, videoUrl: metadata.videoUrl, networks });
-    const published = results.filter((r) => r.ok);
-    const record = { ...metadata, published: { at: new Date().toISOString(), results } };
-    if (!published.length) {
-      await db.contentQueue.update({ where: { id }, data: { status: "PENDING", approvedAt: null, metadata: JSON.stringify(record) } });
-      return NextResponse.json({ error: "No platform accepted the post. The draft remains pending.", results }, { status: 502 });
+    // Each platform's outcome is recorded separately. Platforms that already posted are never attempted again,
+    // so retrying a partly published draft only re-tries the platforms that failed or were skipped.
+    const record: Record<string, PublishRecord> = { ...(metadata.published?.networks ?? {}) };
+    const toAttempt = networks.filter((n) => !record[n]?.ok);
+    const startedAt = new Date().toISOString();
+    const metadataWith = () => JSON.stringify({ ...metadata, published: { startedAt, networks: record } });
+    let saving: Promise<unknown> = db.contentQueue.update({ where: { id }, data: { metadata: metadataWith() } });
+    await saving;
+    await publishDraft({ draftId: id, title: metadata.scriptTitle ?? item.title, script: metadata.script ?? item.content,
+      caption: content ?? item.content, videoUrl: metadata.videoUrl, networks: toAttempt,
+      onResult: (result) => {
+        record[result.network] = { ...result, at: new Date().toISOString() };
+        // Serialised writes: each one stores every result known so far.
+        saving = saving.then(() => db.contentQueue.update({ where: { id }, data: { metadata: metadataWith() } }));
+        return saving.then(() => undefined);
+      } });
+    await saving;
+    const results = networks.map((n) => record[n]).filter((r): r is PublishRecord => !!r);
+    const posted = results.filter((r) => r.ok).map((r) => r.network);
+    const failed = results.filter((r) => !r.ok && !r.skipped).map((r) => r.network);
+    if (!posted.length || failed.length) {
+      await db.contentQueue.update({ where: { id }, data: { status: "PENDING", approvedAt: null, metadata: metadataWith() } });
+      const error = !posted.length
+        ? "No platform accepted the post. The draft remains pending."
+        : `Published to ${posted.join(", ")}. ${failed.join(", ")} failed. Approve again to retry only ${failed.join(", ")}; ${posted.join(", ")} will not be posted twice.`;
+      return NextResponse.json({ error, status: posted.length ? "PARTIAL" : "PENDING", results }, { status: 502 });
     }
-    await db.contentQueue.update({ where: { id }, data: { status: "SENT", sentAt: new Date(), metadata: JSON.stringify(record) } });
-    return NextResponse.json({ ok: true, status: "SENT", results, message: `Published to ${published.map((r) => r.network).join(", ")}.` });
+    await db.contentQueue.update({ where: { id }, data: { status: "SENT", sentAt: new Date(), metadata: metadataWith() } });
+    return NextResponse.json({ ok: true, status: "SENT", results, message: `Published to ${posted.join(", ")}.` });
   }
   // Approval alone does not publish social/PR drafts. Never label them SENT.
   return NextResponse.json({ ok: true, status, message: status === "APPROVED" ? "Approved for manual publication. No message or social post was sent." : undefined });
