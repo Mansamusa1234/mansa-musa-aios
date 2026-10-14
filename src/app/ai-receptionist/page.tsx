@@ -4,11 +4,11 @@ import ReceptionistContent from "./ReceptionistContent";
 export const metadata: Metadata = {
   title: "AI Receptionist — Never Miss a Lead Again | MansaMusaAI",
   description:
-    "Your AI receptionist answers calls, qualifies leads, books appointments, and handles FAQs 24/7. Deploy in minutes. No code required. Works across phone, SMS, email, and web chat.",
-  keywords: ["AI receptionist", "AI phone answering", "lead qualification AI", "appointment booking AI", "24/7 receptionist"],
+    "An AI receptionist for your website chat: answers enquiries about your business and captures leads into your CRM. Set up in minutes, no code required.",
+  keywords: ["AI receptionist", "website chat AI", "lead capture", "appointment booking", "AI for small business"],
   openGraph: {
     title: "AI Receptionist — MansaMusaAI",
-    description: "Never miss a lead again. Your AI receptionist works 24/7 across every channel.",
+    description: "An AI receptionist for your website chat that captures leads into your CRM.",
     images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
   },
   alternates: { canonical: "/ai-receptionist" },

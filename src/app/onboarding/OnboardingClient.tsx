@@ -113,8 +113,8 @@ export default function OnboardingClient({
               Welcome{userName ? `, ${userName.split(" ")[0]}` : ""}!
             </h1>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Let&apos;s set up MansaMusaAI for your business in under 2 minutes.
-              You&apos;ll have an AI receptionist answering calls and capturing leads before you finish your coffee.
+              Let&apos;s set up MansaMusaAI for your business.
+              You&apos;ll have an AI receptionist for your website chat, capturing leads into your CRM.
             </p>
             <div className="grid grid-cols-3 gap-3 pt-2">
               {[
@@ -138,9 +138,9 @@ export default function OnboardingClient({
         {/* Step 1 — AI Receptionist */}
         {step === 1 && (
           <div className="space-y-5">
-            <div className="text-3xl">📞</div>
+            <div className="text-3xl">💬</div>
             <h2 className="text-xl font-bold text-white">Set up your AI receptionist</h2>
-            <p className="text-sm text-gray-400">This is the AI that will answer your calls and chats 24/7.</p>
+            <p className="text-sm text-gray-400">This is the AI that will answer enquiries on your website chat.</p>
 
             <div className="space-y-3">
               <div>
@@ -189,8 +189,8 @@ export default function OnboardingClient({
             <div className="text-3xl">🚀</div>
             <h2 className="text-xl font-bold text-white">Activate your free trial</h2>
             <p className="text-sm text-gray-400">
-              Get 14 days of full Professional access — no credit card required.
-              AI receptionist, CRM, bookings, WhatsApp, and email automation.
+              Get 14 days of full Professional access — no credit card required (verified email needed).
+              AI receptionist for website chat, CRM, bookings and email automation.
             </p>
 
             {trialStarted ? (
@@ -247,14 +247,13 @@ export default function OnboardingClient({
             <div className="text-5xl">🎉</div>
             <h2 className="text-xl font-bold text-white">You&apos;re all set!</h2>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Your AI receptionist is ready. Leads captured via chat, WhatsApp, or your website will appear in your CRM automatically.
+              Your AI receptionist is ready. Leads captured by your website chat will appear in your CRM automatically.
             </p>
             <div className="text-left rounded-xl bg-gray-800 p-4 space-y-2">
               {[
-                { href: "/receptionist", label: "Configure your AI receptionist", icon: "📞" },
+                { href: "/receptionist", label: "Configure your AI receptionist", icon: "💬" },
                 { href: "/crm", label: "View your CRM & leads", icon: "📋" },
                 { href: "/calendar", label: "Set your availability", icon: "📅" },
-                { href: "/whatsapp", label: "Connect WhatsApp", icon: "💬" },
                 { href: "/email-automation", label: "Build email sequences", icon: "📧" },
                 { href: "/affiliate", label: "Earn 20% as an affiliate", icon: "💰" },
               ].map((item) => (

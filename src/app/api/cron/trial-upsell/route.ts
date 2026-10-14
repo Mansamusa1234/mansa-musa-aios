@@ -37,14 +37,13 @@ export const GET = withCron(async () => {
         `<div style="font-family:sans-serif;max-width:580px;margin:0 auto;padding:32px;background:#0a0a1a;color:#e2e8f0">
           <h2 style="color:#a78bfa;margin:0 0 16px">Day 3 of your trial</h2>
           <p style="font-size:16px;line-height:1.7">Hey ${name},</p>
-          <p style="font-size:16px;line-height:1.7">You've had MansaMusaAI for 3 days. Here's what your AI receptionist is already doing while you sleep:</p>
+          <p style="font-size:16px;line-height:1.7">You've had MansaMusaAI for 3 days. Your Professional trial includes:</p>
           <div style="background:#1e1b4b;border-left:3px solid #7c3aed;padding:16px 20px;margin:20px 0;border-radius:4px">
-            <p style="margin:0;font-size:15px">Answering every enquiry 24/7 — no missed calls<br>
-            Capturing leads directly into your CRM<br>
-            Booking appointments without you lifting a finger<br>
-            Sending follow-up emails automatically</p>
+            <p style="margin:0;font-size:15px">An AI receptionist for your website chat<br>
+            Lead capture into your CRM<br>
+            Appointment booking<br>
+            Email automation sequences</p>
           </div>
-          <p style="font-size:16px;line-height:1.7">The average UK small business misses 27% of inbound calls. Each missed call costs £150+ in lost revenue. Your AI receptionist just stopped that leak.</p>
           <p style="font-size:16px;line-height:1.7">You've got ${daysLeft} days left on your Professional trial. Make sure your receptionist is set up — it takes 3 minutes.</p>
           <a href="${APP}/receptionist" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;margin:8px 0">Set up my receptionist</a>
           <p style="font-size:14px;color:#94a3b8;margin-top:32px">Darren Neil · Founder, MansaMusaAI<br>mansamusainitiative.com</p>
@@ -64,24 +63,11 @@ export const GET = withCron(async () => {
         `<div style="font-family:sans-serif;max-width:580px;margin:0 auto;padding:32px;background:#0a0a1a;color:#e2e8f0">
           <h2 style="color:#a78bfa;margin:0 0 16px">7 days in. ${daysLeft} days left.</h2>
           <p style="font-size:16px;line-height:1.7">Hey ${name},</p>
-          <p style="font-size:16px;line-height:1.7">You're halfway through your Professional trial. Here's what stops working if you don't upgrade in ${daysLeft} days:</p>
+          <p style="font-size:16px;line-height:1.7">You're halfway through your Professional trial. When it ends in ${daysLeft} days, your account returns to the Free plan (5 AI chats a day). Your existing data stays; creating new items needs a paid plan:</p>
           <div style="background:#1e1b4b;border:1px solid #7c3aed33;padding:20px;border-radius:8px;margin:20px 0">
-            <p style="color:#f87171;margin:0 0 8px;font-weight:600">What you lose:</p>
             <p style="margin:0;font-size:15px;color:#cbd5e1">
-              3 AI receptionists drops to 1 (chat only, no calls)<br>
-              Unlimited calls capped at 50/month<br>
-              WhatsApp integration goes offline<br>
-              Email automation sequences pause<br>
-              Affiliate programme access removed
-            </p>
-          </div>
-          <div style="background:#0f2a1a;border:1px solid #16a34a33;padding:20px;border-radius:8px;margin:20px 0">
-            <p style="color:#4ade80;margin:0 0 8px;font-weight:600">What £149/month gets you:</p>
-            <p style="margin:0;font-size:15px;color:#cbd5e1">
-              Everything in your trial — forever<br>
-              20% recurring commission on every referral you send<br>
-              WhatsApp automation running 24/7<br>
-              Potential to earn £149/mo back in a single referral
+              Starter, £49/month: website chat AI receptionist, CRM, appointment booking, AI executive team<br>
+              Professional, £149/month: everything in Starter plus email automation sequences and the Business Research Desk
             </p>
           </div>
           <a href="${upgradeUrl}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;margin:8px 0">Keep everything — upgrade now</a>
@@ -104,11 +90,11 @@ export const GET = withCron(async () => {
             <p style="margin:0;font-size:18px;font-weight:700;color:#fca5a5">${daysLeft} days remaining on your trial</p>
           </div>
           <p style="font-size:16px;line-height:1.7">Hey ${name},</p>
-          <p style="font-size:16px;line-height:1.7">Your trial ends in ${daysLeft} days. After that, your AI receptionist stops taking calls, WhatsApp goes quiet, and email automation pauses.</p>
+          <p style="font-size:16px;line-height:1.7">Your trial ends in ${daysLeft} days. After that your account returns to the Free plan: the AI receptionist, CRM, appointment booking and email automation need a paid plan.</p>
           <div style="background:#1e1b4b;border:2px solid #7c3aed;padding:20px;border-radius:8px;margin:20px 0;text-align:center">
             <p style="font-size:22px;font-weight:700;color:#a78bfa;margin:0 0 8px">Professional Plan</p>
             <p style="font-size:36px;font-weight:800;color:#fff;margin:0 0 4px">£149<span style="font-size:18px;color:#94a3b8">/mo</span></p>
-            <p style="color:#94a3b8;margin:0 0 16px">Refer one client and earn £30/mo back. Refer 5 and the plan pays for itself.</p>
+            <p style="color:#94a3b8;margin:0 0 16px">Or choose Starter at £49/month. Cancel from Billing whenever you like.</p>
             <a href="${upgradeUrl}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;text-decoration:none;padding:16px 32px;border-radius:8px;font-weight:700;font-size:18px">Secure my plan now</a>
           </div>
           <p style="font-size:14px;color:#94a3b8;margin-top:32px">Questions? Reply to this email — I read every one.<br><br>Darren Neil · Founder, MansaMusaAI</p>

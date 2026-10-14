@@ -28,22 +28,23 @@ const AGENT_PHRASES = [
   "All AI Employees",
 ];
 
+// Verified facts only (live Stripe prices, trial terms, plan limits, agents in the product).
 const LIVE_METRICS = [
-  { label: "Calls answered 24/7",  value: 100, suffix: "%",   prefix: "",  color: "text-brand-400"   },
-  { label: "Leads captured",       value: 3,   suffix: "x",   prefix: "",  color: "text-green-400"   },
-  { label: "Languages supported",  value: 30,  suffix: "+",   prefix: "",  color: "text-blue-400"    },
-  { label: "Starter plan",         value: 49,  suffix: "/mo", prefix: "£", color: "text-purple-400"  },
-  { label: "Setup time (minutes)", value: 2,   suffix: "",    prefix: "",  color: "text-amber-400"   },
-  { label: "Uptime SLA",           value: 99,  suffix: ".9%", prefix: "",  color: "text-emerald-400" },
+  { label: "Starter plan",             value: 49,  suffix: "/mo",   prefix: "£", color: "text-brand-400"   },
+  { label: "Professional plan",        value: 149, suffix: "/mo",   prefix: "£", color: "text-green-400"   },
+  { label: "Free Professional trial",  value: 14,  suffix: " days", prefix: "",  color: "text-blue-400"    },
+  { label: "Free AI chats per day",    value: 5,   suffix: "",      prefix: "",  color: "text-purple-400"  },
+  { label: "AI executive roles",       value: 16,  suffix: "",      prefix: "",  color: "text-amber-400"   },
+  { label: "Plans to choose from",     value: 4,   suffix: "",      prefix: "",  color: "text-emerald-400" },
 ];
 
 const AGENTS = [
-  { icon: "📞", name: "AI Receptionist",  role: "Answers calls 24/7"          },
+  { icon: "💬", name: "AI Receptionist",  role: "Website Chat Enquiries"      },
   { icon: "💼", name: "Sales Agent",      role: "Pipeline & Lead Nurturing"   },
   { icon: "🎯", name: "Lead Qualifier",   role: "Scores & Routes Hot Leads"   },
   { icon: "📅", name: "Booking Agent",    role: "Appointments & Scheduling"   },
   { icon: "🎧", name: "Support Agent",    role: "Customer Success"            },
-  { icon: "📩", name: "Follow-up Agent",  role: "SMS & Email Sequences"       },
+  { icon: "📩", name: "Follow-up Agent",  role: "Email Sequences"             },
   { icon: "📣", name: "Marketing Agent",  role: "Campaigns & SEO"             },
   { icon: "🔬", name: "Research Agent",   role: "Market Intelligence"         },
   { icon: "💰", name: "Finance Agent",    role: "P&L, Forecasting, Tax"       },
@@ -51,12 +52,12 @@ const AGENTS = [
 ];
 
 const FEATURES = [
-  { icon: "📞", title: "Answers every call",    desc: "Your AI receptionist picks up in under 2 seconds — 24/7, 365, zero hold music."      },
-  { icon: "🎯", title: "Scores every lead",     desc: "Asks qualifying questions, ranks prospects, routes hot leads to your team instantly." },
-  { icon: "📅", title: "Books appointments",    desc: "Syncs with your calendar and confirms bookings without any back-and-forth."           },
-  { icon: "💬", title: "WhatsApp integration",  desc: "AI-powered WhatsApp inbox. Every inbound message gets an instant reply."             },
-  { icon: "🤝", title: "Affiliate programme",   desc: "Earn 20% recurring commission for every business you refer. No cap."                 },
-  { icon: "📧", title: "Email automation",      desc: "Trigger-based sequences fire automatically on lead capture, bookings, and more."      },
+  { icon: "💬", title: "Website chat receptionist", desc: "Answers enquiries about your business on your website chat and captures the enquirer's details." },
+  { icon: "🎯", title: "Lead capture & CRM",        desc: "Every enquiry lands in your CRM pipeline, from first contact to closed deal."                  },
+  { icon: "📅", title: "Books appointments",        desc: "Clients book into your availability with the built-in booking calendar."                       },
+  { icon: "👔", title: "AI executive team",         desc: "Ask your AI CEO, CFO, CMO or Head of Sales for plans, pricing checks and follow-up sequences."  },
+  { icon: "🤝", title: "Affiliate programme",       desc: "Earn 20% recurring commission for every business you refer. No cap."                            },
+  { icon: "📧", title: "Email automation",          desc: "Trigger-based sequences fire automatically on lead capture, bookings, and more."                },
 ];
 
 const WISDOM_FEATURES = [
@@ -84,9 +85,9 @@ const WISDOM_FEATURES = [
 ];
 
 const STEPS = [
-  { step: "01", title: "Sign up free",           desc: "30 seconds. No credit card. Start your 14-day trial instantly." },
+  { step: "01", title: "Sign up free",           desc: "No credit card. Verify your email to start a 14-day Professional trial." },
   { step: "02", title: "Configure your AI",      desc: "Name it, give it your business info, set your hours. Under 2 minutes." },
-  { step: "03", title: "Go live",                desc: "Embed on your site or connect your phone number. Your AI is on call." },
+  { step: "03", title: "Go live",                desc: "Add the chat to your website. Your AI receptionist is live." },
 ];
 
 /* ─── Component ─────────────────────────────────────────────── */
@@ -420,7 +421,7 @@ export default function LandingPage({ plans }: Props) {
                 color: "border-green-500/20 hover:border-green-500/40",
                 accent: "text-green-400",
                 agents: ["Lead Qualifier", "Sales Agent", "Follow-up Agent", "Proposal Writer", "Deal Closer"],
-                desc: "Never miss a lead. AI qualifies, nurtures, and closes — 24/7.",
+                desc: "AI helps you qualify, nurture and follow up every lead in your pipeline.",
               },
               {
                 dept: "Customer Support",
@@ -436,7 +437,7 @@ export default function LandingPage({ plans }: Props) {
                 color: "border-purple-500/20 hover:border-purple-500/40",
                 accent: "text-purple-400",
                 agents: ["Content Writer", "SEO Agent", "Social Media Agent", "Email Campaign Agent", "Brand Voice Agent"],
-                desc: "Campaigns, content, and copy — generated and published automatically.",
+                desc: "Campaigns, content, and copy — drafted for you to review and approve.",
               },
               {
                 dept: "Finance & Accounting",
@@ -566,7 +567,7 @@ export default function LandingPage({ plans }: Props) {
               Your agents don&apos;t stay the<br className="hidden sm:block" /> same. They grow.
             </motion.h2>
             <motion.p variants={fadeUp} className="mt-4 text-gray-400 text-lg max-w-2xl mx-auto">
-              Like a new employee who learns your business on day one and becomes your best performer by year one — MansaMusaAI agents get sharper with every call, every win, every answer saved.
+              Like a new employee who learns your business on day one and becomes your best performer by year one — MansaMusaAI agents get sharper with every conversation, every win, every answer saved.
             </motion.p>
           </motion.div>
 
@@ -585,7 +586,7 @@ export default function LandingPage({ plans }: Props) {
                 color: "from-green-900/40 to-green-900/10 border-green-800/30",
                 accent: "text-green-400",
                 title: "First breath",
-                desc: "Learns your business name, tone, products, and FAQs. Ready to answer calls from the moment you go live.",
+                desc: "Learns your business name, tone, products, and FAQs. Ready to answer enquiries from the moment you go live.",
               },
               {
                 stage: "Week 1",
@@ -657,14 +658,14 @@ export default function LandingPage({ plans }: Props) {
 
           <motion.div variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { icon: "🏗️", who: "Founders & Solopreneurs",       pain: "Wearing every hat in the business",               fix: "Your AI team handles calls, admin, follow-ups and marketing so you focus on growth." },
-              { icon: "🏥", who: "Clinics & Healthcare",           pain: "Missing calls, losing bookings, slow follow-up",   fix: "AI receptionist books appointments 24/7, sends reminders, handles enquiries instantly." },
-              { icon: "🔧", who: "Trades & Service Businesses",    pain: "Can't answer calls on the job",                   fix: "Your AI picks up every call, qualifies the job, books it in — while you're on site." },
+              { icon: "🏗️", who: "Founders & Solopreneurs",       pain: "Wearing every hat in the business",               fix: "Your AI team helps with enquiries, admin, follow-ups and marketing so you focus on growth." },
+              { icon: "🏥", who: "Clinics & Healthcare",           pain: "Missed enquiries, lost bookings, slow follow-up",   fix: "Your website chat receptionist answers enquiries, and your booking calendar lets clients book appointments." },
+              { icon: "🔧", who: "Trades & Service Businesses",    pain: "Can't reply to enquiries on the job",             fix: "Your website chat receptionist captures the job details while you're on site." },
               { icon: "🏠", who: "Estate Agents & Property",       pain: "Leads going cold before you call back",           fix: "AI qualifies every enquiry, books viewings, and follows up until they convert." },
               { icon: "⚖️", who: "Law Firms & Accountants",        pain: "Admin eating into billable time",                 fix: "AI handles intake, scheduling, document queries and client follow-up automatically." },
-              { icon: "🛍️", who: "Retail & E-Commerce",            pain: "Support tickets piling up overnight",             fix: "AI support agent resolves queries 24/7, handles returns, and upsells on autopilot." },
+              { icon: "🛍️", who: "Retail & E-Commerce",            pain: "Support tickets piling up overnight",             fix: "Your website chat receptionist answers common questions while you're away." },
               { icon: "🚀", who: "Startups & Scale-ups",           pain: "Can't afford to hire full departments yet",       fix: "Deploy a full team of specialist AI agents for less than one junior hire." },
-              { icon: "🌍", who: "Global & Remote Businesses",     pain: "Different time zones, different languages",       fix: "AI agents work in 30+ languages, across every time zone, around the clock." },
+              { icon: "🌍", who: "Global & Remote Businesses",     pain: "Different time zones, different languages",       fix: "AI agents that can reply in many languages, whatever the time zone." },
               { icon: "🏢", who: "SMEs Ready to Scale",            pain: "Growth is limited by operational capacity",      fix: "Remove every operational bottleneck with AI that scales instantly with demand." },
             ].map((item) => (
               <motion.div
@@ -882,7 +883,7 @@ export default function LandingPage({ plans }: Props) {
             </span>
           </motion.h2>
           <motion.p variants={fadeUp} className="mt-5 text-lg text-gray-400">
-            Join thousands of founders and operators already building smarter with MansaMusaAI.
+            Start free today. No card needed.
           </motion.p>
           <motion.div variants={fadeUp} className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register" className="rounded-xl bg-brand-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-brand-500/30 hover:bg-brand-600 transition-all hover:-translate-y-0.5 hover:shadow-brand-500/50">
@@ -912,7 +913,7 @@ export default function LandingPage({ plans }: Props) {
         >
           <motion.p variants={fadeUp} className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-3">Community</motion.p>
           <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-extrabold text-white mb-4">
-            Join 1,000+ businesses<br className="hidden sm:block" /> building with AI
+            Build your business<br className="hidden sm:block" /> with AI
           </motion.h2>
           <motion.p variants={fadeUp} className="text-gray-400 text-lg mb-8">
             Get early access to new agents, share wins, ask questions, and connect with founders using MansaMusaAI to scale their business.

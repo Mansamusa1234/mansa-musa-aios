@@ -99,7 +99,7 @@ export default function WorkforceContent(props: Props) {
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-indigo-400 mb-1">· AI Workforce OS ·</p>
           <h1 className="text-2xl font-extrabold text-white sm:text-3xl">Your Executive Team</h1>
-          <p className="mt-1 text-sm text-gray-500">10 AI executives — available 24/7. Click any role to start a conversation.</p>
+          <p className="mt-1 text-sm text-gray-500">Your AI executives are available any time. Click any role to start a conversation.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Link href="/marketplace" className="rounded-xl border border-white/8 bg-white/4 px-4 py-2 text-xs font-semibold text-gray-300 hover:bg-white/8 transition-colors">
@@ -290,7 +290,7 @@ export default function WorkforceContent(props: Props) {
       {/* Quick links */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { href: "/receptionist", label: "AI Receptionist", icon: "📞", desc: "Voice, chat, SMS" },
+          { href: "/receptionist", label: "AI Receptionist", icon: "💬", desc: "Website chat" },
           { href: "/crm",          label: "CRM & Leads",     icon: "👥", desc: "Pipeline management" },
           { href: "/compete",      label: "Agent Arena",     icon: "⚔️", desc: "AI competitions" },
           { href: "/team",         label: "Your Team",       icon: "🏢", desc: "Invite & manage" },

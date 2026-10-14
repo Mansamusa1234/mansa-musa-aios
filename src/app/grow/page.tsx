@@ -15,9 +15,9 @@ const STRATEGIES = [
     color: "border-red-500/20",
     accent: "text-red-400",
     strategies: [
-      { name: "Google Search Ads", desc: "Target 'AI receptionist', 'AI for small business', 'missed calls solution'. High intent — people searching for exactly what you offer.", roi: "£3–8 return per £1 spent" },
-      { name: "Facebook & Instagram Ads", desc: "Retargeting visitors who didn't sign up. Video ads showing AI answering calls. Lookalike audiences from your customer list.", roi: "Best for brand awareness" },
-      { name: "LinkedIn Ads", desc: "Target decision-makers at SMEs by job title (MD, CEO, Operations Manager). Sponsor content about £30K lost to missed calls.", roi: "Highest B2B conversion" },
+      { name: "Google Search Ads", desc: "Target 'AI receptionist', 'AI for small business', 'website chat for small business'. High intent — people searching for exactly what you offer.", roi: "£3–8 return per £1 spent" },
+      { name: "Facebook & Instagram Ads", desc: "Retargeting visitors who didn't sign up. Video ads showing the website chat AI receptionist. Lookalike audiences from your customer list.", roi: "Best for brand awareness" },
+      { name: "LinkedIn Ads", desc: "Target decision-makers at SMEs by job title (MD, CEO, Operations Manager). Sponsor content about capturing more website enquiries.", roi: "Highest B2B conversion" },
       { name: "YouTube Pre-roll", desc: "15-second unskippable ads targeting business content viewers. Show the brain rot format — AI answering a call while owner is on a job.", roi: "£0.01–0.03 per view" },
       { name: "TikTok Ads", desc: "Spark Ads boosting your organic brain rot videos. Target entrepreneurs 25–45. Massive organic amplification potential.", roi: "Lowest CPM of any platform" },
     ],
@@ -42,7 +42,7 @@ const STRATEGIES = [
       { name: "20% Lifetime Affiliate Programme", desc: "Already built. Every affiliate earns 20% of every subscription they refer — forever. A £499/month customer earns them £100/month passively.", roi: "£0 acquisition cost" },
       { name: "Customer Referral Rewards", desc: "Give existing customers 1 free month for every paying customer they refer. Word-of-mouth from happy users is your most trusted channel.", roi: "3x higher conversion rate" },
       { name: "Partner with Accountants", desc: "Every UK accountant has 50–200 SME clients. One accountant recommending MansaMusaAI generates massive recurring revenue.", roi: "One partner = 20+ customers" },
-      { name: "Agency Reseller Programme", desc: "Let marketing agencies white-label or resell MansaMusaAI to their clients. They take a cut, you get distribution at scale.", roi: "Exponential distribution" },
+      { name: "Agency Reseller Programme", desc: "Let marketing agencies refer MansaMusaAI to their clients through the affiliate programme. They earn commission, you get distribution.", roi: "Exponential distribution" },
     ],
   },
   {

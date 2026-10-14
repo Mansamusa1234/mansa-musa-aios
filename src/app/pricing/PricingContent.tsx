@@ -11,28 +11,27 @@ import ExitIntent from "@/components/marketing/ExitIntent";
 import { fadeUp, stagger, staggerSlow, scaleIn } from "@/lib/motion";
 import type { PricingPlan } from "@/types";
 
+// Only features that work today. Each account has one website chat receptionist; phone, SMS and
+// WhatsApp channels are not offered.
 const tableFeatures = [
-  { label: "AI receptionist",         values: ["1 (chat only)", "1", "3", "Unlimited"]                 },
-  { label: "Calls / chats per month", values: ["50", "200", "Unlimited", "Unlimited"]                  },
-  { label: "Lead capture & CRM",      values: [true, true, true, true]                                  },
-  { label: "Appointment booking",     values: [false, true, true, true]                                 },
-  { label: "WhatsApp integration",    values: [false, false, true, true]                                },
-  { label: "Email automation",        values: [false, false, true, true]                                },
-  { label: "Affiliate programme",     values: [false, false, true, true]                                },
-  { label: "CRM integration",         values: [false, false, "200+ tools", "Custom"]                   },
-  { label: "Languages supported",     values: ["3", "10", "30+", "30+"]                                },
-  { label: "Analytics dashboard",     values: ["Basic", "Standard", "Advanced", "Enterprise"]           },
-  { label: "Custom branding",         values: [false, false, false, true]                               },
-  { label: "SSO / SAML",             values: [false, false, false, true]                                },
-  { label: "Dedicated account mgr",   values: [false, false, false, true]                               },
-  { label: "SLA guarantee",           values: [false, false, false, true]                               },
-  { label: "Cancel anytime",          values: [true, true, true, true]                                  },
+  { label: "AI chat",                       values: ["5 / day", "Unlimited (fair use)", "Unlimited (fair use)", "Unlimited (fair use)"] },
+  { label: "AI models",                     values: ["Claude Haiku 4.5", "+ Claude Sonnet 4.6", "+ Claude Sonnet 5 & Opus 4.8", "+ Claude Fable 5"] },
+  { label: "Website chat AI receptionist",  values: [false, true, true, true]                                },
+  { label: "Lead capture & CRM",            values: [false, true, true, true]                                },
+  { label: "Appointment booking",           values: [false, true, true, true]                                },
+  { label: "AI executive team",             values: [false, true, true, true]                                },
+  { label: "Email automation sequences",    values: [false, false, true, true]                               },
+  { label: "Business Research Desk",        values: [false, false, true, true]                               },
+  { label: "Affiliate programme",           values: [false, false, true, true]                               },
+  { label: "Dedicated account manager",     values: [false, false, false, true]                              },
+  { label: "SLA guarantee",                 values: [false, false, false, true]                              },
+  { label: "Cancel anytime",                values: [true, true, true, true]                                 },
 ];
 
 const faqs = [
-  { q: "Is there a free trial?",                  a: "Yes — every new account gets a 14-day free trial of Professional. No credit card required. After the trial, choose a paid plan or stay on the free tier." },
+  { q: "Is there a free trial?",                  a: "Yes — verify your email and you can start a 14-day free trial of Professional. No credit card required. After the trial, choose a paid plan or stay on the free tier." },
   { q: "Can I change plans at any time?",         a: "Yes. Upgrade or downgrade instantly. We prorate any difference to the day." },
-  { q: "How does the AI receptionist work?",      a: "You configure a name, greeting, and persona. It then answers enquiries on your website chat and WhatsApp (Professional+), books appointments into your calendar, and pushes leads into your CRM — automatically, 24/7." },
+  { q: "How does the AI receptionist work?",      a: "You configure a name, greeting, and persona, then add it to your website chat. It answers enquiries about your business, captures enquirers' details into your CRM. Your booking calendar lets clients book appointments. Phone, SMS and WhatsApp are not currently offered." },
   { q: "What currencies do you accept?",          a: "We bill in GBP. All prices are shown per month and include VAT where applicable." },
   { q: "Is there an annual discount?",            a: "Annual billing saves 20% on paid plans. When the Annual toggle is shown at the top of this page, the annual price is charged at checkout; otherwise use “Ask about annual billing” and we will set it up for you." },
   { q: "What’s your refund policy?",              a: "7-day money-back guarantee on all paid plans. No questions asked." },
@@ -112,7 +111,7 @@ export default function PricingContent({ plans }: Props) {
             One employee costs more than this
           </motion.h1>
           <motion.p variants={fadeUp} className="mt-4 text-xl text-gray-400">
-            Your AI receptionist answers every call, captures every lead, and books every appointment — starting from £49/mo.
+            A website chat AI receptionist, CRM, appointment booking and your AI executive team — starting from £49/mo.
           </motion.p>
           <motion.div variants={fadeUp} className="mt-6 flex flex-wrap items-center justify-center gap-3">
             {INDUSTRIES.map((ind) => (
@@ -259,12 +258,12 @@ export default function PricingContent({ plans }: Props) {
       {/* Social proof */}
       <section className="bg-gray-950 px-6 py-16">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-8">Trusted by businesses across the UK</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-brand-400 mb-8">Built for UK businesses</p>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
             {[
-              { stat: "24/7", label: "Always answering" },
-              { stat: "< 2s", label: "Response time" },
-              { stat: "30+", label: "Languages" },
+              { stat: "£49", label: "Starter per month" },
+              { stat: "14 days", label: "Free Professional trial" },
+              { stat: "No card", label: "To start free" },
               { stat: "20%", label: "Affiliate commission" },
             ].map((s) => (
               <div key={s.label}>

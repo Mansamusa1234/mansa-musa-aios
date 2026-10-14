@@ -48,9 +48,9 @@ export default function AgentFeed({ maxItems = 5 }: { maxItems?: number }) {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" />
           </span>
-          <span className="text-xs font-semibold text-white tracking-wide">Live Agent Activity</span>
+          <span className="text-xs font-semibold text-white tracking-wide">Example Agent Activity</span>
         </div>
-        <span className="text-[10px] text-gray-500 font-mono">REAL-TIME</span>
+        <span className="text-[10px] text-gray-500 font-mono">ILLUSTRATIVE</span>
       </div>
 
       <AnimatePresence initial={false}>

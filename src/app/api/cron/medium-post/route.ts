@@ -7,19 +7,17 @@ function generateArticleHTML(script: VideoScript): string {
   return `
 <p>${opening}</p>
 
-<h2>Why UK Businesses Need an AI Receptionist</h2>
-<p>In today's competitive market, UK businesses can't afford to miss a single call. Every unanswered phone call is a potential customer walking straight to your competitor. An AI receptionist from Mansa Musa AI ensures your business never misses a lead — answering calls instantly, 24 hours a day, 7 days a week, even during evenings, weekends, and bank holidays.</p>
-<p>Whether you run a salon, a trades business, a restaurant, or a professional service, the cost of a missed call far exceeds the cost of automation. Our customers report recouping their monthly subscription in just a single saved booking.</p>
+<h2>Why UK Businesses Use an AI Receptionist</h2>
+<p>Small businesses lose enquiries when nobody is free to reply. Mansa Musa AI gives you an AI receptionist for your website chat: it answers questions about your business, captures the enquirer's details into your CRM. A booking calendar lets clients book appointments.</p>
 
-<h2>The Real Cost Savings</h2>
-<p>Hiring a full-time receptionist in the UK costs upwards of £22,000 a year in salary alone — before you factor in National Insurance, holiday pay, sick leave, and training. Mansa Musa AI starts at just £49 a month, with no contracts and no hidden fees.</p>
-<p>That's less than £2 a day for a receptionist who never calls in sick, never takes a lunch break, never misses a call, and works every single day of the year.</p>
+<h2>What It Costs</h2>
+<p>There is a free plan with 5 AI chats a day. Paid plans are Starter at £49 a month, Professional at £149 a month and Enterprise at £499 a month. Verify your email and you can try Professional free for 14 days with no card.</p>
 
-<h2>How It Works</h2>
-<p>Getting started with Mansa Musa AI takes minutes, not weeks. Once set up, your AI receptionist answers every inbound call using natural, conversational AI. It can book appointments directly into your calendar, capture lead details, answer common questions about your business, and send automatic follow-up messages via WhatsApp or SMS.</p>
+<h2>What You Get</h2>
+<p>Starter includes the website chat AI receptionist, lead capture with a CRM, appointment booking and an AI executive team for strategy, sales, finance and marketing questions. Professional adds email automation sequences and the Business Research Desk.</p>
 
-<h2>Ready to Get Started?</h2>
-<p>Join hundreds of UK businesses already using Mansa Musa AI to capture more leads and grow their revenue — without adding headcount. Visit <a href="https://mansamusainitiative.com">mansamusainitiative.com</a> for a free trial. No credit card required.</p>
+<h2>Get Started</h2>
+<p>Visit <a href="https://mansamusainitiative.com">mansamusainitiative.com</a> to start free.</p>
 `.trim();
 }
 
@@ -43,7 +41,8 @@ export const GET = withCron(async () => {
       contentFormat: "html",
       content: generateArticleHTML(script),
       tags: script.hashtags.map((h) => h.replace("#", "")).slice(0, 5),
-      publishStatus: "public",
+      // Draft only: the owner reviews and publishes on Medium. Nothing goes public automatically.
+      publishStatus: "draft",
       canonicalUrl: "https://mansamusainitiative.com",
     }),
   });

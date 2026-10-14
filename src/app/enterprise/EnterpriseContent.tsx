@@ -7,15 +7,14 @@ import MarketingNav from "@/components/marketing/MarketingNav";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
 import { fadeUp, stagger } from "@/lib/motion";
 
+// Only capabilities that exist today, plus commercial commitments the business offers directly.
 const FEATURES = [
-  { icon: "🏢", title: "Dedicated infrastructure", body: "Your own isolated database, compute, and storage. No noisy neighbours. Guaranteed uptime SLA." },
-  { icon: "🔑", title: "Single Sign-On (SSO)", body: "Connect your existing identity provider — Okta, Azure AD, Google Workspace. Enforce MFA policy across all users." },
-  { icon: "🤖", title: "Custom AI agents", body: "Build bespoke agents trained on your internal knowledge, processes, and brand voice. Private model fine-tuning available." },
-  { icon: "📊", title: "Advanced analytics", body: "Full usage analytics, cost attribution per team, agent performance dashboards, and custom reporting via API." },
-  { icon: "⚙️", title: "Role-based access control", body: "Fine-grained permissions for every team and resource. Audit logs for every action. Compliance-ready from day one." },
-  { icon: "🛡️", title: "Enterprise security", body: "SOC 2 Type II-ready, GDPR DPA, custom data residency, penetration test reports on request." },
-  { icon: "💬", title: "Dedicated success team", body: "Named customer success manager, priority Slack channel, quarterly business reviews, and onboarding assistance." },
-  { icon: "💰", title: "Volume pricing", body: "Significant discounts for larger teams. Annual billing options. Custom commercial terms for large deployments." },
+  { icon: "🧠", title: "Most capable AI models", body: "Enterprise includes access to the most capable models in the platform, including Claude Fable 5." },
+  { icon: "👔", title: "AI executive team", body: "Specialist AI advisers for strategy, finance, marketing, sales, operations and more." },
+  { icon: "👥", title: "Team accounts", body: "Invite colleagues to your organisation and manage their roles." },
+  { icon: "🔐", title: "Account security", body: "Two-factor authentication, session management and an audit log of sign-in events." },
+  { icon: "💬", title: "Dedicated account manager", body: "A named contact to help you get set up and make the most of the platform." },
+  { icon: "💰", title: "Volume pricing", body: "Talk to us about larger teams and annual billing." },
 ];
 
 const LOGOS = ["Fortune 500", "Series B+", "SMB 500+", "Government", "Healthcare", "Legal"];
@@ -72,7 +71,7 @@ export default function EnterpriseContent() {
                   </span>
                 </motion.h1>
                 <motion.p variants={fadeUp} className="mt-5 text-lg text-gray-400">
-                  Dedicated infrastructure, custom agents, SSO, compliance controls, and a team that treats your success as their job.
+                  The most capable AI models, your AI executive team, team accounts and a dedicated account manager.
                 </motion.p>
                 <motion.div variants={fadeUp} className="mt-8 flex flex-wrap gap-3">
                   <a href="#contact" className="rounded-xl bg-brand-600 px-7 py-3 text-sm font-semibold text-white hover:bg-brand-700 transition-colors">
@@ -86,7 +85,7 @@ export default function EnterpriseContent() {
               <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
                 className="rounded-2xl border border-white/10 bg-white/5 p-8 space-y-4"
               >
-                {["99.99% uptime SLA", "Custom data residency", "SOC 2 Type II-ready", "Dedicated CSM", "Volume discounts", "Custom AI agents"].map((item) => (
+                {["Most capable AI models", "AI executive team", "Team accounts", "Two-factor authentication", "Dedicated account manager", "Volume pricing"].map((item) => (
                   <div key={item} className="flex items-center gap-3 text-sm">
                     <svg className="h-4 w-4 text-green-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
