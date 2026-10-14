@@ -161,6 +161,16 @@ Start free today at mansamusainitiative.com.`,
   platform: "youtube",
 };
 
+/** What a platform returned for an accepted post; `false` means it was not posted. */
+export type PostReceipt = { id: string; url: string | null };
+
+async function receiptFrom(response: Response, url: (id: string) => string | null): Promise<PostReceipt | false> {
+  if (!response.ok) return false;
+  const body = await response.json().catch(() => ({}));
+  const id = typeof body?.id === "string" ? body.id : typeof body?.post_id === "string" ? body.post_id : null;
+  return id ? { id, url: url(id) } : false;
+}
+
 async function reportProviderFailure(provider: string, response: Response): Promise<void> {
   if (response.ok) return;
   const detail = await response.text().catch(() => "");
@@ -236,7 +246,7 @@ export async function getHeyGenVideoUrl(videoId: string): Promise<string | null>
   return data?.data?.status === "completed" ? data.data.video_url : null;
 }
 
-export async function postToTikTok(videoUrl: string, script: VideoScript): Promise<boolean> {
+export async function postToTikTok(videoUrl: string, script: VideoScript): Promise<PostReceipt | false> {
   const accessToken = process.env.TIKTOK_ACCESS_TOKEN;
   if (!accessToken) return false;
 
@@ -267,7 +277,8 @@ export async function postToTikTok(videoUrl: string, script: VideoScript): Promi
   if (!initRes.ok || !initData?.data?.publish_id) {
     console.error("[social:tiktok] publish failed", initRes.status, JSON.stringify(initData).slice(0, 1200));
   }
-  return !!initData?.data?.publish_id;
+  // TikTok returns a publish_id; the public URL only exists once TikTok finishes processing.
+  return initData?.data?.publish_id ? { id: String(initData.data.publish_id), url: null } : false;
 }
 
 export async function postToLinkedIn(videoUrl: string, script: VideoScript): Promise<boolean> {
@@ -347,7 +358,7 @@ export async function postToLinkedIn(videoUrl: string, script: VideoScript): Pro
   return res.ok;
 }
 
-export async function postToInstagram(videoUrl: string, script: VideoScript): Promise<boolean> {
+export async function postToInstagram(videoUrl: string, script: VideoScript): Promise<PostReceipt | false> {
   const igUserId = process.env.INSTAGRAM_USER_ID;
   const storedAccount = igUserId
     ? await db.account.findUnique({
@@ -397,7 +408,10 @@ export async function postToInstagram(videoUrl: string, script: VideoScript): Pr
   });
 
   await reportProviderFailure("instagram-publish", publishRes);
-  return publishRes.ok;
+  const receipt = await receiptFrom(publishRes, () => null);
+  if (!receipt) return false;
+  const media = await fetch(`${INSTAGRAM_GRAPH_BASE}/${receipt.id}?fields=permalink&access_token=${encodeURIComponent(token)}`).then((r) => r.json()).catch(() => ({}));
+  return { id: receipt.id, url: typeof media?.permalink === "string" ? media.permalink : null };
 }
 
 export async function postToTwitter(videoUrl: string, script: VideoScript): Promise<boolean> {
@@ -452,7 +466,7 @@ export async function postToTwitter(videoUrl: string, script: VideoScript): Prom
   return res.ok;
 }
 
-export async function postToFacebook(videoUrl: string, script: VideoScript): Promise<boolean> {
+export async function postToFacebook(videoUrl: string, script: VideoScript): Promise<PostReceipt | false> {
   const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
   const pageId = process.env.FACEBOOK_PAGE_ID;
   if (!token || !pageId) return false;
@@ -466,7 +480,7 @@ export async function postToFacebook(videoUrl: string, script: VideoScript): Pro
   });
 
   await reportProviderFailure("facebook", res);
-  return res.ok;
+  return receiptFrom(res, (id) => `https://www.facebook.com/${pageId}/videos/${id}`);
 }
 
 export async function postToThreads(videoUrl: string, script: VideoScript): Promise<boolean> {
@@ -567,7 +581,7 @@ export async function postToPinterest(videoUrl: string, script: VideoScript): Pr
   return res.ok;
 }
 
-export async function postToYouTube(videoUrl: string, script: VideoScript): Promise<boolean> {
+export async function postToYouTube(videoUrl: string, script: VideoScript): Promise<PostReceipt | false> {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
   const refreshToken = process.env.YOUTUBE_REFRESH_TOKEN;
@@ -637,7 +651,7 @@ export async function postToYouTube(videoUrl: string, script: VideoScript): Prom
   );
 
   await reportProviderFailure("youtube-upload", uploadRes);
-  return uploadRes.ok;
+  return receiptFrom(uploadRes, (id) => `https://www.youtube.com/shorts/${id}`);
 }
 
 // ── Text-only fallbacks (no video required) ──────────────────────────────────
@@ -672,7 +686,7 @@ export async function postToLinkedInText(script: VideoScript): Promise<boolean> 
   return res.ok;
 }
 
-export async function postToFacebookText(script: VideoScript): Promise<boolean> {
+export async function postToFacebookText(script: VideoScript): Promise<PostReceipt | false> {
   const token = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
   const pageId = process.env.FACEBOOK_PAGE_ID;
   if (!token || !pageId) return false;
@@ -685,7 +699,8 @@ export async function postToFacebookText(script: VideoScript): Promise<boolean> 
     body: JSON.stringify({ message, access_token: token }),
   });
 
-  return res.ok;
+  await reportProviderFailure("facebook-text", res);
+  return receiptFrom(res, (id) => `https://www.facebook.com/${id}`);
 }
 
 export async function postToThreadsText(script: VideoScript): Promise<boolean> {

@@ -63,8 +63,9 @@ test('HeyGen spends credits only when explicitly enabled, then the video is atta
 
 function approve(row, { env = {}, fetchOk = true, platformOk = {} } = {}) {
   const db = memoryDb(); db.contentQueue.rows.push(row); const sent = []; const posted = [];
-  const post = (network) => async (videoUrl, script) => { posted.push({ network, videoUrl, script }); return platformOk[network] ?? true; };
-  const social = { postToFacebook: post('facebook'), postToInstagram: post('instagram'), postToTikTok: post('tiktok'), postToYouTube: post('youtube'), postToFacebookText: async (script) => { posted.push({ network: 'facebook', videoUrl: null, script }); return platformOk.facebook ?? true; } };
+  const receipt = (network) => (platformOk[network] ?? true) ? { id: `${network}-post-1`, url: `https://${network}.test/p/1` } : false;
+  const post = (network) => async (videoUrl, script) => { posted.push({ network, videoUrl, script }); return receipt(network); };
+  const social = { postToFacebook: post('facebook'), postToInstagram: post('instagram'), postToTikTok: post('tiktok'), postToYouTube: post('youtube'), postToFacebookText: async (script) => { posted.push({ network: 'facebook', videoUrl: null, script }); return receipt('facebook'); } };
   const fetchImpl = async (url, init) => { sent.push({ url: String(url), headers: init.headers, body: JSON.parse(init.body) }); return { ok: fetchOk, status: fetchOk ? 200 : 403, json: async () => (fetchOk ? { data: { id: 1000 + sent.length } } : { error: 'forbidden' }) }; };
   const metricool = load('src/lib/metricool.ts', {}, env, fetchImpl);
   const publisher = load('src/lib/socialPublisher.ts', { '@/lib/social-automation': social, '@/lib/metricool': metricool }, env);
@@ -107,7 +108,7 @@ test('Metricool rejection leaves the draft pending', async () => {
   assert.equal((await a.run()).status, 502); assert.equal(a.db.contentQueue.rows[0].status, 'PENDING');
 });
 
-const DIRECT = { SOCIAL_DIRECT_PUBLISH: 'true', NEXT_PUBLIC_APP_URL: 'https://www.mansamusainitiative.com', FACEBOOK_PAGE_ACCESS_TOKEN: 't', FACEBOOK_PAGE_ID: 'p', INSTAGRAM_USER_ID: 'ig' };
+const DIRECT = { SOCIAL_DIRECT_PUBLISH: 'true', SOCIAL_PUBLISH_NETWORKS: 'facebook, Instagram,tiktok,youtube', NEXT_PUBLIC_APP_URL: 'https://www.mansamusainitiative.com', FACEBOOK_PAGE_ACCESS_TOKEN: 't', FACEBOOK_PAGE_ID: 'p', INSTAGRAM_USER_ID: 'ig' };
 
 test('direct publishing (no Metricool API) posts only to connected networks, with per-network UTM, and marks SENT', async () => {
   const a = approve(draft({ videoUrl: 'https://cdn.test/v.mp4', script: 'Spoken script', scriptTitle: 'Missed Calls' }), { env: DIRECT });
@@ -119,6 +120,16 @@ test('direct publishing (no Metricool API) posts only to connected networks, wit
   assert.equal(byNet.tiktok.skipped, 'not_connected'); assert.equal(byNet.youtube.skipped, 'not_connected');
   const row = a.db.contentQueue.rows[0]; assert.equal(row.status, 'SENT'); assert.ok(row.sentAt instanceof Date);
   assert.equal(JSON.parse(row.metadata).published.results.length, 4);
+  assert.equal(byNet.instagram.postId, 'instagram-post-1'); assert.equal(byNet.instagram.url, 'https://instagram.test/p/1');
+});
+
+test('a connected network gets nothing until the owner adds it to SOCIAL_PUBLISH_NETWORKS', async () => {
+  const a = approve(draft({ videoUrl: 'https://cdn.test/v.mp4' }), { env: { ...DIRECT, SOCIAL_PUBLISH_NETWORKS: 'instagram' } });
+  const res = await a.run(); assert.equal(res.body.status, 'SENT');
+  assert.deepEqual(a.posted.map(p => p.network), ['instagram']);
+  assert.equal(res.body.results.find(r => r.network === 'facebook').skipped, 'not_enabled');
+  const none = approve(draft({ videoUrl: 'https://cdn.test/v.mp4' }), { env: { ...DIRECT, SOCIAL_PUBLISH_NETWORKS: '' } });
+  assert.equal((await none.run()).status, 502); assert.equal(none.posted.length, 0); assert.equal(none.db.contentQueue.rows[0].status, 'PENDING');
 });
 
 test('direct publishing keeps the draft pending when every platform rejects it', async () => {
@@ -152,4 +163,27 @@ test('free rendered video (GitHub Actions → Blob) is attached by day, and late
   assert.equal(res.body.videosAttached, 1);
   assert.equal(JSON.parse(db.contentQueue.rows[0].metadata).videoUrl, `${base}/social/${day}.mp4`);
   assert.ok(heads.every(([method]) => method === 'HEAD'));
+});
+
+test('platform functions return the real post id and URL, or false when rejected', async () => {
+  const script = { title: 'T', script: 'S', caption: 'C', hashtags: ['#AI'], platform: 'instagram' };
+  const reply = (ok, body) => ({ ok, status: ok ? 200 : 400, json: async () => body, text: async () => JSON.stringify(body) });
+  const fb = (ok) => load('src/lib/social-automation.ts', { '@/lib/db': { db: {} } }, { FACEBOOK_PAGE_ACCESS_TOKEN: 't', FACEBOOK_PAGE_ID: 'page1' }, async () => reply(ok, ok ? { id: 'vid9' } : { error: { message: 'bad' } }));
+  assert.deepEqual({ ...(await fb(true).postToFacebook('https://cdn.test/v.mp4', script)) }, { id: 'vid9', url: 'https://www.facebook.com/page1/videos/vid9' });
+  assert.equal(await fb(false).postToFacebook('https://cdn.test/v.mp4', script), false);
+  const calls = [];
+  const igFetch = async (url) => {
+    calls.push(String(url)); const u = String(url);
+    if (u.endsWith('/ig1/media')) return reply(true, { id: 'container1' });
+    if (u.includes('/container1?')) return reply(true, { status_code: 'FINISHED' });
+    if (u.endsWith('/media_publish')) return reply(true, { id: 'media7' });
+    if (u.includes('/media7?fields=permalink')) return reply(true, { permalink: 'https://www.instagram.com/reel/abc/' });
+    throw new Error('unexpected ' + u);
+  };
+  // Load with an immediate setTimeout so the 5 s processing poll does not slow the test.
+  const source = ts.transpileModule(fs.readFileSync('src/lib/social-automation.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
+  const mod = { exports: {} };
+  vm.runInNewContext(source, { module: mod, exports: mod.exports, require: n => n === '@/lib/db' ? { db: { account: { findUnique: async () => null } } } : require(n), process: { env: { INSTAGRAM_USER_ID: 'ig1', INSTAGRAM_ACCESS_TOKEN: 'tok' } }, console: { error() {}, warn() {}, log() {} }, Buffer, URL, URLSearchParams, JSON, Promise, Math, Date, fetch: igFetch, setTimeout: (fn) => fn() });
+  assert.deepEqual({ ...(await mod.exports.postToInstagram('https://cdn.test/v.mp4', script)) }, { id: 'media7', url: 'https://www.instagram.com/reel/abc/' });
+  assert.ok(calls.some(u => u.endsWith('/media_publish')));
 });

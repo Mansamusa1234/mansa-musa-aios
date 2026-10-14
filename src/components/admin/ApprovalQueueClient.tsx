@@ -8,6 +8,7 @@ export default function ApprovalQueueClient() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [posts, setPosts] = useState<{ network: string; url?: string | null; postId?: string; skipped?: string; error?: string }[]>([]);
   const load = useCallback(async () => {
     setBusy(true); setError("");
     try {
@@ -20,10 +21,11 @@ export default function ApprovalQueueClient() {
   }, [status]);
   useEffect(() => { void load(); }, [load]);
   async function act(item: Item, action: "approve" | "reject" | "edit") {
-    setBusy(true); setError(""); setMessage("");
+    setBusy(true); setError(""); setMessage(""); setPosts([]);
     try {
       const response = await fetch(`/api/content-queue/${item.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, content: item.content }) });
       const data = await response.json();
+      if (Array.isArray(data.results)) setPosts(data.results);
       if (!response.ok) throw new Error(data.error ?? "The action failed.");
       setMessage(data.message ?? (data.status === "SENT" ? "Email accepted by the provider." : action === "edit" ? "Draft saved." : "Draft rejected."));
       await load();
@@ -39,6 +41,12 @@ export default function ApprovalQueueClient() {
     </div>
     {error && <p role="alert" className="mb-4 text-red-400">{error}</p>}
     {message && <p role="status" className="mb-4 text-green-400">{message}</p>}
+    {posts.length > 0 && <ul aria-label="Publishing results" className="mb-4 space-y-1 text-sm">{posts.map(post => <li key={post.network}>
+      <span className="font-semibold capitalize">{post.network}:</span>{" "}
+      {post.url ? <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-brand-400 underline">view post</a>
+        : post.postId ? <span>posted (id {post.postId})</span>
+        : <span className="text-gray-400">{post.skipped === "not_enabled" ? "not enabled for live posting" : post.skipped === "not_connected" ? "not connected" : post.skipped === "needs_video" ? "needs a video" : post.error ?? "not posted"}</span>}
+    </li>)}</ul>}
     {!busy && !error && items.length === 0 && <p className="text-gray-400">No {status.toLowerCase()} drafts.</p>}
     <div className="space-y-5">{items.map(item => {
       let recipient = ""; let video: { url?: string | null; rendering: boolean; error?: string } | null = null;

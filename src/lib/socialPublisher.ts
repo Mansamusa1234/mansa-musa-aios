@@ -7,6 +7,15 @@ export function directPublishEnabled(): boolean {
   return process.env.SOCIAL_DIRECT_PUBLISH === "true";
 }
 
+/**
+ * Networks the owner has explicitly cleared for live posting (SOCIAL_PUBLISH_NETWORKS, comma-separated).
+ * Empty by default, so a newly connected platform never receives a post until the owner adds it
+ * after approving its first post.
+ */
+export function networkEnabled(network: SocialNetwork): boolean {
+  return (process.env.SOCIAL_PUBLISH_NETWORKS ?? "").split(",").map((n) => n.trim().toLowerCase()).includes(network);
+}
+
 /** Whether the app holds its own credentials for a network (Metricool's connections are separate). */
 export function networkConfigured(network: SocialNetwork): boolean {
   const env = process.env;
@@ -18,7 +27,7 @@ export function networkConfigured(network: SocialNetwork): boolean {
   }
 }
 
-export type PublishResult = { network: SocialNetwork; ok: boolean; skipped?: "not_connected" | "needs_video"; error?: string };
+export type PublishResult = { network: SocialNetwork; ok: boolean; skipped?: "not_enabled" | "not_connected" | "needs_video"; postId?: string; url?: string | null; error?: string };
 
 export async function publishDraft(input: {
   draftId: string;
@@ -29,6 +38,7 @@ export async function publishDraft(input: {
   networks: SocialNetwork[];
 }): Promise<PublishResult[]> {
   return Promise.all(input.networks.map(async (network): Promise<PublishResult> => {
+    if (!networkEnabled(network)) return { network, ok: false, skipped: "not_enabled" };
     if (!networkConfigured(network)) return { network, ok: false, skipped: "not_connected" };
     if (!input.videoUrl && network !== "facebook") return { network, ok: false, skipped: "needs_video" };
     // Hashtags are already part of the approved caption; the UTM link attributes leads and revenue.
@@ -40,10 +50,12 @@ export async function publishDraft(input: {
       platform: network === "facebook" ? "instagram" : network,
     };
     try {
-      const ok = input.videoUrl
+      const receipt = input.videoUrl
         ? await ({ facebook: postToFacebook, instagram: postToInstagram, tiktok: postToTikTok, youtube: postToYouTube }[network])(input.videoUrl, script)
         : await postToFacebookText({ ...script, script: script.caption });
-      return { network, ok, ...(ok ? {} : { error: "Platform rejected the post (see server logs)" }) };
+      return receipt
+        ? { network, ok: true, postId: receipt.id, url: receipt.url }
+        : { network, ok: false, error: "Platform rejected the post (see server logs)" };
     } catch (err) {
       return { network, ok: false, error: err instanceof Error ? err.message : String(err) };
     }
