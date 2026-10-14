@@ -19,7 +19,7 @@ function queueFixture({ role = 'ADMIN', sent = true, type = 'email', metadata = 
     if (where.status !== item.status || where.updatedAt !== item.updatedAt) return { count: 0 };
     Object.assign(item, data); return { count: 1 };
   }, update: async ({ data }) => Object.assign(item, data) } };
-  const api = load('src/app/api/content-queue/[id]/route.ts', { 'next/server': response, '@/lib/auth': { auth: async () => role ? { user: { id: 'admin', role } } : null }, '@/lib/db': { db }, '@/lib/email': { sendEmail: async (_to, _subject, body, _from, idempotencyKey) => { calls++; html = body; key = idempotencyKey; return { sent, reason: 'Provider rejected' }; } } });
+  const api = load('src/app/api/content-queue/[id]/route.ts', { 'next/server': response, '@/lib/metricool': load('src/lib/metricool.ts', {}), '@/lib/auth': { auth: async () => role ? { user: { id: 'admin', role } } : null }, '@/lib/db': { db }, '@/lib/email': { sendEmail: async (_to, _subject, body, _from, idempotencyKey) => { calls++; html = body; key = idempotencyKey; return { sent, reason: 'Provider rejected' }; } } });
   return { item, send: () => api.PATCH(new Request('https://app.test/api/content-queue/draft1', { method: 'PATCH', body: JSON.stringify({ action: 'approve' }) }), { params: Promise.resolve({ id: 'draft1' }) }), info: () => ({ calls, html, key }) };
 }
 test('queue requires authenticated admin', async () => {

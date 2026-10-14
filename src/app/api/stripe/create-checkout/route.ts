@@ -5,6 +5,7 @@ import { checkRateLimit, limiters } from "@/lib/ratelimit";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { UTM_COOKIE, utmMetadata } from "@/lib/attribution";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -58,6 +59,8 @@ export async function POST(req: Request) {
       billingInterval: plan.annualPriceId === priceId ? "annual" : "monthly",
     };
     if (affCode) metadata.affiliateCode = affCode;
+    // First-touch campaign attribution (e.g. the social post that brought this customer).
+    Object.assign(metadata, utmMetadata(cookieStore.get(UTM_COOKIE)?.value));
 
     // Apply affiliate discount coupon if the code matches
     let discounts: { coupon: string }[] | undefined;
@@ -79,6 +82,7 @@ export async function POST(req: Request) {
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing?success=true`,
       cancel_url:  `${process.env.NEXT_PUBLIC_APP_URL}/billing?canceled=true`,
       metadata,
+      subscription_data: { metadata },
       allow_promotion_codes: !discounts,
       ...(discounts ? { discounts } : {}),
     }, {
