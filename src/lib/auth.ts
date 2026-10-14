@@ -168,9 +168,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const rememberMe = parsed.data.rememberMe === "true";
         const jti = crypto.randomUUID();
 
-        const priorSuccessFromThisIp =
-          ip !== "anonymous" ? await db.auditLog.findFirst({ where: { userId: user.id, event: "LOGIN_SUCCESS", ip } }) : null;
-        const isNewIp = ip !== "anonymous" && !priorSuccessFromThisIp;
+        // Alert on a new location only when there is an earlier sign-in to compare with
+        // (a brand-new account's first sign-in is not suspicious).
+        const [priorSuccessFromThisIp, anyPriorSuccess] = ip !== "anonymous"
+          ? await Promise.all([
+            db.auditLog.findFirst({ where: { userId: user.id, event: "LOGIN_SUCCESS", ip } }),
+            db.auditLog.findFirst({ where: { userId: user.id, event: "LOGIN_SUCCESS" } }),
+          ])
+          : [null, null];
+        const isNewIp = ip !== "anonymous" && !!anyPriorSuccess && !priorSuccessFromThisIp;
 
         await Promise.all([
           db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null } }),

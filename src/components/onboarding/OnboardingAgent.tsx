@@ -18,7 +18,7 @@ const STEPS: Step[] = [
     id: "welcome",
     title: "Welcome to MansaMusaAI",
     description: "Your AI operating system is ready.",
-    detail: "MansaMusaAI replaces your entire back office with AI. You get an AI receptionist that answers calls 24/7, a CRM that captures every lead automatically, a calendar that books appointments without you, email automation that follows up every prospect, and social media that posts daily without you lifting a finger. Let me show you around.",
+    detail: "MansaMusaAI replaces your entire back office with AI. You get an AI receptionist that answers calls 24/7, a CRM that captures every lead automatically, a calendar that books appointments without you, and email automation that follows up every prospect. Let me show you around.",
     icon: "👑",
   },
   {

@@ -14,11 +14,28 @@ export function getStripe(): Stripe | null {
     stripeClient = new Stripe(apiKey, {
       apiVersion: STRIPE_API_VERSION,
       typescript: true,
+      ...localMockHost(apiKey),
     });
     stripeClientKey = apiKey;
   }
 
   return stripeClient;
+}
+
+/**
+ * Local testing only: STRIPE_MOCK_URL (e.g. http://127.0.0.1:12111 for stripe-mock) is honoured
+ * solely for a loopback address with a test-mode key, so it can never redirect live traffic.
+ */
+function localMockHost(apiKey: string): { host: string; port: number; protocol: "http" | "https" } | Record<string, never> {
+  const raw = process.env.STRIPE_MOCK_URL?.trim();
+  if (!raw || !apiKey.startsWith("sk_test_")) return {};
+  try {
+    const url = new URL(raw);
+    if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) return {};
+    return { host: url.hostname, port: Number(url.port || (url.protocol === "https:" ? 443 : 80)), protocol: url.protocol === "https:" ? "https" : "http" };
+  } catch {
+    return {};
+  }
 }
 
 export function requireStripe(): Stripe {

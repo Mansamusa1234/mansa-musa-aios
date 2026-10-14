@@ -112,7 +112,7 @@ export default function LandingPage({ plans }: Props) {
         initial={{ opacity: 0, y: -18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="fixed top-0 z-50 w-full border-b border-white/8 bg-[#030308]/85 backdrop-blur-xl"
+        className="sticky top-0 z-50 w-full border-b border-white/8 bg-[#030308]/85 backdrop-blur-xl"
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
           <Link href="/" className="text-xl font-bold text-white tracking-tight">

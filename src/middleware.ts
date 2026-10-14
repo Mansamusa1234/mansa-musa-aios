@@ -21,7 +21,8 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET!,
-    secureCookie: process.env.NODE_ENV === "production",
+    // Same rule Auth.js uses when it sets the cookie: the __Secure- name only over HTTPS.
+    secureCookie: req.nextUrl.protocol === "https:",
   });
 
   if (!token) {

@@ -140,3 +140,13 @@ test('plan change and cancellation store a valid billing period from modern Stri
   assert.equal(bad.status, 500); assert.doesNotMatch(JSON.stringify(bad.body), /provider detail/);
   assert.equal((await change.POST(new Request('https://app.test', { method: 'POST', body: JSON.stringify({ priceId: 'price_unknown' }) }))).status, 400);
 });
+
+test('STRIPE_MOCK_URL only redirects a test-mode key to a loopback address', () => {
+  const seen = [];
+  const load2 = (env) => load('src/lib/stripe.ts', { stripe: class { constructor(key, opts) { seen.push(opts); } } }, env);
+  load2({ STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_MOCK_URL: 'http://127.0.0.1:12111' }).getStripe();
+  load2({ STRIPE_SECRET_KEY: 'sk_live_x', STRIPE_MOCK_URL: 'http://127.0.0.1:12111' }).getStripe();
+  load2({ STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_MOCK_URL: 'https://attacker.example' }).getStripe();
+  // One client per module load (cached); only the test key with a loopback URL is redirected.
+  assert.deepEqual(seen.map((o) => o.host ?? 'api.stripe.com'), ['127.0.0.1', 'api.stripe.com', 'api.stripe.com']);
+});

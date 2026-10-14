@@ -223,6 +223,11 @@ export default function CRMContent({ pipeline, totalLeads, totalValue, wonCount,
                 <input value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} placeholder="Source" className="rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none" />
               </div>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notes" rows={2} className="w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm text-white outline-none resize-none" />
+              {actionError && (
+                <p role="alert" className="text-sm text-red-300">
+                  {actionError}{/upgrade/i.test(actionError) && <> <a href="/billing" className="underline">Open Billing</a></>}
+                </p>
+              )}
               <div className="flex gap-3 pt-1">
                 <button type="submit" disabled={adding} className="flex-1 rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50">{adding ? "Adding..." : "Add lead"}</button>
                 <button type="button" onClick={() => setShowAdd(false)} className="rounded-xl border border-white/8 px-4 py-2.5 text-sm text-gray-400 hover:text-white">Cancel</button>

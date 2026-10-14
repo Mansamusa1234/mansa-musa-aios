@@ -101,3 +101,33 @@ test('2FA challenge tokens cannot be signed with a guessable key in production',
   const challenge = load('src/lib/authChallenge.ts', {}, { NODE_ENV: 'production' });
   assert.throws(() => challenge.createChallengeToken('u1'), /not set/);
 });
+
+test('the first sign-in of a new account sends no "new sign-in" alert; a later sign-in from a new IP does', async () => {
+  const bcrypt = require('bcryptjs');
+  const hash = bcrypt.hashSync('Correct-Horse-9!', 4);
+  const run = async (priorLogins) => {
+    const emails = []; const tasks = [];
+    const user = { id: 'u2', email: 'b@test.local', name: 'B', role: 'USER', passwordHash: hash, twoFactorEnabled: false, failedLoginAttempts: 0, lockedUntil: null };
+    let config;
+    load('src/lib/auth.ts', {
+      'next-auth': (c) => { config = c; return { handlers: {}, auth: async () => null, signIn: async () => {}, signOut: async () => {} }; },
+      '@auth/prisma-adapter': { PrismaAdapter: () => ({}) }, 'next-auth/providers/credentials': (o) => ({ id: 'credentials', ...o }),
+      'next-auth/providers/github': () => ({}), 'next-auth/providers/google': () => ({}), 'next/server': { after: (fn) => tasks.push(fn) },
+      './db': { db: { user: { findFirst: async () => user, update: async () => user }, trustedSession: { create: async () => {} },
+        auditLog: { findFirst: async ({ where }) => priorLogins.find((l) => !where.ip || l.ip === where.ip) ?? null } } },
+      './auth.config': { authConfig: { events: {} } },
+      '@/lib/ratelimit': { checkRateLimit: async () => null, limiters: {}, getIP: () => '9.9.9.9', claimOnce: async () => true },
+      '@/lib/audit': { logAuditEvent: async () => {} }, '@/lib/email': { sendEmail: async (to, subject) => { emails.push(subject); return { sent: true }; }, suspiciousLoginEmailHtml: () => '' },
+      './auth.providers': { microsoftEntraIdProvider: [], appleProvider: [] }, './authChallenge': {}, './twoFactor': {},
+    }, { NEXTAUTH_SECRET: 's' });
+    const creds = config.providers.find((p) => p.id === 'credentials');
+    const signedIn = await creds.authorize({ email: 'b@test.local', password: 'Correct-Horse-9!' }, new Request('https://app.test'));
+    for (const t of tasks) await t();
+    return { signedIn, emails };
+  };
+  const first = await run([]);
+  assert.equal(first.signedIn?.id, 'u2'); assert.deepEqual(first.emails, []);
+  const later = await run([{ ip: '1.1.1.1' }]);
+  assert.deepEqual(later.emails, ['New sign-in to your MansaMusaAI account']);
+  assert.deepEqual((await run([{ ip: '9.9.9.9' }])).emails, []);
+});

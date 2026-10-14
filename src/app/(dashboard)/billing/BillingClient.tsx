@@ -13,6 +13,8 @@ interface Props {
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: Date | null;
   subscriptionId: string | null;
+  /** Card-free trial in progress (grants Professional without a Stripe subscription). */
+  onTrial?: boolean;
 }
 
 export default function BillingClient({
@@ -23,6 +25,7 @@ export default function BillingClient({
   cancelAtPeriodEnd,
   currentPeriodEnd,
   subscriptionId,
+  onTrial = false,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +34,7 @@ export default function BillingClient({
 
   const isCurrent = plan.priceId
     ? currentPriceId === plan.priceId || currentPriceId === plan.annualPriceId
-    : !currentPriceId;
+    : !currentPriceId && !onTrial;
   const isUpgrade = plan.price > currentPrice;
   const isDowngrade = plan.price < currentPrice && plan.price > 0;
   const hasActiveSub = !!subscriptionId && currentPriceId !== null;
@@ -188,6 +191,9 @@ export default function BillingClient({
       <p className={`text-xs font-bold uppercase tracking-widest ${plan.highlighted ? "text-brand-100" : "text-brand-600"}`}>
         {plan.name}
       </p>
+      {onTrial && plan.id === "professional" && (
+        <p className={`mt-1 text-xs font-semibold ${plan.highlighted ? "text-white" : "text-brand-500"}`}>Included in your free trial</p>
+      )}
 
       <div className="mt-3 flex items-end gap-1">
         <span className={`text-3xl font-extrabold ${plan.highlighted ? "text-white" : "text-gray-900 dark:text-white"}`}>
