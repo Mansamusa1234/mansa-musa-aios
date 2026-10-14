@@ -64,4 +64,16 @@ Webhook fixes are now in #35. What remains unique to #32: the Stripe SDK/API upg
 
 Behaviour change to note before merging #35: Free users lose access to the AI receptionist and the C-suite workforce chat, matching the plan gates declared in `src/lib/subscription.ts`.
 
+## 2026-10-14: Launch verification
+| Change | Commit | Verification |
+|---|---|---|
+| Local end-to-end subscription journey (Docker Postgres + real Stripe SDK on stripe-mock v0.205.0): signup → Free blocked from paid AI → checkout → tampered webhook rejected → signed webhook fulfils → Starter uses AI → cancellation revokes | 6d0d064 | **7/7 pass** on this branch; **4/7 fail on `main`** |
+| Daily social pipeline: cron queues one draft/day (no direct publishing); HeyGen only when `SOCIAL_HEYGEN_ENABLED=true`; approval schedules per-network Metricool posts with UTM links (drafts by default); Metricool rejection keeps the draft pending | 9d05315 | 6 new tests; real local app: cron 401 without secret, queued once per day, admin approval OK |
+| First-touch UTM → Stripe checkout and subscription metadata (revenue attribution) | 9d05315 | New test incl. unsafe-value stripping |
+| Approval queue shows video preview / rendering status | this commit | tsc, eslint |
+
+Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 44/44 ✅ · test:journey 7/7 ✅ · build ✅
+
+Not yet verified against real services (credentials required): Stripe test mode, Metricool API, HeyGen render, Anthropic/Abacus calls.
+
 > Operational notes (tooling, accounts, open security items) are kept in the owner's private workspace, not in this public repository.
