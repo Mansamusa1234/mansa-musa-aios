@@ -71,7 +71,10 @@ try {
   await step("pay on Stripe Checkout with the published test card", async () => {
     const browser = await chromium.launch();
     try {
-      const page = await browser.newPage();
+      // Same signed-in session as the API calls, so Stripe's return to /billing renders for this customer.
+      const context = await browser.newContext();
+      await context.addCookies([...jar].map(([name, value]) => ({ name, value, url: BASE })));
+      const page = await context.newPage();
       await page.goto(checkoutUrl, { waitUntil: "domcontentloaded" });
       const cardTab = page.locator('[data-testid="card-accordion-item-button"]');
       if (await cardTab.isVisible({ timeout: 8000 }).catch(() => false)) await cardTab.click();
@@ -83,7 +86,8 @@ try {
       const postcode = page.locator("#billingPostalCode"); if (await postcode.isVisible().catch(() => false)) await postcode.fill("SW1A 1AA");
       const save = page.locator("#enableStripePass"); if (await save.isChecked().catch(() => false)) await save.uncheck();
       await page.locator('[data-testid="hosted-payment-submit-button"], button[type="submit"]').first().click();
-      await page.waitForURL((u) => u.toString().startsWith(`${BASE}/billing`), { timeout: 90000 });
+      await page.waitForURL((u) => u.toString().startsWith(`${BASE}/billing?success=true`), { timeout: 90000 });
+      await page.getByText(/Your paid plan is active|Checkout returned/).first().waitFor({ timeout: 30000 });
       return { returnedTo: new URL(page.url()).pathname + new URL(page.url()).search };
     } finally { await browser.close(); }
   });
