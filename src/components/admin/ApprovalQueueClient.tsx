@@ -2,7 +2,17 @@
 import { useCallback, useEffect, useState } from "react";
 
 interface Item { id: string; type: string; platform: string | null; title: string; content: string; metadata: string | null; status: string }
-export default function ApprovalQueueClient() {
+export type SocialMode = "manual" | "direct" | "metricool-draft" | "metricool-schedule";
+
+/** What approving a daily social draft will actually do, in plain words. */
+export function approveLabel(mode: SocialMode, liveNetworks: string[]): string {
+  if (mode === "direct") return liveNetworks.length ? `Approve and publish now to ${liveNetworks.join(", ")}` : "Approve (no network is enabled for live posting)";
+  if (mode === "metricool-draft") return "Approve and save as Metricool drafts";
+  if (mode === "metricool-schedule") return "Approve and schedule in Metricool";
+  return "Approve for manual publication";
+}
+
+export default function ApprovalQueueClient({ socialMode = "manual", liveNetworks = [] }: { socialMode?: SocialMode; liveNetworks?: string[] }) {
   const [status, setStatus] = useState("PENDING");
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
@@ -20,7 +30,9 @@ export default function ApprovalQueueClient() {
     finally { setBusy(false); }
   }, [status]);
   useEffect(() => { void load(); }, [load]);
-  async function act(item: Item, action: "approve" | "reject" | "edit") {
+  async function act(item: Item, action: "approve" | "reject" | "edit", liveTargets: string[] = []) {
+    // Publishing is public and immediate: ask once more, naming the platforms.
+    if (action === "approve" && liveTargets.length && !window.confirm(`This publishes the post publicly on ${liveTargets.join(", ")} now. Continue?`)) return;
     setBusy(true); setError(""); setMessage(""); setPosts([]);
     try {
       const response = await fetch(`/api/content-queue/${item.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, content: item.content }) });
@@ -34,7 +46,10 @@ export default function ApprovalQueueClient() {
   }
   return <div className="mx-auto max-w-4xl text-white">
     <h1 className="text-2xl font-bold">Approval Queue</h1>
-    <p className="mt-2 text-sm text-gray-400">Review each draft and recipient. Approving an email sends it; social and PR drafts are approved for manual publication.</p>
+    <p className="mt-2 text-sm text-gray-400">Review each draft and recipient. Approving an email sends it. {socialMode === "direct"
+      ? (liveNetworks.length ? `Approving a daily social draft publishes it immediately to ${liveNetworks.join(", ")}.` : "Direct publishing is on, but no network is enabled, so nothing will be posted.")
+      : socialMode === "manual" ? "Social and PR drafts are approved for manual publication; nothing is posted automatically."
+      : socialMode === "metricool-draft" ? "Daily social drafts become Metricool drafts for a final check; nothing is published." : "Daily social drafts are scheduled in Metricool."}</p>
     <div className="my-5 flex flex-wrap gap-3">
       <select aria-label="Queue status" value={status} disabled={busy} onChange={event => setStatus(event.target.value)} className="rounded-lg bg-slate-900 border border-white/20 p-2">{["PENDING", "APPROVED", "REJECTED", "SENT"].map(value => <option key={value}>{value}</option>)}</select>
       <button disabled={busy} onClick={() => void load()} className="rounded-lg border border-white/20 px-4 py-2 disabled:opacity-50">{busy ? "Loading…" : "Refresh"}</button>
@@ -58,11 +73,11 @@ export default function ApprovalQueueClient() {
       const email = ["email", "lead_followup", "cold_outreach"].includes(item.type) && !!recipient;
       return <article key={item.id} className="rounded-xl border border-white/15 bg-white/5 p-5">
         <h2 className="font-semibold">{item.title}</h2><p className="my-2 text-sm text-gray-400">{item.type} · {recipient ? `To: ${recipient}` : item.platform ?? "Manual publication"}</p>
-        {video && <p className="mb-2 text-sm">{video.url ? <a href={video.url} target="_blank" rel="noreferrer" className="text-indigo-300 underline">Preview video</a> : video.rendering ? <span className="text-amber-300">Video still rendering. Approve once it is attached.</span> : <span className="text-gray-400">Text only: will be scheduled to Facebook.</span>}{video.error && <span className="ml-2 text-red-400">{video.error}</span>}</p>}
+        {video && <p className="mb-2 text-sm">{video.url ? <a href={video.url} target="_blank" rel="noreferrer" className="text-indigo-300 underline">Preview video</a> : video.rendering ? <span className="text-amber-300">Video still rendering. Approve once it is attached.</span> : <span className="text-gray-400">{socialMode === "manual" ? "Text only (no video attached)." : "Text only: only Facebook accepts text posts; video platforms are skipped."}</span>}{video.error && <span className="ml-2 text-red-400">{video.error}</span>}</p>}
         <textarea aria-label={`Draft: ${item.title}`} value={item.content} readOnly={item.status !== "PENDING"} onChange={event => setItems(previous => previous.map(entry => entry.id === item.id ? { ...entry, content: event.target.value } : entry))} className="min-h-48 w-full rounded-lg bg-slate-950 border border-white/20 p-3 text-base" />
         {item.status === "PENDING" && <div className="mt-3 flex flex-wrap gap-3">
           <button disabled={busy || !item.content.trim()} onClick={() => void act(item, "edit")} className="rounded-lg border border-white/20 px-4 py-2 disabled:opacity-50">Save draft</button>
-          <button disabled={busy || !item.content.trim()} onClick={() => void act(item, "approve")} className="rounded-lg bg-indigo-600 px-4 py-2 disabled:opacity-50">{email ? "Approve and send email" : "Approve for manual publication"}</button>
+          <button disabled={busy || !item.content.trim()} onClick={() => void act(item, "approve", video && socialMode === "direct" ? liveNetworks.filter((n) => video.url || n === "facebook") : [])} className="rounded-lg bg-indigo-600 px-4 py-2 disabled:opacity-50">{email ? "Approve and send email" : video ? approveLabel(socialMode, liveNetworks.filter((n) => video.url || n === "facebook")) : "Approve for manual publication"}</button>
           <button disabled={busy} onClick={() => void act(item, "reject")} className="rounded-lg border border-red-400/30 px-4 py-2 text-red-300 disabled:opacity-50">Reject</button>
         </div>}
       </article>;

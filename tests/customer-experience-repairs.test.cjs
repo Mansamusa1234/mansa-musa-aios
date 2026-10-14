@@ -35,3 +35,33 @@ test('billing treats only a live Stripe subscription as the current plan', () =>
   assert.match(src, /currentPriceId=\{liveSubscription\?\.stripePriceId \?\? null\}/);
   assert.match(fs.readFileSync('src/app/(dashboard)/billing/BillingClient.tsx', 'utf8'), /: !currentPriceId && !onTrial;/);
 });
+
+function loadTsx(file, mocks, env = {}) {
+  const source = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
+  const mod = { exports: {} };
+  vm.runInNewContext(source, { module: mod, exports: mod.exports, require: (n) => (n in mocks ? mocks[n] : require(n)), process: { env } });
+  return mod.exports;
+}
+
+test('the approval button says what approving will actually do', () => {
+  const { approveLabel } = loadTsx('src/components/admin/ApprovalQueueClient.tsx', {});
+  assert.equal(approveLabel('manual', []), 'Approve for manual publication');
+  assert.equal(approveLabel('direct', ['instagram', 'facebook']), 'Approve and publish now to instagram, facebook');
+  assert.equal(approveLabel('direct', []), 'Approve (no network is enabled for live posting)');
+  assert.equal(approveLabel('metricool-draft', []), 'Approve and save as Metricool drafts');
+});
+
+test('the approval page derives the mode and live networks from the same settings the approval route uses', async () => {
+  const render = async (env) => {
+    const page = loadTsx('src/app/admin/approval-queue/page.tsx', {
+      '@/components/admin/ApprovalQueueClient': { __esModule: true, default: (props) => props },
+      '@/lib/metricool': { isMetricoolConfigured: () => !!env.METRICOOL, metricoolDraftMode: () => true, SOCIAL_NETWORKS: ['facebook', 'instagram', 'tiktok', 'youtube'] },
+      '@/lib/socialPublisher': { directPublishEnabled: () => env.SOCIAL_DIRECT_PUBLISH === 'true', networkEnabled: (n) => (env.SOCIAL_PUBLISH_NETWORKS ?? '').split(',').includes(n), networkConfigured: async (n) => n !== 'tiktok' },
+    }, env);
+    return (await page.default()).props;
+  };
+  assert.deepEqual({ ...(await render({})) , liveNetworks: [...(await render({})).liveNetworks] }, { socialMode: 'manual', liveNetworks: [] });
+  const direct = await render({ SOCIAL_DIRECT_PUBLISH: 'true', SOCIAL_PUBLISH_NETWORKS: 'instagram,tiktok' });
+  assert.equal(direct.socialMode, 'direct'); assert.deepEqual([...direct.liveNetworks], ['instagram'], 'enabled AND connected only');
+  assert.equal((await render({ METRICOOL: true, SOCIAL_DIRECT_PUBLISH: 'true' })).socialMode, 'metricool-draft', 'Metricool takes precedence, as in the route');
+});

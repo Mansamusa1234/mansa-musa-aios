@@ -34,7 +34,7 @@ const faqs = [
   { q: "Can I change plans at any time?",         a: "Yes. Upgrade or downgrade instantly. We prorate any difference to the day." },
   { q: "How does the AI receptionist work?",      a: "You configure a name, greeting, and persona. It then answers enquiries on your website chat and WhatsApp (Professional+), books appointments into your calendar, and pushes leads into your CRM — automatically, 24/7." },
   { q: "What currencies do you accept?",          a: "We bill in GBP. All prices are shown per month and include VAT where applicable." },
-  { q: "Is there an annual discount?",            a: "Yes — toggle to Annual billing at the top of this page to save 20% on any paid plan. That’s over 2 months free every year. The discount is applied automatically at checkout." },
+  { q: "Is there an annual discount?",            a: "Annual billing saves 20% on paid plans. When the Annual toggle is shown at the top of this page, the annual price is charged at checkout; otherwise use “Ask about annual billing” and we will set it up for you." },
   { q: "What’s your refund policy?",              a: "7-day money-back guarantee on all paid plans. No questions asked." },
   { q: "Can I earn as an affiliate?",             a: "Yes. Professional and Enterprise users get access to our affiliate programme — earn 20% recurring commission on every business you refer, with no cap." },
 ];
