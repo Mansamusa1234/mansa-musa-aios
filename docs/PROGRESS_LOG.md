@@ -102,4 +102,14 @@ Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 52/52 ✅ · build ✅
 
 Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 57/57 ✅ · test:journey 7/7 ✅ · build ✅
 
+## 2026-10-14: Review fixes and release gate
+| Change | Commit | Verification |
+|---|---|---|
+| Per-network publish records; retries never repost; interrupted runs resumable | d0c7e90 | 3 regression tests (fail on old code) |
+| Preview diagnostics to build log only | b3a0ec2 | Regression test; Preview `/_diagnostics/*` → 404 |
+| Preview read-only unless `PREVIEW_DATABASE_URL`; journeys local-only | c908653 | Unit + real-Postgres tests; tenant-isolation journey test |
+| Release gate workflow, secret scanner, `docs/RELEASE.md` | 5b0a8e6, 5212fb5 | CI run 38598407317 ✅ |
+
+Gate: secret scan ✅ · npm audit 0 ✅ · tsc ✅ · eslint 0 errors ✅ · test:repairs 66/66 ✅ · test:journey 9/9 ✅ · build ✅
+
 > Operational notes (tooling, accounts, open security items) are kept in the owner's private workspace, not in this public repository.
