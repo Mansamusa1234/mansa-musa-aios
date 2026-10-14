@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
 import MarketingClient from "@/components/admin/MarketingClient";
+import { getMarketingChannels } from "@/lib/marketingStatus";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminMarketingPage() {
-  const [referralLeaders, subscriberCount, pushSubscriberCount, couponCount, totalReferrals, totalAffiliates] = await Promise.all([
+  const [channels, referralLeaders, subscriberCount, pushSubscriberCount, couponCount, totalReferrals, totalAffiliates] = await Promise.all([
+    getMarketingChannels(),
     db.referral.groupBy({ by: ["referrerId"], where: { status: "CONVERTED" }, _count: { _all: true }, orderBy: { _count: { referrerId: "desc" } }, take: 10 }),
     db.newsletterSubscriber.count({ where: { status: "SUBSCRIBED" } }),
     db.pushSubscription.count(),
@@ -25,6 +27,7 @@ export default async function AdminMarketingPage() {
 
   return (
     <MarketingClient
+      channels={channels}
       leaderboard={leaderboard}
       subscriberCount={subscriberCount}
       pushSubscriberCount={pushSubscriberCount}
