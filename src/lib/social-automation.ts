@@ -16,134 +16,119 @@ export interface VideoScript {
   platform: "instagram" | "linkedin" | "tiktok" | "youtube";
 }
 
+// Launch copy rules: only verified facts. Prices are the live Stripe prices (Starter £49, Professional
+// £149, Enterprise £499 a month). The free plan is 5 AI chats a day. The 14-day Professional trial
+// needs no card but does need a verified email. No statistics, earnings claims, "every call", "24/7" or
+// other guarantees. Every draft still needs owner approval before it is published.
+const FREE_START = "Start free at mansamusainitiative.com";
+const TRIAL_LINE = "Verify your email and try Professional free for 14 days. No card needed.";
+
 export const MANSA_SCRIPTS: VideoScript[] = [
   {
-    title: "Missed Calls Cost You Money",
-    script: `Your receptionist just cost you a customer.
-They missed the call. Again.
-While your competitor answered instantly — with an AI receptionist that never sleeps, never calls in sick, and never misses a lead.
-At Mansa Musa AI, we give UK businesses an AI receptionist that books appointments, captures leads, and follows up automatically.
-24 hours a day. 7 days a week.
-Your competitors are already using this. Are you?
-Visit mansamusainitiative.com and start free today.`,
-    caption: "Your receptionist just cost you a customer. We fixed that. AI receptionists for UK businesses — 24/7, never misses a call. Start free 👇 mansamusainitiative.com",
+    title: "Enquiries in One Place",
+    script: `Busy running the business and missing enquiries?
+Mansa Musa AI gives UK small businesses an AI receptionist for your website chat, a CRM for your leads and appointment booking in one place.
+Plans start at £49 a month.
+${TRIAL_LINE}
+${FREE_START}`,
+    caption: `A website chat AI receptionist, a CRM and appointment booking in one place for UK small businesses. Plans from £49/month. ${TRIAL_LINE} 👇 mansamusainitiative.com`,
     hashtags: ["#AIReceptionist", "#UKBusiness", "#SmallBusiness", "#BusinessAutomation", "#MansaMusaAI"],
     platform: "instagram",
   },
   {
-    title: "While You Sleep",
-    script: `While you sleep, your competitor is taking your customers.
-Every missed call is a lost sale.
-Every unanswered message is money walking out the door.
-Mansa Musa AI gives your business an AI receptionist that works 24 hours a day, 7 days a week.
-It books appointments. Captures leads. Follows up automatically.
-You wake up to new customers — not missed opportunities.
-Start free at mansamusainitiative.com`,
-    caption: "While you sleep your competitor is taking your customers. Get an AI receptionist that works 24/7. Start free 👇 mansamusainitiative.com",
-    hashtags: ["#UKBusiness", "#AITools", "#BusinessGrowth", "#Automation", "#MansaMusaAI"],
+    title: "Your Leads in One Place",
+    script: `Leads in your inbox. Leads on scraps of paper. Leads you forgot to call back.
+Mansa Musa AI keeps them in one pipeline, from first contact to closed deal.
+Add a lead, move it through each stage, and record each conversation and follow-up.
+The CRM is included from the Starter plan at £49 a month.
+${FREE_START}`,
+    caption: "Keep every lead in one pipeline, from first contact to closed deal. CRM included from Starter (£49/month). Start free 👇 mansamusainitiative.com",
+    hashtags: ["#UKBusiness", "#CRM", "#SmallBusiness", "#LeadManagement", "#MansaMusaAI"],
     platform: "instagram",
   },
   {
-    title: "The £49 Employee",
-    script: `What if you could hire an employee who never takes a day off, never calls in sick, never misses a call, and costs less than £2 a day?
-That's Mansa Musa AI.
-An AI receptionist that answers every call, books every appointment, and captures every lead — automatically.
-UK businesses are replacing expensive front desks with smart AI that works harder and costs less.
-£49 a month. No contracts. Start free today at mansamusainitiative.com`,
-    caption: "An employee who never calls in sick, never misses a call, costs £49/month. That's our AI receptionist. Start free 👇 mansamusainitiative.com",
+    title: "The £49 Plan",
+    script: `What does £49 a month get a UK small business?
+With Mansa Musa AI Starter: an AI receptionist for your website chat, lead capture and a CRM, appointment booking, and your AI executive team for strategy, sales, finance and marketing questions.
+That is less than £2 a day.
+Cancel from Billing whenever you like.
+${FREE_START}`,
+    caption: "Starter is £49/month: website chat AI receptionist, lead capture & CRM, appointment booking and your AI executive team. Start free 👇 mansamusainitiative.com",
     hashtags: ["#UKSmallBusiness", "#AIReceptionist", "#BusinessAutomation", "#Productivity", "#MansaMusaAI"],
     platform: "linkedin",
   },
   {
     title: "Stop Losing Leads",
-    script: `Every time your phone rings and nobody answers — that's a lead gone forever.
-They don't leave voicemails. They call your competitor.
-Mansa Musa AI catches every call, every time.
-Our AI receptionist answers instantly, books appointments directly into your calendar, and follows up with every lead automatically.
-No missed calls. No lost customers. No stress.
-UK businesses are signing up free at mansamusainitiative.com — are you next?`,
-    caption: "Every missed call is a customer going to your competitor. Stop losing leads. Get your AI receptionist free 👇 mansamusainitiative.com",
+    script: `A lead you never follow up is a sale you never make.
+Mansa Musa AI captures leads into your CRM and lets you book appointments straight into your calendar.
+Start on the free plan with 5 AI chats a day.
+${TRIAL_LINE}
+${FREE_START}`,
+    caption: `Capture leads, book appointments, follow up. Free plan available. ${TRIAL_LINE} 👇 mansamusainitiative.com`,
     hashtags: ["#LeadGeneration", "#UKBusiness", "#AI", "#SalesAutomation", "#MansaMusaAI"],
     platform: "tiktok",
   },
   {
-    title: "The Truth About Small Business",
-    script: `Here's the truth nobody tells small business owners.
-You're not losing customers because of your product.
-You're losing them because nobody answered the phone.
-80% of callers who reach voicemail never call back.
-They go to your competitor who picked up.
-Mansa Musa AI fixes this with an AI receptionist that answers every call, 24 hours a day.
-It books appointments. Captures leads. Sends follow-ups.
-All automatically. Starting at £49 a month.
-Visit mansamusainitiative.com and never miss another customer.`,
-    caption: "80% of callers who reach voicemail never call back. They call your competitor. Fix it with AI 👇 mansamusainitiative.com",
-    hashtags: ["#SmallBusinessTips", "#UKEntrepreneur", "#AIBusiness", "#CustomerService", "#MansaMusaAI"],
+    title: "An AI Executive Team",
+    script: `Running a small business means being the CEO, the finance team and the marketing department.
+Mansa Musa AI gives you an AI executive team: ask your AI CEO, CFO, CMO or Head of Sales for a plan, a pricing check or a follow-up sequence.
+Included from the Starter plan at £49 a month.
+${TRIAL_LINE}
+${FREE_START}`,
+    caption: `Ask your AI CEO, CFO, CMO or Head of Sales. Included from Starter (£49/month). ${TRIAL_LINE} 👇 mansamusainitiative.com`,
+    hashtags: ["#SmallBusinessTips", "#UKEntrepreneur", "#AIBusiness", "#BusinessStrategy", "#MansaMusaAI"],
     platform: "linkedin",
   },
   {
-    title: "WhatsApp + AI",
-    script: `Your customers aren't just calling — they're messaging on WhatsApp too.
-And if nobody replies within 5 minutes, they've moved on.
-Mansa Musa AI handles both.
-Phone calls answered instantly. WhatsApp messages replied to automatically.
-Appointments booked. Leads captured. Follow-ups sent.
-All without you lifting a finger.
-This is the future of UK business — and it starts at £49 a month.
-Get started free at mansamusainitiative.com`,
-    caption: "Calls AND WhatsApp — both handled automatically by your AI receptionist. Start free 👇 mansamusainitiative.com",
-    hashtags: ["#WhatsAppBusiness", "#AIReceptionist", "#UKBusiness", "#Automation", "#MansaMusaAI"],
+    title: "Professional Plan",
+    script: `Growing past the basics?
+Mansa Musa AI Professional is £149 a month and adds email automation sequences and the Business Research Desk to everything in Starter.
+${TRIAL_LINE}
+${FREE_START}`,
+    caption: `Professional (£149/month) adds email automation sequences and the Business Research Desk. ${TRIAL_LINE} 👇 mansamusainitiative.com`,
+    hashtags: ["#EmailAutomation", "#BusinessResearch", "#UKBusiness", "#Automation", "#MansaMusaAI"],
     platform: "instagram",
   },
   {
     title: "For Barbers and Salons",
     script: `Barbers. Hair salons. Nail technicians.
-You can't answer the phone when your hands are full.
-But every missed call is a missed booking.
-Mansa Musa AI gives you an AI receptionist that answers calls, books appointments into your calendar, and sends reminders automatically.
-No more no-shows. No more missed bookings. No more lost money.
-UK salons are switching to AI and saving thousands a year.
-Start free at mansamusainitiative.com`,
-    caption: "Barbers & salons — stop missing bookings when your hands are full. AI receptionist answers every call 👇 mansamusainitiative.com",
+You can't always reply when your hands are full.
+Mansa Musa AI gives you an AI receptionist for your website chat and appointment booking, so clients have another way to reach you while you work.
+Plans start at £49 a month.
+${FREE_START}`,
+    caption: "Barbers & salons: a website chat AI receptionist and appointment booking for when your hands are full. Plans from £49/month 👇 mansamusainitiative.com",
     hashtags: ["#BarberShop", "#HairSalon", "#UKSalon", "#BookingAutomation", "#MansaMusaAI"],
     platform: "tiktok",
   },
   {
     title: "For Plumbers and Trades",
     script: `Plumbers. Electricians. Builders.
-You're on the job. You can't answer your phone.
-But that call you missed? That was a £500 job going to someone else.
-Mansa Musa AI answers every call for you.
-It takes the job details, books them in, and sends you a summary.
-You finish your current job. Your next job is already booked.
-UK tradespeople are earning more by missing fewer calls.
-Start free at mansamusainitiative.com`,
-    caption: "Plumbers & trades — every missed call is a £500 job lost. AI receptionist handles it while you work 👇 mansamusainitiative.com",
+You're on the job and can't always reply.
+Mansa Musa AI gives your business an AI receptionist for your website chat, a CRM for enquiries and appointment booking.
+Plans start at £49 a month.
+${TRIAL_LINE}
+${FREE_START}`,
+    caption: `Plumbers & trades: website chat AI receptionist, CRM and appointment booking from £49/month. ${TRIAL_LINE} 👇 mansamusainitiative.com`,
     hashtags: ["#Plumber", "#UKTrades", "#Electrician", "#TradesmenUK", "#MansaMusaAI"],
     platform: "tiktok",
   },
   {
-    title: "Affiliate Opportunity",
-    script: `What if you could earn recurring commissions just by referring businesses to a service they already need?
-Mansa Musa AI has an affiliate programme that pays you every single month — for every business you refer.
-Refer a plumber. They pay £49 a month. You earn commission every month they stay.
-Refer 10 businesses. Earn passive income every month.
-No selling. No convincing. Just sharing something that genuinely helps UK businesses.
-Join the affiliate programme at mansamusainitiative.com`,
-    caption: "Earn recurring monthly commissions referring UK businesses to AI. Join our affiliate programme 👇 mansamusainitiative.com",
-    hashtags: ["#AffiliateMarketing", "#PassiveIncome", "#UKAffiliate", "#SideHustle", "#MansaMusaAI"],
+    title: "Affiliate Programme",
+    script: `Know UK businesses that could use Mansa Musa AI?
+Our affiliate programme pays commission on the subscriptions of businesses you refer, for as long as they stay subscribed.
+Commission rates and terms are on the affiliate page.
+Find out more at mansamusainitiative.com`,
+    caption: "Refer UK businesses to Mansa Musa AI and earn commission on their subscriptions. Rates and terms on the affiliate page 👇 mansamusainitiative.com",
+    hashtags: ["#AffiliateMarketing", "#UKAffiliate", "#UKBusiness", "#MansaMusaAI"],
     platform: "linkedin",
   },
   {
     title: "Restaurants",
-    script: `Restaurant owners — your phone rings during the dinner rush.
-Nobody picks up.
-That was a table for 8 gone forever.
-Mansa Musa AI gives your restaurant an AI receptionist that takes reservations, answers questions about your menu, and handles calls 24 hours a day.
-Your staff focus on the customers in front of them.
-Your AI handles everyone else.
-Start free at mansamusainitiative.com`,
-    caption: "Restaurants — stop losing reservations during the rush. AI answers every call 👇 mansamusainitiative.com",
+    script: `Restaurant owners: enquiries arrive at the busiest moment of the night.
+Mansa Musa AI gives your restaurant an AI receptionist for your website chat and booking tools, so your staff can stay with the guests in front of them.
+Plans start at £49 a month.
+${FREE_START}`,
+    caption: "Restaurants: a website chat AI receptionist and booking tools so your team can focus on the guests in front of them. From £49/month 👇 mansamusainitiative.com",
     hashtags: ["#RestaurantBusiness", "#UKRestaurant", "#HospitalityUK", "#FoodBusiness", "#MansaMusaAI"],
     platform: "instagram",
   },
@@ -151,12 +136,12 @@ Start free at mansamusainitiative.com`,
 
 export const MANSA_INTRO_SCRIPT: VideoScript = {
   title: "Meet MansaMusaAI — Your AI Workforce",
-  script: `Meet MansaMusaAI — the AI workforce built to help your business grow.
-One platform gives you specialist AI agents for sales, customer service, marketing, finance, operations and more.
-Your AI receptionist answers calls around the clock, captures leads, books appointments and follows up automatically.
-Whether you run a restaurant, salon, trade business, clinic, property company or online brand, MansaMusaAI helps you do more without hiring a full department.
-Start free today at mansamusainitiative.com.`,
-  caption: "Meet MansaMusaAI — your complete AI workforce. Answer calls, capture leads, book appointments and run your business 24/7. Start free at mansamusainitiative.com",
+  script: `Meet MansaMusaAI: AI tools built to help UK small businesses grow.
+An AI receptionist for your website chat, a CRM for your leads, appointment booking and an AI executive team for sales, finance, marketing and operations questions.
+Start on the free plan, or verify your email and try Professional free for 14 days with no card.
+Paid plans: Starter £49, Professional £149 and Enterprise £499 a month.
+${FREE_START}.`,
+  caption: "Meet MansaMusaAI: website chat AI receptionist, CRM, appointment booking and an AI executive team. Free plan available; Professional free for 14 days, no card. Start free at mansamusainitiative.com",
   hashtags: ["#MansaMusaAI", "#AIWorkforce", "#AIReceptionist", "#BusinessAutomation", "#UKBusiness"],
   platform: "youtube",
 };

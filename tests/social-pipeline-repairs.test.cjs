@@ -226,3 +226,14 @@ test('the daily cron only queues a PENDING draft and never calls a publishing fu
   assert.equal(res.status, 200);
   assert.equal(db.contentQueue.rows.length, 1); assert.equal(db.contentQueue.rows[0].status, 'PENDING'); assert.equal(db.contentQueue.rows[0].sentAt, undefined);
 });
+
+test('launch scripts contain only verified claims: live prices, real trial terms, no statistics, guarantees or unavailable channels', () => {
+  const lib = load('src/lib/social-automation.ts', { '@/lib/db': { db: {} } });
+  const all = [...lib.MANSA_SCRIPTS, lib.MANSA_INTRO_SCRIPT];
+  for (const s of all) {
+    const text = `${s.title}\n${s.script}\n${s.caption}\n${s.hashtags.join(' ')}`;
+    assert.doesNotMatch(text, /\d+\s?%|£\s?500|every call|never miss|24\/7|24 hours|passive income|side ?hustle|guarantee|whatsapp|phone call|answers calls/i, s.title);
+    for (const [, amount] of text.matchAll(/£\s?(\d+(?:\.\d+)?)/g)) assert.ok(['2', '49', '149', '499'].includes(amount), `${s.title}: £${amount} is not a live price`);
+    if (/14 days|14-day/.test(text)) assert.match(text, /verif/i, `${s.title}: trial needs a verified email`);
+  }
+});
