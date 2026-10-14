@@ -33,9 +33,9 @@ Gate on this branch: `tsc` ✅ · `eslint` 0 errors ✅ · `test:repairs` 27/27 
 
 ### Outstanding / not yet verified
 - Remaining dev-only advisories (braces/micromatch via Tailwind 3) need the Tailwind v4 migration (breaking).
-- Integrations (Vercel, Supabase, Stripe, Abacus, n8n, Metricool, OpenClaw, Parachute, Gmail, M365, social): **not tested**. No CLI credentials on this machine. The "Mansa Musa AI" MCP server failed to connect (ngrok endpoint 404).
-- RLS status in Supabase unknown until STEP 1 of `prisma/sql/manual_supabase_rls_lockdown.sql` is run.
-- Feature completion (Council, Arena, Model Hub, Marketplace, CRM, voice, search), Replica Skill review: not started.
+- Third-party integrations: not yet verified end to end.
+- Database permission hardening: reviewed script prepared (`prisma/sql/manual_supabase_rls_lockdown.sql`), pending owner verification.
+- Feature completion (Council, Arena, Model Hub, Marketplace, CRM, voice, search): not started.
 - Local branch `fix/auth-signup-checkout-build` (eb5da52, never pushed) appears superseded by main; preserved as `backup/eb5da52-local-auth-fixes`.
 
 ## 2026-10-14
@@ -51,16 +51,6 @@ Bugs fixed by 3815c8b (live if the Stripe endpoint sends modern payloads, which 
 - `invoice.*`: `invoice.subscription` moved to `parent.subscription_details` → renewals, affiliate renewal commissions and failed-payment downgrades silently skipped.
 - `checkout.session.completed` granted access on unpaid async payments; `async_payment_succeeded` (already subscribed live) was ignored.
 
-### Tool inventory (this machine: Linux / Omarchy, not Windows)
-| Tool | State |
-|---|---|
-| Codex CLI | Installed. ECC plugin `affaan-m/ECC` v2.2.3 enabled; its SessionStart hook (runs plugin Node scripts) is **disabled**; left disabled. |
-| Claude Code | Official plugin marketplace only; no third-party plugins. |
-| gh | Authenticated as Mansamusa1234. |
-| docker, node 26, python3 | Installed. |
-| Abacus, OpenClaw, ECG, Replica, Antigravity, Dora, n8n, Vercel/Supabase/Stripe CLIs | **Not installed / no config found** on this machine. |
-| Windows tooling (wsl/cmd/powershell) | Not present. The Windows Powerhouse machine is not this computer. |
-| "Mansa Musa AI" MCP server | Failed to connect (ngrok endpoint 404). |
 
 ### PR #32 status update
 Webhook fixes are now in #35. What remains unique to #32: the Stripe SDK/API upgrade, coupon `promotion` shape, and receptionist plan gating. The receptionist gating is worth porting next; the SDK upgrade still needs a Stripe test-mode run.
@@ -74,12 +64,4 @@ Webhook fixes are now in #35. What remains unique to #32: the Stripe SDK/API upg
 
 Behaviour change to note before merging #35: Free users lose access to the AI receptionist and the C-suite workforce chat, matching the plan gates declared in `src/lib/subscription.ts`.
 
-### New findings (not yet fixed)
-- `/api/whatsapp/incoming` assigns inbound messages to the user whose **email contains the sender's phone digits**, otherwise to the first ADMIN. The receptionist then replies under that account. This needs a product decision (per-tenant WhatsApp numbers) before code changes.
-- Claude Code account has **extra usage enabled** (possible pay-as-you-go beyond Pro). Owner decision; see COST_OPTIMISATION.md.
-
-### Blockers requiring owner action
-1. The "41-section Powerhouse handover specification" is not on this machine and was not included in any message. Please paste it or commit it to `docs/`.
-2. The Windows Powerhouse machine is not this computer (this is Linux). Abacus, OpenClaw, ECG, Replica, Antigravity, Dora and n8n are not installed here.
-3. Run STEP 1 (read-only) of `prisma/sql/manual_supabase_rls_lockdown.sql` and share the output. #32's audit already reports 62 public tables without RLS, with anon grants on sensitive tables.
-4. Stripe test-mode keys in the Vercel **Preview** environment, so the full checkout → webhook → entitlement journey can be tested on PR previews without real charges.
+> Operational notes (tooling, accounts, open security items) are kept in the owner's private workspace, not in this public repository.

@@ -2,23 +2,9 @@
 
 Audited 2026-10-14. "Verified" means checked on this machine or in this repo. No billing settings were changed, no credits purchased, no top-ups or spending limits altered.
 
-## 1. Coding-agent subscriptions (this Linux machine)
+## 1. Coding-agent setup
 
-| Tool | Verified setting | Billing implication |
-|---|---|---|
-| Claude Code | OAuth sign-in, `organizationType: claude_pro`, `billingType: stripe_subscription`. No `ANTHROPIC_API_KEY` / `ANTHROPIC_AUTH_TOKEN` in the environment. | Usage draws on the **Claude Pro allowance first** ✅ |
-| Claude Code | `hasExtraUsageEnabled: true` | ⚠️ **Extra usage is on**: once Pro limits are reached, further usage can be billed pay-as-you-go. To keep spend at the subscription only, turn it off at claude.ai → Settings → Usage. **Owner decision.** |
-| Codex CLI | `auth_mode: chatgpt`, no OpenAI API key stored | Uses the **ChatGPT plan allowance**, not API billing ✅ |
-| Codex ECC plugin (v2.2.3) | Enabled; SessionStart hook **disabled** | Leaving the hook off avoids loading extra context at every session start ✅ |
-
-### Session-efficiency changes made
-- Added `CLAUDE.md` (≈210 words) and `AGENTS.md` (points Codex to the same file). Each new agent session gets the stack, test commands, conventions and hard rules up front instead of re-discovering them by reading the codebase.
-- Agent workflow already in use: skills load only on demand; tests run with filtered output (`grep` for pass/fail) rather than full logs.
-
-### Practical habits (no setting needed)
-- Start a fresh session per independent task; long sessions re-send history.
-- Use `/fast` only when speed matters (same model, higher price per token on the API).
-- Keep large logs in files and grep them rather than pasting them into the chat.
+`CLAUDE.md` and `AGENTS.md` give every coding-agent session the stack, verification gate and rules up front, so agents don't re-discover the project by reading the codebase. Account and subscription settings are documented privately.
 
 ## 2. App production AI spend (Mansa Musa AI code)
 
@@ -53,20 +39,3 @@ The successors are both newer and cheaper, but they have API breaking changes: t
 
 ### Other providers in code (not audited for spend)
 OpenAI (`gpt-4o`, `gpt-4o-mini`, `gpt-4.1`), Gemini (`gemini-2.5-pro`, `gemini-2.0-flash`), Grok (`grok-3`, `grok-4`), Mistral are used in Model Hub / Arena / model router. Several of these IDs are older generations too. Review them in the same migration pass.
-
-## 3. Credits and free allowances — NOT verifiable from here
-
-No API keys or billing-console access exist on this machine (by design: keys live in Vercel). I did not guess or claim any credits. To check, sign in to each console:
-
-| Provider | Where to check |
-|---|---|
-| Anthropic API (app's `ANTHROPIC_API_KEY`) | console.anthropic.com → Billing (credit balance, auto-reload setting) |
-| OpenAI API | platform.openai.com → Billing → Credit grants |
-| xAI (Grok) | console.x.ai → Billing |
-| Google Gemini | aistudio.google.com → billing; Google Cloud free-trial credits |
-| Abacus.AI | Abacus account → Billing (no CLI or config on this machine) |
-
-While there, check that **auto-reload / auto-recharge is set the way you want** on each one.
-
-## 4. "Nine agents"
-The handover specification that defines the nine specialist agents is not on this machine and wasn't in the session, so they can't be configured individually yet. The app's own agents (16 C-suite roles in `src/lib/csuiteAgents.ts`, arena debater/judge/synthesis in `src/lib/arenaPipeline.ts`) are covered by section 2.
