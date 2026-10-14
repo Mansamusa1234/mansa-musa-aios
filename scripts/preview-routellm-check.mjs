@@ -49,3 +49,44 @@ const env = {
 };
 console.log("[env-inventory]", JSON.stringify(env));
 writeFileSync("public/_diagnostics/env.json", JSON.stringify(env, null, 2));
+
+// Read-only connection checks (identity / balance only; nothing is posted or spent).
+const secrets = ["FACEBOOK_PAGE_ACCESS_TOKEN", "INSTAGRAM_ACCESS_TOKEN", "YOUTUBE_CLIENT_SECRET", "YOUTUBE_REFRESH_TOKEN", "HEYGEN_API_KEY"]
+  .map((n) => process.env[n]).filter(Boolean);
+const scrub = (text) => secrets.reduce((t, s) => t.split(s).join("[redacted]"), String(text)).slice(0, 240);
+async function probe(fn) {
+  try { return await fn(); } catch (err) { return { ok: false, error: scrub(err instanceof Error ? err.message : err) }; }
+}
+async function getJson(url, init) {
+  const res = await fetch(url, { ...init, signal: AbortSignal.timeout(20000) });
+  const body = await res.json().catch(() => ({}));
+  return { res, body };
+}
+const e = process.env;
+const connections = {
+  checkedAt: record.checkedAt,
+  commit: record.commit,
+  facebook: !(e.FACEBOOK_PAGE_ACCESS_TOKEN && e.FACEBOOK_PAGE_ID) ? { ok: false, error: "not configured" } : await probe(async () => {
+    const { res, body } = await getJson(`https://graph.facebook.com/v19.0/${encodeURIComponent(e.FACEBOOK_PAGE_ID)}?fields=id,name&access_token=${encodeURIComponent(e.FACEBOOK_PAGE_ACCESS_TOKEN)}`);
+    return res.ok ? { ok: true, page: body.name } : { ok: false, status: res.status, error: scrub(JSON.stringify(body.error ?? body)) };
+  }),
+  instagram: !e.INSTAGRAM_ACCESS_TOKEN ? { ok: false, error: "not configured" } : await probe(async () => {
+    const { res, body } = await getJson(`https://graph.instagram.com/v25.0/me?fields=id,username&access_token=${encodeURIComponent(e.INSTAGRAM_ACCESS_TOKEN)}`);
+    return res.ok ? { ok: true, username: body.username, matchesUserId: body.id === e.INSTAGRAM_USER_ID } : { ok: false, status: res.status, error: scrub(JSON.stringify(body.error ?? body)) };
+  }),
+  youtube: !(e.YOUTUBE_CLIENT_ID && e.YOUTUBE_CLIENT_SECRET && e.YOUTUBE_REFRESH_TOKEN) ? { ok: false, error: "not configured" } : await probe(async () => {
+    const token = await getJson("https://oauth2.googleapis.com/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ client_id: e.YOUTUBE_CLIENT_ID, client_secret: e.YOUTUBE_CLIENT_SECRET, refresh_token: e.YOUTUBE_REFRESH_TOKEN, grant_type: "refresh_token" }) });
+    if (!token.res.ok) return { ok: false, stage: "token", status: token.res.status, error: scrub(JSON.stringify(token.body)) };
+    const { res, body } = await getJson("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true", { headers: { Authorization: `Bearer ${token.body.access_token}` } });
+    return res.ok ? { ok: true, channel: body.items?.[0]?.snippet?.title ?? null, scope: token.body.scope } : { ok: false, stage: "channels", status: res.status, error: scrub(JSON.stringify(body.error ?? body)) };
+  }),
+  tiktok: e.TIKTOK_ACCESS_TOKEN ? { ok: null, note: "configured; not probed" } : { ok: false, error: "not configured" },
+  heygen: !e.HEYGEN_API_KEY ? { ok: false, error: "not configured" } : await probe(async () => {
+    const { res, body } = await getJson("https://api.heygen.com/v2/user/remaining_quota", { headers: { "x-api-key": e.HEYGEN_API_KEY } });
+    const quota = body?.data?.remaining_quota;
+    return res.ok ? { ok: true, remainingQuota: quota, approxCredits: typeof quota === "number" ? Math.floor(quota / 60) : null } : { ok: false, status: res.status, error: scrub(JSON.stringify(body)) };
+  }),
+};
+console.log("[connections]", JSON.stringify(connections));
+writeFileSync("public/_diagnostics/connections.json", JSON.stringify(connections, null, 2));
