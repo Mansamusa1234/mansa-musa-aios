@@ -93,4 +93,13 @@ Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 49/49 ✅ · build ✅
 
 Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 52/52 ✅ · build ✅
 
+## 2026-10-14: Customer AI on RouteLLM, voiced video, nine-department agent proof
+| Change | Commit | Verification |
+|---|---|---|
+| `abacus` provider in the model router (auto model only when no other provider is set); `aiText.completeText` (Anthropic → RouteLLM) used by the AI executive team, clean 503 on provider failure | 68451c5 | 4 new tests; journey 7/7 |
+| Free offline voiceover (espeak-ng) in the daily video; captions stay up until spoken | 98c87ce | GitHub Actions run 38582423544 ✅: 1080x1920, 43.3 s, H.264/AAC with audible speech |
+| Preview agent proof: the app's own C-suite prompts complete one task per department via RouteLLM (only on commits tagged `[agent-proof]`) | bf19fc9 | **9/9 departments HTTP 200 with on-brief output** on Preview (2.4–6.9 s each) |
+
+Gate: tsc ✅ · eslint 0 errors ✅ · test:repairs 57/57 ✅ · test:journey 7/7 ✅ · build ✅
+
 > Operational notes (tooling, accounts, open security items) are kept in the owner's private workspace, not in this public repository.
