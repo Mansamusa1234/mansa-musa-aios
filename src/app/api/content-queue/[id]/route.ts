@@ -3,7 +3,11 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { directPublishEnabled, publishDraft } from "@/lib/socialPublisher";
 import { isMetricoolConfigured, metricoolDraftMode, schedulePost, utmLink, SOCIAL_NETWORKS, type SocialNetwork } from "@/lib/metricool";
+
+// Direct publishing waits for platform video processing (Instagram, YouTube upload).
+export const maxDuration = 300;
 
 const schema = z.object({ action: z.enum(["approve", "reject", "edit"]), content: z.string().min(1).max(50000).optional() });
 const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
@@ -20,7 +24,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (item.status !== "PENDING") return NextResponse.json({ error: "This item has already been processed. Refresh the queue." }, { status: 409 });
   if (action === "edit" && !content) return NextResponse.json({ error: "Content is required." }, { status: 400 });
-  let metadata: { toEmail?: string; subject?: string; kind?: string; videoId?: string | null; videoUrl?: string | null; networks?: string[] } = {};
+  let metadata: { toEmail?: string; subject?: string; kind?: string; videoId?: string | null; videoUrl?: string | null; networks?: string[]; script?: string; scriptTitle?: string } = {};
   try { metadata = JSON.parse(item.metadata ?? "{}"); } catch {
     return NextResponse.json({ error: "Item metadata is invalid. Repair the draft before approval." }, { status: 400 });
   }
@@ -71,6 +75,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await db.contentQueue.update({ where: { id }, data: { metadata: JSON.stringify({ ...metadata, metricool: { scheduledFor: when, draft: metricoolDraftMode(), results } }) } });
     return NextResponse.json({ ok: true, status: "APPROVED", scheduledFor: when, metricoolDraft: metricoolDraftMode(), results,
       message: metricoolDraftMode() ? "Saved as Metricool drafts for a final check. Nothing was published." : `Scheduled in Metricool for ${when} (Europe/London).` });
+  }
+  if (action === "approve" && dailyVideo && directPublishEnabled()) {
+    const networks = (metadata.networks ?? [...SOCIAL_NETWORKS])
+      .filter((n): n is SocialNetwork => (SOCIAL_NETWORKS as readonly string[]).includes(n));
+    const results = await publishDraft({ draftId: id, title: metadata.scriptTitle ?? item.title, script: metadata.script ?? item.content,
+      caption: content ?? item.content, videoUrl: metadata.videoUrl, networks });
+    const published = results.filter((r) => r.ok);
+    const record = { ...metadata, published: { at: new Date().toISOString(), results } };
+    if (!published.length) {
+      await db.contentQueue.update({ where: { id }, data: { status: "PENDING", approvedAt: null, metadata: JSON.stringify(record) } });
+      return NextResponse.json({ error: "No platform accepted the post. The draft remains pending.", results }, { status: 502 });
+    }
+    await db.contentQueue.update({ where: { id }, data: { status: "SENT", sentAt: new Date(), metadata: JSON.stringify(record) } });
+    return NextResponse.json({ ok: true, status: "SENT", results, message: `Published to ${published.map((r) => r.network).join(", ")}.` });
   }
   // Approval alone does not publish social/PR drafts. Never label them SENT.
   return NextResponse.json({ ok: true, status, message: status === "APPROVED" ? "Approved for manual publication. No message or social post was sent." : undefined });
