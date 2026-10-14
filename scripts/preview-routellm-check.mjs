@@ -112,9 +112,14 @@ if (process.env.DATABASE_URL) {
                  (SELECT count(*)::int FROM "Subscription") AS subscriptions,
                  (SELECT count(*)::int FROM "User" WHERE role = 'ADMIN') AS admins,
                  (SELECT count(*)::int FROM "User" WHERE role = 'ADMIN' AND "emailVerified" IS NOT NULL) AS "adminsVerified"`);
+        // Whether the owner's account (OWNER_EMAIL, as in auth.config) exists and is verified: booleans only.
+        const ownerEmail = (process.env.OWNER_EMAIL ?? process.env.REPORT_EMAIL ?? "darrenneil2025@gmail.com").trim().toLowerCase();
+        const [owner] = await tx.$queryRawUnsafe(`SELECT count(*)::int > 0 AS exists, bool_or("emailVerified" IS NOT NULL) AS verified, bool_or(role = 'ADMIN') AS admin
+          FROM "User" WHERE lower(email) = $1`, ownerEmail);
         return {
           ok: true,
           ...people,
+          ownerAccount: { exists: owner.exists, verified: !!owner.verified, admin: !!owner.admin },
           tables: tables.length,
           withoutRls: tables.filter((t) => !t.rls).map((t) => t.name),
           rlsWithoutPolicies: tables.filter((t) => t.rls && t.policies === 0).length,
