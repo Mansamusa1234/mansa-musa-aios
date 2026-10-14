@@ -336,9 +336,13 @@ export default function Sidebar({ user }: Props) {
           })}
         </nav>
 
-        {/* User card */}
+        {/* User card — opens profile/account settings */}
         <div className="border-t border-white/6 px-3 py-4">
-          <div className="flex items-center gap-2.5 rounded-lg border border-white/6 bg-white/3 px-3 py-2.5">
+          <Link
+            href="/settings"
+            aria-label="Open profile and account settings"
+            className="group flex items-center gap-2.5 rounded-lg border border-white/6 bg-white/3 px-3 py-2.5 transition-colors hover:border-white/12 hover:bg-white/6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60"
+          >
             <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-brand-500/20 text-xs font-bold text-brand-300">
               {user.name?.[0]?.toUpperCase() ?? "U"}
             </div>
@@ -346,7 +350,17 @@ export default function Sidebar({ user }: Props) {
               <p className="truncate text-[12px] font-semibold text-gray-300">{user.name ?? "User"}</p>
               <p className="truncate text-[10px] text-gray-500">{user.role ?? "Member"}</p>
             </div>
-          </div>
+            <svg
+              className="h-3.5 w-3.5 flex-shrink-0 text-gray-600 transition-colors group-hover:text-gray-400"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
+              <path d="m7.5 5 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
         </div>
       </motion.aside>
 
