@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { stagger, fadeUp, scaleIn } from "@/lib/motion";
 
-type Provider = "anthropic" | "openai" | "grok" | "gemini" | "mistral" | "openrouter";
+type Provider = "anthropic" | "openai" | "grok" | "gemini" | "mistral" | "openrouter" | "abacus";
 
 interface CatalogItem {
   provider: Provider;
@@ -30,6 +30,7 @@ const PROVIDER_META: Record<Provider, { name: string; color: string; bg: string;
   gemini:      { name: "Google",      color: "text-blue-400",    bg: "border-blue-500/25 bg-blue-500/5",      logo: "✦" },
   mistral:     { name: "Mistral",     color: "text-purple-400",  bg: "border-purple-500/25 bg-purple-500/5",  logo: "▲" },
   openrouter:  { name: "OpenRouter",  color: "text-pink-400",    bg: "border-pink-500/25 bg-pink-500/5",      logo: "↗" },
+  abacus:      { name: "Abacus",      color: "text-amber-400",   bg: "border-amber-500/25 bg-amber-500/5",    logo: "◆" },
 };
 
 const TABS = ["Model Selection", "Compare", "Routing Info"] as const;

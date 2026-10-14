@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { anthropic } from "@/lib/anthropic";
+import { completeText } from "@/lib/aiText";
 import { CSUITE_BY_ROLE } from "@/lib/csuiteAgents";
 import type { CsuiteRole } from "@/lib/csuiteAgents";
 import { getActivePlan, hasFeature } from "@/lib/subscription";
@@ -38,14 +38,13 @@ export async function POST(req: Request) {
   const agent = Object.hasOwn(CSUITE_BY_ROLE, role) ? CSUITE_BY_ROLE[role] : undefined;
   if (!agent) return NextResponse.json({ error: "Unknown agent role" }, { status: 400 });
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system: agent.systemPrompt,
-    messages: messages.slice(-20),
-  });
-
-  const reply = response.content[0].type === "text" ? response.content[0].text : "";
+  let reply: string;
+  try {
+    ({ text: reply } = await completeText({ anthropicModel: "claude-sonnet-4-6", maxTokens: 1024, system: agent.systemPrompt, messages: messages.slice(-20) }));
+  } catch (err) {
+    console.error("[workforce/chat] AI request failed:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Your AI executive is unavailable right now. Please try again shortly." }, { status: 503 });
+  }
 
   // Persist conversation (upsert by userId + role)
   const existing = await db.workforceChat.findFirst({

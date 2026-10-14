@@ -60,15 +60,27 @@ test('subscription recognises annual prices, live card-free trials, and expiry',
   assert.equal(plan({ status: 'PAST_DUE', stripePriceId: 'annual-pro' }), 'free');
 });
 
-function routerFixture(env = {}) {
+function routerFixture(env = {}, routeResult = null) {
   const failed = class { messages = { stream: async () => { throw new Error('Provider rejected'); } }; };
-  return load('src/lib/modelRouter.ts', { '@anthropic-ai/sdk': failed, openai: class {}, '@google/generative-ai': { GoogleGenerativeAI: class {} }, '@mistralai/mistralai': { Mistral: class {} } }, env);
+  const routellm = { isRouteLlmConfigured: () => Boolean(env.ABACUS_API_KEY), routeLlmChat: async () => routeResult };
+  return load('src/lib/modelRouter.ts', { '@anthropic-ai/sdk': failed, openai: class {}, '@google/generative-ai': { GoogleGenerativeAI: class {} }, '@mistralai/mistralai': { Mistral: class {} }, '@/lib/routellm': routellm }, env);
 }
 test('auto routing uses configured eligible providers and fails when none exist', () => {
   assert.throws(() => routerFixture().getAutoModel('free'), /No configured/);
   const router = routerFixture({ OPENAI_API_KEY: 'test' });
   const model = router.getAutoModel('free'); assert.equal(model.provider, 'openai'); assert.equal(model.planGate, 'free');
   assert.equal(router.planRank('starter'), router.planRank('basic')); assert.equal(router.planRank('professional'), router.planRank('pro'));
+});
+test('Abacus RouteLLM is the auto model only when no other provider is configured', async () => {
+  assert.equal(routerFixture({ ABACUS_API_KEY: 'k', OPENAI_API_KEY: 'o' }).getAutoModel('free').provider, 'openai');
+  const router = routerFixture({ ABACUS_API_KEY: 'k' }, { ok: true, status: 200, content: 'Hello from Abacus', model: 'gpt-x', usage: { input_tokens: 5, output_tokens: 3 } });
+  const model = router.getAutoModel('enterprise'); assert.equal(model.provider, 'abacus');
+  const result = router.routeMessage(model, [{ role: 'user', content: 'hi' }], 'sys');
+  const chunk = await result.stream.getReader().read(); assert.equal(new TextDecoder().decode(chunk.value), 'Hello from Abacus');
+  const usage = await result.onComplete; assert.equal(usage.provider, 'abacus'); assert.equal(usage.inputTokens, 5); assert.equal(usage.outputTokens, 3); assert.equal(usage.model, 'gpt-x');
+  const failing = routerFixture({ ABACUS_API_KEY: 'k' }, { ok: false, status: 401, content: null });
+  const bad = failing.routeMessage(failing.getAutoModel('free'), [{ role: 'user', content: 'hi' }], 'sys');
+  await assert.rejects(bad.stream.getReader().read(), /status 401/); await assert.rejects(bad.onComplete, /status 401/);
 });
 test('provider failure rejects both the stream and completion instead of hanging', async () => {
   const router = routerFixture({ ANTHROPIC_API_KEY: 'test' });

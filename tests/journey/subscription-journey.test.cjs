@@ -34,6 +34,8 @@ class LocalStripe extends RealStripe {
   }
 }
 
+// Mocked below; set so the real aiText helper selects the (mocked) Anthropic client.
+process.env.ANTHROPIC_API_KEY ??= 'test-only-not-a-key';
 let sessionUser = null; let aiCalls = 0; const afterTasks = [];
 const shared = {
   stripe: LocalStripe,
